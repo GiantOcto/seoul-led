@@ -1,0 +1,85 @@
+.pm10,
+.grade {
+  display: inline-block;
+}
+
+.grade b,
+.temperature b,
+.description b,
+.o3 b {
+  font-size: 20px;
+}
+
+.grade b,
+.o3 b {
+  margin-left: 10px;
+}
+
+.temperature i {
+  color: #ffffff;
+  margin-right: 5px;
+  font-size: 16px;
+}
+
+.desc-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 5px;
+}
+
+.pm10,
+.description i {
+  margin-right: 5px;
+}
+
+.mid {
+  height: 17%;
+  width: 128px;
+  writing-mode: vertical-lr;
+  text-align: center;
+  position: absolute;
+  justify-content: space-evenly;
+  display: flex;
+  margin: 0;
+}
+
+.mid_text p {
+  margin: 1px;
+  padding-top: 0px;
+}
+
+.mid_text {
+  height: 688px;
+  width: 128px;
+  writing-mode: vertical-lr;
+  font-size: 24px;
+  color: white;
+  position: relative;
+
+  /*text-align: center;*/
+}
+.mid-picture {
+  height: 90px;
+  width: 128px;
+  /*background-image: url("../문구.bmp");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;*/
+}
+
+.mid p {
+  margin: 0;
+  /*line-height: 1.5;*/
+}
+
+.mid-box {
+  height: 100%;
+  width: 128px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  writing-mode: horizontal-tb;
+  text-align: center;
+  color: white;
+  margin-bottom: 0px;
+}
