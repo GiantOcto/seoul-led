@@ -65,16 +65,16 @@ function Weather({ selectedDistrict }) {
   }, [selectedDistrict]);
 
   const getO3Grade = (o3) => {
-    if (o3 <= 60) return { text: "좋음", color: 'lightgreen' };
-    if (o3 <= 90) return { text: "보통", color: 'yellow' };
-    if (o3 <= 150) return { text: "나쁨", color: 'orange' };
+    if (o3 <= 60) return { text: "좋음", color: 'rgb(71, 131, 174)' };
+    if (o3 <= 90) return { text: "보통", color: 'rgb(153, 179, 82)' };
+    if (o3 <= 150) return { text: "나쁨", color: 'rgb(225, 190, 100)' };
     return { text: "매우 나쁨", color: 'lightcoral' };
   };
 
   const getPM10Grade = (pm10) => {
-    if (pm10 <= 30) return { text: "좋음", color: 'lightgreen' };
-    if (pm10 <= 80) return { text: "보통", color: 'yellow' };
-    if (pm10 <= 150) return { text: "나쁨", color: 'orange' };
+    if (pm10 <= 30) return { text: "좋음", color: 'rgb(71, 131, 174)' };
+    if (pm10 <= 80) return { text: "보통", color: 'rgb(153, 179, 82)' };
+    if (pm10 <= 150) return { text: "나쁨", color: 'rgb(225, 190, 100)' };
     return { text: "매우 나쁨", color: 'lightcoral' };
   };
 
@@ -108,30 +108,31 @@ function Weather({ selectedDistrict }) {
 
   return (
     <div className="weather-container">
-      <div className="temperature">
-        <i className="fas fa-thermometer-half "></i>
-        <b style={{ color: tempColor }}>{temperature}</b>
-      </div>
-
-      <div className="description">
-        <img src={iconURL} className="desc-icon" alt={description} />
-        <b>{description}</b>
-      </div>
-
+ 
       <div className="air-quality">
         <div className="pm10">
-          <span style={{ fontSize: '15px', color: pm10Grade.color }}>
+          <span style={{ fontSize: '15px'}}>
             미세먼지
           </span>
+
+          <div className="emoji">
+            <img src={`/images/${pm10Grade.text}.png`} alt={pm10Grade.text} />
+          </div>
+
           <div className="grade">
             <b style={{ color: pm10Grade.color }}>{pm10Grade.text}</b>
           </div>
         </div>
 
         <div className="o3">
-          <span style={{ fontSize: '15px', color: o3Grade.color }}>
-            오존
+          <span style={{ fontSize: '15px' }}>
+            오&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;존
           </span>
+
+          <div className="emoji">
+            <img src={`/images/${o3Grade.text}.png`} alt={pm10Grade.text} />
+          </div>
+
           <b style={{ color: o3Grade.color }}>{o3Grade.text}</b>
         </div>
       </div>

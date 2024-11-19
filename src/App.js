@@ -1,6 +1,5 @@
 import Clock from "./components/Clock/Clock";
-import Weather from "./components/Weather/Weather";
-import Logo from "./components/Logo/Logo";
+import { Logo1, Logo2 } from "./components/Logo/Logo";
 import DistrictSelector from "./components/DistrictSelector/DistrictSelector";
 import ClockSelector from "./components/ClockSelector/ClockSelector";
 import { useSectionManager } from "./hooks/useSectionManager";
@@ -11,11 +10,11 @@ function App() {
   const {
     selectedDistrict,
     setSelectedDistrict,
-    selectedClockStyle,     
-    setSelectedClockStyle,  
+    selectedClockStyle,
+    setSelectedClockStyle,
     toggleSection,
     getButtonStyle,
-    sectionBottom
+    sections,
   } = useSectionManager();
 
   const { isDarkMode, setIsDarkMode } = useDarkMode();
@@ -76,7 +75,6 @@ function App() {
                 onClockstyleChange={setSelectedClockStyle}
               />
             </div>
-
           </div>
         </div>
 
@@ -101,40 +99,29 @@ function App() {
 
       <div className="main-page">
         <div className="container">
-          <div className="section-top">
-            <Logo />
-            <Clock />
-          </div>
+          {sections.top}
 
-          <div className="section-middle">
-            <div className="video-container">
-              <div className="mid">
-                <div className="mid-box">
-                  <Weather selectedDistrict={selectedDistrict} />
-                </div>
-              </div>
-            </div>
-          </div>
+          {sections.middle}
 
-          {sectionBottom}
+          {sections.bottom}
         </div>
       </div>
 
       <div className="section-controls">
         <button style={getButtonStyle(0)} onClick={() => toggleSection(0)}>
-          Event 
+          Event
         </button>
         <button style={getButtonStyle(1)} onClick={() => toggleSection(1)}>
-          Video 
+          Video
         </button>
         <button style={getButtonStyle(2)} onClick={() => toggleSection(2)}>
-          Section 3 
+          Section 3
         </button>
         <button style={getButtonStyle(3)} onClick={() => toggleSection(3)}>
-          Section 4 
+          Section 4
         </button>
         <button style={getButtonStyle(4)} onClick={() => toggleSection(4)}>
-          Section 5 
+          Section 5
         </button>
       </div>
     </>

@@ -1,5 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap");
 
+@font-face {
+  font-family: 'SeoulHangangL';
+  src: url('../public/fonts/SeoulHangangL.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SeoulHangangM';
+  src: url('../public/fonts/SeoulHangangM.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
 
 button,
 div,
@@ -19,25 +32,24 @@ span {
 }
 
 .banner {
-  display: flex;  
+  display: flex;
   justify-content: space-between;
   width: 100%;
   height: 10%;
-  background-color: rgba(0, 0, 0, 0.8);;
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
 .banner-left {
   display: flex;
   justify-content: start;
   width: 20%;
-
 }
 
 .banner-left h1 {
   font-size: 50px;
   color: aliceblue;
   margin: 0 0 0 10px;
-  padding: 10PX;
+  padding: 10px;
 }
 
 .banner-mid {
@@ -77,9 +89,9 @@ span {
 
 .offcanvas.offcanvas-end {
   width: 80%;
-  height: 80%;  
-  top: 12%;    
-  border-radius: 10px 0 0 10px;  
+  height: 80%;
+  top: 12%;
+  border-radius: 10px 0 0 10px;
   border: 3px solid coral;
   border-left: 3px solid coral;
 }
@@ -102,71 +114,247 @@ span {
   width: 128px;
   height: 768px;
   display: inline-block;
-  flex-direction: column;
   position: relative;
-  overflow:hidden;
+  overflow: hidden;
   padding: 0;
   margin-left: 50px;
 }
 
-.section-top {
-  position: relative;
-  height: 23%;
-  width: 128px;
-  display: flex;
-  flex-direction: column;
-  padding: 0px;
+#top1 {
+  height: 10%;
+  justify-content: center;
+  align-items: center;
 }
 
-.section-middle {
-  height: 17%;
-  width: 128px;
+#middle1 {
   display: flex;
   justify-content: center;
   align-items: center;
-  text-align: center;
-  flex-direction: column;
-}
-
-.section-bottom {
   height: 60%;
-  width: 128px;
-  display: none;
-  flex-direction: column;
-  margin: 0;
-  align-items: center;
-  text-align: center;
-  justify-content: center;
 }
 
-#bottom2 video{
+#bottom1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 30%;
+  padding-bottom: 10px;
+}
+
+#top2 {
+  height: 10%;
+}
+
+#middle2 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 90%;
+}
+
+#bottom2 video {
   background-color: red;
   width: 100%;
-  height:100%;
+  height: 100%;
   object-fit: cover;
 }
 
-#bottom3 {
-    background-color: beige;
+#top3 {
+  height: 25%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'SeoulHangangM';
+  color: aliceblue;
 }
 
-#bottom4 {
-  background-color: green;
+#top3 #logo-donghang {
+ margin-bottom: 20px;
 }
 
-.video-container {
-  width: 128px;
-  height: 100%;
+#top3 h1 {
+  font-size: 20px;
+  font-weight: 900;
+  margin: 0;
+}
+
+#middle3 {
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 45%;
+}
+
+#bottom3 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 30%;
+  padding-bottom: 10px;
+}
+
+#top4 {
+  height: 25%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'SeoulHangangM';
+  color: aliceblue;
+}
+
+#top4 #logo-donghang {
+  margin-bottom: 20px;
+ }
+ 
+ #top4 h1 {
+   font-size: 20px;
+   font-weight: 900;
+   margin: 0;
+ }
+
+#middle4 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 45%;
+}
+
+#bottom4 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 30%;
+  padding-bottom: 10px;
+}
+
+.advertising-text {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  writing-mode: vertical-rl;
+  text-orientation: mixed; 
+  margin: 0 auto;
+  text-align: center;
+  gap: 10px;
+}
+
+.advertising-text h1 {
+  font-family: "Noto Serif KR", serif;
+  font-size: 22px;
+  letter-spacing: 0.2em;
+
+  margin: 0;
+}
+
+.stink-data {
+  position: relative;
+  width: 100px;
+  height: 183px;
+  border: 2px dashed aliceblue;
+  border-radius: 15px;
+}
+
+#stink-data-page2 {
+  top: 120px;
+  left: 14px;
+}
+
+.air-quality {
+  background-image: url("../public/images/line.png") ;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 100%;
+  height: 100%;
+  font-family: 'SeoulHangangM';
+  font-weight: 900;
+  color: rgb(230, 201, 183);
+  margin-bottom: 30px;
+}
+
+.air-quality-text {
+  position: relative;
+  top: 80px;
+  text-align: end;
+  margin-right: 10px;
+}
+
+.air-quality-text h1 {
+  font-size: 20px;
+  font-weight: 900;
+  margin: 0;
+}
+.air-quality-text p {
+  font-size: 13px;
+  margin: 0;
+}
+
+.pm10 {
+  position: relative;
+  top: 105px;
+  left: 25px;
+  width: 80px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  background-image: none;
+}
+
+.o3 {
+  position: relative;
+  top: 140px;
+  left: 25px;
+  width: 80px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pm10 span,
+.o3 span {
+  font-size: 15px;
+  color: aliceblue;
+}
+
+.pm10 b,
+.o3 b {
+  margin: 0;
+}
+
+.water-level {
+  width: 80%;
+  height: 90%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px dashed skyblue;
+  border-radius: 15px;
+}
+
+.water-level-warning {
+  position: relative;
+  width: 100px;
+  height: 183px;
+  border: 2px dashed skyblue;
+  border-radius: 15px;
 }
 
 .section-controls {
   position: fixed;
-  left: 0;           
-  bottom: 0;        
-  width: 100%; 
+  left: 0;
+  bottom: 0;
+  width: 100%;
   height: 5%;
   display: flex;
   justify-content: flex-start;
@@ -199,3 +387,13 @@ span {
   opacity: 0.5;
 }
 
+.weather,
+.air-quality *,  
+.dust-info,
+.ozone-info,
+.pm10,
+.o3,
+.air-quality-text {
+  background: none;
+  background-image: none;
+}

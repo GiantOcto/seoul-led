@@ -1,16 +1,20 @@
-.logo {
-    position: relative; 
+.logo-1 {
+    text-align: center;
   }
 
- #logo-main {
-    max-width: 126px;
-    height: auto;
-    display: block;
-    position: absolute;
-    left: 1px;
-    top: 2px;
+ #logo-seoul {
+    width: 80px;
+    display: inline-block;
+    margin: 0 auto;
+    margin-top: 10px;
   }
-  
+
+  #logo-donghang {
+    display: inline-block;
+    margin: 0 auto;
+    margin-top: 10px;
+  }
+
   #heart {
     display: inline-block;
     position: absolute;
