@@ -12,11 +12,23 @@ if %ERRORLEVEL% NEQ 0 (
     del node_setup.msi
 )
 
+:: npm 패키지 설치 확인
+if not exist "node_modules" (
+    echo node_modules 폴더가 없습니다. 필요한 패키지를 설치합니다...
+    call npm install
+)
+
+:: react-scripts 설치 확인
+if not exist "node_modules\react-scripts" (
+    echo react-scripts를 설치합니다...
+    call npm install react-scripts
+)
+
 :: serve 전역 설치 확인
 where serve >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo serve 패키지를 설치합니다...
-    npm install -g serve
+    call npm install -g serve
 )
 
 :: serve 실행
