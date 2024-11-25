@@ -1,0 +1,23 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background circle -->
+    <circle cx="50" cy="50" r="45" fill="#2196F3"/>
+    
+    <!-- Serial port symbol -->
+    <path d="M30 35 H70 V65 H30 V35" fill="none" stroke="white" stroke-width="4"/>
+    
+    <!-- Pins -->
+    <rect x="35" y="40" width="30" height="5" fill="white"/>
+    <rect x="35" y="50" width="30" height="5" fill="white"/>
+    <rect x="35" y="60" width="30" height="5" fill="white"/>
+    
+    <!-- Data flow lines -->
+    <path d="M15 40 L25 40" stroke="white" stroke-width="2">
+        <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/>
+    </path>
+    <path d="M75 50 L85 50" stroke="white" stroke-width="2">
+        <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/>
+    </path>
+    <path d="M15 60 L25 60" stroke="white" stroke-width="2">
+        <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/>
+    </path>
+</svg>

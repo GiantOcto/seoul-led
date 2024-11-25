@@ -1,0 +1,101 @@
+.news-container {
+    padding: 1px;
+  }
+  
+  .news-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .news-item {
+    background-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(25px);
+    width: 80%;
+    height: 120px;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 10px;
+    overflow: hidden;
+  }
+  
+  .news-item h3 {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    color: aliceblue;
+    word-break: keep-all;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.5;
+  }
+  
+  .news-item p {
+    font-family: "Noto Sans KR", serif;
+    font-weight: bold;
+    margin: 0 0 15px 0;
+    color: #666;
+  }
+  
+  .news-meta {
+    display: flex;
+    justify-content: center;
+    color: #888;
+    font-size: 8px;
+  }
+  
+  .news-keyword-selector {
+    display: flex;
+    background-color: black;
+    width: 200px;
+    height: 150px;
+    border: 1px solid coral;
+    border-radius: 8px;
+    color: aliceblue;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 10px;
+  }
+  
+  .news-keyword-selector h5 {
+    font-size: 16px;
+    color: aliceblue;
+    text-align: center;
+  }
+
+  .news-keyword-selector p {
+    font-size: 12px;
+    color: aliceblue;
+    text-align: center;
+  }
+  
+  .news-keyword-selector .input-group {
+    display: flex;
+    width: 60%;
+  }
+  
+  .news-keyword-selector input {
+    width: 100px;
+    padding-left: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  
+  .news-keyword-selector button {
+    padding: 5px;
+    background-color: coral;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .news-keyword-selector button:hover {
+    background-color: coral;
+    opacity: 0.8;
+  }
+  

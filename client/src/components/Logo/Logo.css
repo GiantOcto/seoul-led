@@ -1,0 +1,37 @@
+.logo-1 {
+    text-align: center;
+  }
+
+ #logo-seoul {
+    width: 80px;
+    display: inline-block;
+   
+  }
+
+  #logo-donghang {
+    display: inline-block;
+    margin: 0 auto;
+    
+  }
+
+  #heart {
+    display: inline-block;
+    position: absolute;
+    left: 19px;
+    animation: flip-multiple 5s ease-in-out infinite;
+  }
+  
+  #black-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 50;
+  }
+  
+  @keyframes flip-multiple {
+    0%, 80% { transform: scalex(1); }
+    85% { transform: scalex(-1); }
+    90% { transform: scalex(1); }
+    95% { transform: scalex(-1); }
+    100% { transform: scalex(1); }
+  }

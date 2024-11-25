@@ -1,0 +1,8 @@
+﻿node_modules/
+build/
+*.zip
+dist/
+__pycache__/
+*.pyc
+*.spec
+.DS_Store

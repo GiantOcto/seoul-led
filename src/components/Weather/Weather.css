@@ -1,0 +1,57 @@
+.pm10,
+.grade {
+  display: inline-block;
+}
+
+.grade b,
+.temperature b,
+.description b,
+.o3 b {
+  font-size: 12px;
+  font-family: "Noto Sans KR", serif;
+}
+
+.grade b,
+.o3 b {
+  margin-left: 10px;
+}
+
+.temperature i {
+  color: #ffffff;
+  margin-right: 5px;
+  font-size: 15px;
+}
+
+.desc-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 5px;
+}
+
+.pm10,
+.description i {
+  margin-right: 5px;
+}
+
+.mid p {
+  margin: 0;
+}
+
+.mid-box {
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(25px);
+  height: 100%;
+  width: 115px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 15px;
+  color: white;
+  padding: 10px;
+}
+
+.air-quality span {
+  font-size: 10px;
+  font-family: "Noto Sans KR", serif;
+  font-weight: bold;
+}

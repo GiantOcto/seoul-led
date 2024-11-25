@@ -1,0 +1,18 @@
+.grade b,
+.temperature b,
+.description b,
+.o3 b {
+  font-size: 25px;
+}
+
+.emoji img {
+  width: 60px;
+  height: 60px;
+  filter: brightness(0) invert(1);
+}
+
+
+
+
+
+
