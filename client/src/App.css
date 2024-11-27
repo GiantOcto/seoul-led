@@ -1,0 +1,296 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap");
+
+@font-face {
+  font-family: 'SeoulHangangEB';
+  src: url('../public/fonts/SeoulHangangEB.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SeoulHangangEB';
+  src: url('../public/fonts/SeoulHangangEB.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+button,
+div,
+input,
+textarea {
+  box-sizing: border-box;
+}
+
+a,
+button,
+h1,
+h2,
+h3,
+p,
+span {
+  transform: rotate(0.04deg);
+}
+
+.banner {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  height: 10%;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.banner-left {
+  display: flex;
+  justify-content: start;
+  width: 20%;
+}
+
+.banner-left h1 {
+  font-size: 50px;
+  color: aliceblue;
+  margin: 0 0 0 10px;
+  padding: 10px;
+}
+
+.banner-mid {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  width: 70%;
+}
+
+.banner-mid button {
+  background-color: transparent;
+  border: 1px solid coral;
+  color: aliceblue;
+  font-size: 20px;
+}
+
+.banner-right {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  width: 10%;
+  margin-right: 10px;
+}
+
+.form-check-input:checked {
+  background-color: coral;
+  border-color: coral;
+}
+
+#moon {
+  color: yellow;
+}
+
+.offcanvas {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.offcanvas.offcanvas-end {
+  width: 80%;
+  height: 80%;
+  top: 12%;
+  border-radius: 10px 0 0 10px;
+  border: 3px solid coral;
+  border-left: 3px solid coral;
+}
+
+.offcanvas-header {
+  border-bottom: 1px solid coral;
+  color: aliceblue;
+}
+
+.main-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 85%;
+}
+
+.container {
+  background: #000000;
+  width: 128px;
+  height: 768px;
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  margin-left: 50px;
+}
+
+#top1 {
+  height: 10%;
+  justify-content: center;
+  align-items: center;
+}
+
+#middle1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60%;
+}
+
+#middle1 img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#bottom1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 30%;
+  padding-bottom: 10px;
+}
+
+#top2 {
+  background-image: url('../public/images/line.png');
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  
+}
+
+#top3 {
+  height: 25%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'SeoulHangangEB';
+  color: aliceblue;
+}
+
+#top3 #logo-donghang {
+ margin-bottom: 20px;
+}
+
+#top3 h1 {
+  font-size: 27px;
+  font-weight: 400;
+  margin: 0;
+}
+
+#middle3 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 45%;
+}
+
+#bottom3 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 30%;
+  padding-bottom: 10px;
+}
+
+#top4 {
+  height: 25%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'SeoulHangangEB';
+  color: aliceblue;
+}
+
+#top4 #logo-donghang {
+  margin-bottom: 20px;
+ }
+ 
+ #top4 h1 {
+  font-size: 27px;
+  font-weight: 900;
+  margin: 0;
+ }
+
+#middle4 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 45%;
+}
+
+#middle4 span {
+  font-size: 20px;
+  font-family: 'SeoulHangangEB';
+  margin-bottom: 10px;
+}
+
+#bottom4 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 30%;
+  padding-bottom: 10px;
+}
+
+.advertising-text {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  writing-mode: vertical-rl;
+  text-orientation: mixed; 
+  margin: 0 auto;
+  text-align: center;
+  gap: 10px;
+}
+
+.advertising-text h1 {
+  font-family: "SeoulHangangEB", serif;
+  font-size: 22px;
+  letter-spacing: 0.2em;
+
+  margin: 0;
+}
+
+.section-controls {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 5%;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  z-index: 1000;
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.section-controls button {
+  position: relative;
+  padding: 10px;
+  background-color: #333;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.section-controls button.active {
+  background-color: #007bff;
+}
+
+.section-controls button.enabled {
+  background-color: #666;
+  opacity: 1;
+}
+
+.section-controls button.disabled {
+  opacity: 0.5;
+}
+

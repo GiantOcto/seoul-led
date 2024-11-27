@@ -1,0 +1,16 @@
+.date {
+    color: #ffffff;
+    font-family: 'SeoulHangangEB', sans-serif;
+    font-weight: 400;
+    font-size: 17.5px;
+    text-align: center;
+}
+
+.time {
+    color: rgb(153, 179, 82);
+    font-family: 'SeoulHangangEB';
+    font-weight: 400;
+    font-size: 26px;
+    text-align: center;
+}
+

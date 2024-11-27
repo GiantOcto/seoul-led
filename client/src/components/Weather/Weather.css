@@ -1,0 +1,93 @@
+.air-quality {
+  position: relative;
+  bottom: 55px;
+  background-size: auto 720px;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 100%;
+  height: 100%;
+  font-family: 'SeoulHangangEB';
+  font-weight: 900;
+  color: rgb(230, 201, 183);
+}
+
+.air-quality-text {
+  position: relative;
+  top: 80px;
+  text-align: end;
+  margin-right: 10px;
+}
+
+.air-quality-text h1 {
+  font-size: 27px;
+  font-weight: 400;
+  margin: 0;
+}
+.air-quality-text p {
+  font-size: 17px;
+  font-weight: 400;
+  margin: 0;
+}
+
+.pm10 {
+  position: relative;
+  top: 160px;
+  left: 5px;
+  width: 10 0px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  background-image: none;
+}
+
+.o3 {
+  position: relative;
+  top: 210px;
+  left: 15px;
+  width: 100px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pm10 span,
+.o3 span {
+  font-family: 'SeoulHangangEB';
+  font-weight: 400;
+  font-size: 22px;
+  color: aliceblue;
+}
+
+.grade p,
+.o3 p {
+  font-family: 'SeoulHangangEB';
+  font-weight: 400;
+  font-size: 28px;
+}
+
+.emoji img {
+  width: 75px;
+  height: 75px;
+  filter: brightness(0) invert(1);
+  margin: 10px 0 15px 0;
+}
+
+.weather,
+.air-quality *,  
+.dust-info,
+.ozone-info,
+.pm10,
+.o3,
+.air-quality-text {
+  background: none;
+  background-image: none;
+}
+
+
+
+
