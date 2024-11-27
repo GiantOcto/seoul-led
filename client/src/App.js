@@ -19,27 +19,40 @@ function App() {
 
   const [waterLevel, setWaterLevel] = useState(0);
 
-  useEffect(() => {
-    if (waterLevel > 1 && !activeSections.includes(2)) {
-      toggleSection(2);
-    }
-    if (waterLevel <= 1 && activeSections.includes(2)) {
-      toggleSection(2);
-    }
-  }, [waterLevel, activeSections, toggleSection]);
-
   const handleDistrictChange = (district) => {
     setSelectedDistrict(district);
   };
 
-  const handleWaterLevelChange = (newLevel) => {
-    setWaterLevel(newLevel);
+  const handleWaterLevelChange = (level) => {
+    setWaterLevel(level);
   };
 
-  const handleButtonClick = () => {
-    if (waterLevel > 1) {
-      toggleSection(2);
+  useEffect(() => {
+    if (waterLevel >= 1 && !activeSections.includes(2)) {
+      toggleSection(2);  // 수위가 1 이상일 때 강제로 활성화
+    } else if (waterLevel === 0 && activeSections.includes(2)) {
+      toggleSection(2);  // 수위가 0일 때 강제로 비활성화
     }
+  }, [waterLevel, activeSections, toggleSection]);
+
+  const getWaterButtonStyle = (index) => {
+    const baseStyle = getButtonStyle(index);
+    if (index === 2) {
+      if (waterLevel >= 1) {
+        return {
+          ...baseStyle,
+          backgroundColor: "red",
+          cursor: "pointer"  // 활성화 상태일 때 커서
+        };
+      } else if (waterLevel === 0) {
+        return {
+          ...baseStyle,
+          opacity: 0.5,
+          cursor: "not-allowed"  // 비활성화 상태일 때 커서
+        };
+      }
+    }
+    return baseStyle;
   };
 
   return (
@@ -120,28 +133,20 @@ function App() {
       </div>
 
       <div className="section-controls">
-        <button style={getButtonStyle(0)} onClick={() => toggleSection(0)}>
+        <button style={getWaterButtonStyle(0)} onClick={() => toggleSection(0)}>
           문구
         </button>
-        <button style={getButtonStyle(1)} onClick={() => toggleSection(1)}>
+        <button style={getWaterButtonStyle(1)} onClick={() => toggleSection(1)}>
           미세먼지 및 오존
         </button>
-        <button
-          style={{
-            ...getButtonStyle(2),
-            backgroundColor: waterLevel > 1 ? "red" : "#333",
-            opacity: waterLevel > 1 ? 1 : 0.5,
-            cursor: waterLevel > 1 ? "pointer" : "not-allowed"
-          }}
-          onClick={handleButtonClick}
-        >
+        <button style={getWaterButtonStyle(2)} onClick={() => toggleSection(2)}>
           수위데이터
         </button>
-        <button style={getButtonStyle(3)} onClick={() => toggleSection(3)}>
+        <button style={getWaterButtonStyle(3)} onClick={() => toggleSection(3)}>
           구 이벤트
         </button>
       </div>
-      <WaterLevel onLevelChange={handleWaterLevelChange} />
+      <WaterLevel onWaterLevelChange={handleWaterLevelChange} />
     </>
   );
 }

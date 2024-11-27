@@ -6,28 +6,30 @@ const socket = io("http://localhost:8000", {
   transports: ["websocket"],
 });
 
-function WaterLevel() {
+function WaterLevel({ onWaterLevelChange }) {
   const [waterLevel, setWaterLevel] = useState(0);
 
   useEffect(() => {
     // 초기 데이터 수신
     socket.on("initial_data", (data) => {
       if (data && data.length > 0) {
-        setWaterLevel(data[data.length - 1].water_level);
+        const level = data[data.length - 1].water_level;
+        setWaterLevel(level);
+        onWaterLevelChange(level);
       }
     });
 
     // 실시간 데이터 수신
     socket.on("new_data", (data) => {
       setWaterLevel(data.water_level);
+      onWaterLevelChange(data.water_level);
     });
 
-    // 컴포넌트 언마운트 시 연결 해제
     return () => {
       socket.off("initial_data");
       socket.off("new_data");
     };
-  }, []);
+  }, [onWaterLevelChange]);
 
   return (
     <div className="water-level">
