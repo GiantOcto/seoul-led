@@ -1,17 +1,4 @@
 .logo-1 {
     text-align: center;
   }
-
-  #logo2-page2 {
-    position: relative;
-    top: 7px;
-  }
-
   
-  @keyframes flip-multiple {
-    0%, 80% { transform: scalex(1); }
-    85% { transform: scalex(-1); }
-    90% { transform: scalex(1); }
-    95% { transform: scalex(-1); }
-    100% { transform: scalex(1); }
-  }

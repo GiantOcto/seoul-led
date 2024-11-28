@@ -26,15 +26,21 @@
     font-weight: 400;
     font-size: 22px;
     margin: 0;
-    color: aliceblue;
   }
 
-  .stink-data-good h2 {
+  .stink-data-good h1 {
+    color: rgb(71, 131, 174);
+  }
+  .stink-data-running h1 {
+    color: rgb(255, 196, 25);
+  }
+
+  .stink-data-good h2,
+  .stink-data-running h2  {
     font-family: "SeoulHangangEB";
     font-weight: 400;
     font-size: 28px;
     margin: 0;
-    color: rgb(142, 195, 31);
   }
 
   .stink-data-running h2 {
@@ -42,6 +48,12 @@
     font-weight: 400;
     font-size: 28px;
     margin: 0;
+  }
+
+  .stink-data-good h2 {
+    color: rgb(71, 131, 174);
+  }
+  .stink-data-running h2 {
     color: rgb(255, 196, 25);
   }
 

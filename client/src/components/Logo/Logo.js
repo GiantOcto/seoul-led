@@ -21,5 +21,17 @@ export function Logo2({ id }) {
   );
 }
 
+export function Logo3({ id }) {
+  return (
+    <div className="logo-3" id={id}>
+      <img
+        id="logo-gangnam"
+        src="/images/slogans/강남구.png"
+        alt="gangnam   Logo"
+      />
+    </div>
+  );
+}
+
 // 기본 내보내기는 Logo1으로 유지
 export default Logo1;

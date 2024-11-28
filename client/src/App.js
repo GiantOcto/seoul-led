@@ -146,7 +146,9 @@ function App() {
           구 이벤트
         </button>
       </div>
-      <WaterLevel onWaterLevelChange={handleWaterLevelChange} />
+      {activeSections.includes(2) && (
+        <WaterLevel onWaterLevelChange={handleWaterLevelChange} />
+      )}
     </>
   );
 }

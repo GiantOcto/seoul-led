@@ -73,7 +73,6 @@
 .emoji img {
   width: 75px;
   height: 75px;
-  filter: brightness(0) invert(1);
   margin: 10px 0 15px 0;
 }
 
