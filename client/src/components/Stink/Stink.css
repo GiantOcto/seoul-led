@@ -1,7 +1,7 @@
 .stink-data-good,
 .stink-data-running {
-    width: 110px;
-    height: 200px;
+    width: 100px;
+    height: 150px;
     border: 3px solid aliceblue;
     border-radius: 15px;
     display: flex;
@@ -51,18 +51,16 @@
   }
 
   .stink-data-good h2 {
-    color: rgb(71, 131, 174);
+    color: rgb(0, 146, 215);
   }
   .stink-data-running h2 {
-    color: rgb(255, 196, 25);
+    color: rgb(250, 191, 28);
   }
 
   .stink-data-good img {
     width: 75px;
     height: 75px;
     margin: 10px 0 15px 0;
-    animation: headtilt 1.5s infinite alternate ease-in-out;
-    transform-origin: bottom center;
   } 
 
   .stink-data-running img {
@@ -74,6 +72,26 @@
     display: block;
   }
 
+  .stink-images {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.stink-image-back {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulse 2s infinite ease-in-out; 
+}
+
+.stink-image-front {
+  position: relative;
+  left: 13px;
+  z-index: 1;
+}
+
   @keyframes headtilt {
     0% {
       transform: rotate(-10deg);
@@ -83,11 +101,17 @@
     }
   }
 
-  @keyframes rotateClockwise {
+  @keyframes pulse {
     0% {
-      transform: rotate(0deg);
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+      opacity: 0.8;
     }
     100% {
-      transform: rotate(360deg);
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
     }
   }

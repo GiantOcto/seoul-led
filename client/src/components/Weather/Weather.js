@@ -31,7 +31,7 @@ const districtCoordinates = {
   중랑구: { latitude: 37.5980, longitude: 127.0927 }
 };
 
-function Weather({ selectedDistrict }) {
+function Weather({ selectedDistrict, onWeatherUpdate }) {
   const [weatherData, setWeatherData] = useState(null);
   const [pollutionData, setPollutionData] = useState(null);
 
@@ -56,25 +56,35 @@ function Weather({ selectedDistrict }) {
         setWeatherData(weatherJson);
         setPollutionData(pollutionJson);
 
+        const pm10 = pollutionJson.list[0].components.pm10;
+        const o3 = pollutionJson.list[0].components.o3;
+        
+        const pm10Grade = getPM10Grade(pm10);
+        const o3Grade = getO3Grade(o3);
+        
+        onWeatherUpdate({
+          pm10Grade: pm10Grade.text,  // "좋음", "보통" 등의 텍스트
+          o3Grade: o3Grade.text
+        });
       } catch (error) {
         console.error('에러 발생:', error);
       }
     };
 
     fetchData();
-  }, [selectedDistrict]);
+  }, [selectedDistrict, onWeatherUpdate]);
 
   const getO3Grade = (o3) => {
-    if (o3 <= 60) return { text: "매우좋음", color: 'rgb(71, 131, 174)' };
-    if (o3 <= 90) return { text: "좋 음", color: 'rgb(142, 195, 31)' };
-    if (o3 <= 150) return { text: "나 쁨", color: 'rgb(225, 190, 100)' };
+    if (o3 <= 60) return { text: "좋 음", color: 'rgb(0, 146, 215)' };
+    if (o3 <= 90) return { text: "보 통", color: 'rgb(142, 195, 31)' };
+    if (o3 <= 150) return { text: "나 쁨", color: 'rgb(255, 196, 25)' };
     return { text: "매우나쁨", color: 'lightcoral' };
   };
 
   const getPM10Grade = (pm10) => {
-    if (pm10 <= 30) return { text: "매우좋음", color: 'rgb(71, 131, 174)' };
-    if (pm10 <= 80) return { text: "좋 음", color: 'rgb(142, 195, 31)' };
-    if (pm10 <= 150) return { text: "나 쁨", color: 'rgb(225, 190, 100)' };
+    if (pm10 <= 30) return { text: "좋 음", color: 'rgb(0, 146, 215)' };
+    if (pm10 <= 80) return { text: "보 통", color: 'rgb(142, 195, 31)' };
+    if (pm10 <= 150) return { text: "나 쁨", color: 'rgb(255, 196, 25)' };
     return { text: "매우나쁨", color: 'lightcoral' };
   };
 
@@ -111,12 +121,12 @@ function Weather({ selectedDistrict }) {
  
       <div className="air-quality">
         <div className="pm10">
-          <span>
+          <span style={{ color: pm10Grade.color }}>
             미세먼지
           </span>
 
           <div className="emoji">
-            <img src={`/images/${pm10Grade.text}.png`} alt={pm10Grade.text} />
+            <img src={`/images/${pm10Grade.text}.svg`} alt={pm10Grade.text} style={{ color: pm10Grade.color }}/>
           </div>
 
           <div className="grade">
@@ -125,12 +135,12 @@ function Weather({ selectedDistrict }) {
         </div>
 
         <div className="o3">
-          <span>
+          <span style={{ color: o3Grade.color }}>
             오&nbsp;&nbsp;&nbsp;&nbsp;존
           </span>
 
           <div className="emoji">
-            <img src={`/images/${o3Grade.text}.png`} alt={pm10Grade.text} />
+            <img src={`/images/${o3Grade.text}.svg`} alt={pm10Grade.text} />
           </div>
 
           <p style={{ color: o3Grade.color }}>{o3Grade.text}</p>

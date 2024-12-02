@@ -1,18 +1,23 @@
 import { useState, useEffect } from "react";
 import Event from "../components/Event/Event";
-import { Logo1, Logo2 } from "../components/Logo/Logo";
+import { Logo1, Logo2, Logo3, Logo4 } from "../components/Logo/Logo";
 import Clock from "../components/Clock/Clock";
 import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
 
-const INTERVALS = [3000, 3000, 3000, 3000];
+const INTERVALS = [3000, 3000, 3000, 3000, 3000];
 
 export const useSectionManager = (initialDistrict = "강남구") => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [selectedClockStyle, setSelectedClockStyle] = useState("아날로그");
   const [currentSection, setCurrentSection] = useState(0);
   const [activeSections, setActiveSections] = useState([0, 1, 2, 3]);
+  const [weatherData, setWeatherData] = useState({
+    pm10Grade: "좋음",
+    o3Grade: "좋음",
+  });
+  const [machineStatus, setMachineStatus] = useState(0);
 
   useEffect(() => {
     if (activeSections.length === 0) return;
@@ -40,7 +45,7 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               : "none",
         }}
       >
-        <Logo1 />
+        <Logo4 selectedDistrict={selectedDistrict} />
       </div>,
       <div
         key="top2"
@@ -51,17 +56,41 @@ export const useSectionManager = (initialDistrict = "강남구") => {
             currentSection === 1 && activeSections.includes(1)
               ? "flex"
               : "none",
+          "--filter-value1":
+            weatherData.pm10Grade === "좋 음"
+              ? "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)"
+              : weatherData.pm10Grade === "보 통"
+              ? "invert(60%) sepia(84%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
+              : weatherData.pm10Grade === "나 쁨"
+              ? "invert(76%) sepia(98%) saturate(2574%) hue-rotate(341deg) brightness(103%) contrast(104%)"
+              : "invert(57%) sepia(44%) saturate(539%) hue-rotate(314deg) brightness(100%) contrast(89%)",
+          "--filter-value2":
+            weatherData.o3Grade === "좋 음"
+              ? "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)"
+              : weatherData.o3Grade === "보 통"
+              ? "invert(35%) sepia(94%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
+              : weatherData.o3Grade === "나 쁨"
+              ? "invert(76%) sepia(98%) saturate(2574%) hue-rotate(341deg) brightness(103%) contrast(104%)"
+              : "invert(57%) sepia(44%) saturate(539%) hue-rotate(314deg) brightness(100%) contrast(89%)",
+          "--filter-value3":
+            machineStatus === 1
+              ? " invert(8%) sepia(90%) saturate(345%) hue-rotate(341deg) brightness(101%) contrast(102%)"
+              : "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)",
         }}
       >
-        <Logo2 id="logo2-page2" />
+        <div className="background3"></div>
+        <Logo4 selectedDistrict={selectedDistrict} />
         <div className="air-quality">
           <div className="air-quality-text">
             <h1>{selectedDistrict}</h1>
             <p>오늘의 대기질</p>
           </div>
 
-          <Weather selectedDistrict={selectedDistrict} />
-          <Stink id="stink-data-page2"/>
+          <Weather
+            selectedDistrict={selectedDistrict}
+            onWeatherUpdate={setWeatherData}
+          />
+          <Stink id="stink-data-page2" />
         </div>
       </div>,
       <div
@@ -90,9 +119,9 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               : "none",
         }}
       >
-       <Logo2 />
-        <h1>{selectedDistrict}</h1>
+        <Logo4 selectedDistrict={selectedDistrict} />
         <Clock />
+        <span style={{ color: "white" }}>NEWS</span>
       </div>,
       <div
         key="top5"
@@ -105,7 +134,9 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               : "none",
         }}
       >
-        <p>text</p>
+        <Logo2 />
+        <Clock />
+        <span style={{ color: "white" }}>NEWS</span>
       </div>,
     ],
 
@@ -121,7 +152,7 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               : "none",
         }}
       >
-       <img src="/images/홍보문구.png" alt="middle1" />
+        <img src="/images/홍보문구.png" alt="middle1" />
       </div>,
       <div
         key="middle2"
@@ -133,8 +164,7 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               ? "flex"
               : "none",
         }}
-      >
-      </div>,
+      ></div>,
       <div
         key="middle3"
         className="section-middle"
@@ -159,11 +189,7 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               : "none",
         }}
       >
-        <div className="slogan">
-          <img src={`/images/slogans/${selectedDistrict}.png`} alt="slogan" />
-        </div>
-        <span style={{color: 'white'}}>NEWS</span>
-        <Event selectedDistrict={selectedDistrict} />
+        <Event key="middle4-event" selectedDistrict={selectedDistrict} position="middle4" />
       </div>,
       <div
         key="middle5"
@@ -176,7 +202,7 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               : "none",
         }}
       >
-        <p>text</p>
+        <Event key="middle5-event" selectedDistrict={selectedDistrict} position="middle5" />
       </div>,
     ],
 
@@ -191,9 +217,7 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               ? "flex"
               : "none",
         }}
-      >
-          <Stink/>
-      </div>,
+      ></div>,
       <div
         key="bottom2"
         className="section-bottom"
@@ -217,7 +241,11 @@ export const useSectionManager = (initialDistrict = "강남구") => {
         }}
       >
         <div className="water-level-warning">
-          <p>다른 도로로<br/>우회하세요</p>
+          <p>
+            다른 도로로
+            <br />
+            우회하세요
+          </p>
           <img src="/images/우회 화살표.png" alt="우회 화살표" />
         </div>
       </div>,
@@ -232,7 +260,7 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               : "none",
         }}
       >
-        <Stink/>
+        <Event key="bottom4-event" selectedDistrict={selectedDistrict} position="bottom4" />
       </div>,
       <div
         key="bottom5"
@@ -245,7 +273,7 @@ export const useSectionManager = (initialDistrict = "강남구") => {
               : "none",
         }}
       >
-        <p>text</p>
+        <Event key="bottom5-event" selectedDistrict={selectedDistrict} position="bottom5" />
       </div>,
     ],
   };

@@ -32,8 +32,8 @@
 .pm10 {
   position: relative;
   top: 160px;
-  left: 5px;
-  width: 10 0px;
+  left: 15px;
+  width: 100px;
   height: 150px;
   display: flex;
   flex-direction: column;

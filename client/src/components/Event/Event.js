@@ -1,28 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import './Event.css';
 
-function Event({ selectedDistrict }) {
+function Event({ selectedDistrict, position }) {
   const [events, setEvents] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentEvent, setCurrentEvent] = useState(null);
 
-  // 이벤트 데이터 가져오기
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const formattedDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const formattedDate = new Date().toLocaleDateString('en-CA');
         const response = await fetch(
           `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/300///${formattedDate}`
         );
         const data = await response.json();
         
-        // 선택된 구의 이벤트만 필터링
-        const filteredEvents = data.culturalEventInfo.row.filter(
-          (event) => event.GUNAME === selectedDistrict
-        );
+        if (!data?.culturalEventInfo?.row) {
+          console.error("API 응답 데이터 형식이 올바르지 않습니다:", data);
+          return;
+        }
+
+        let filteredEvents;
+        if (position === 'middle4') {
+          // 선택된 구의 홀수 인덱스 이벤트
+          filteredEvents = data.culturalEventInfo.row.filter(
+            (event, index) => event.GUNAME === selectedDistrict && index % 2 === 1
+          );
+        } else if (position === 'bottom4') {
+          // 선택된 구의 짝수 인덱스 이벤트
+          filteredEvents = data.culturalEventInfo.row.filter(
+            (event, index) => event.GUNAME === selectedDistrict && index % 2 === 0
+          );
+        } else if (position === 'middle5') {
+          // 선택된 구를 제외한 다른 구의 홀수 인덱스 이벤트
+          filteredEvents = data.culturalEventInfo.row.filter(
+            (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 1
+          );
+        } else if (position === 'bottom5') {
+          // 선택된 구를 제외한 다른 구의 짝수 인덱스 이벤트
+          filteredEvents = data.culturalEventInfo.row.filter(
+            (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 0
+          );
+        }
         
-        setEvents(filteredEvents);
-        if (filteredEvents.length > 0) {
+        if (filteredEvents && filteredEvents.length > 0) {
+          setEvents(filteredEvents);
           setCurrentEvent(filteredEvents[0]);
         }
       } catch (error) {
@@ -31,11 +53,10 @@ function Event({ selectedDistrict }) {
     };
 
     fetchEvents();
-  }, [selectedDistrict]); // selectedDistrict가 변경될 때마다 실행
+  }, [selectedDistrict, position]);
 
-  // 5초마다 이벤트 변경
   useEffect(() => {
-    if (events.length === 0) return;
+    if (!events || events.length === 0) return;
 
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => {
@@ -48,7 +69,6 @@ function Event({ selectedDistrict }) {
     return () => clearInterval(interval);
   }, [events]);
 
-  // 날짜 포맷팅 함수
   const formatDate = (dateString) => {
     const [startDate, endDate] = dateString.split("~");
     return (

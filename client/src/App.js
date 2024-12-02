@@ -145,6 +145,9 @@ function App() {
         <button style={getWaterButtonStyle(3)} onClick={() => toggleSection(3)}>
           구 이벤트
         </button>
+        <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
+          전체 이벤트
+        </button>
       </div>
       {activeSections.includes(2) && (
         <WaterLevel onWaterLevelChange={handleWaterLevelChange} />

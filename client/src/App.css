@@ -1,15 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap");
 
 @font-face {
-  font-family: 'SeoulHangangEB';
-  src: url('../public/fonts/SeoulHangangEB.woff') format('woff');
+  font-family: "SeoulHangangEB";
+  src: url("../public/fonts/SeoulHangangEB.woff") format("woff");
   font-weight: 300;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'SeoulHangangEB';
-  src: url('../public/fonts/SeoulHangangEB.woff') format('woff');
+  font-family: "SeoulHangangEB";
+  src: url("../public/fonts/SeoulHangangEB.woff") format("woff");
   font-weight: normal;
   font-style: normal;
 }
@@ -126,10 +126,9 @@ span {
   align-items: center;
 }
 
-#top1 img {
+#top1 .logo-4 {
   position: relative;
   top: 10px;
-  width: 80px;
 }
 
 #middle1 {
@@ -156,7 +155,7 @@ span {
 }
 
 #top2 {
-  background-image: url('../public/images/line.png');
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
@@ -165,7 +164,47 @@ span {
   align-items: center;
 }
 
-#top2 .slogan {
+#top2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("../public/images/line1.svg");
+  background-repeat: no-repeat;
+  background-size: 128px auto;
+  filter: var(--filter-value1);
+}
+
+#top2::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("../public/images/line2.svg");
+  background-repeat: no-repeat;
+  background-size: 128px auto;
+  filter: var(--filter-value2);
+}
+
+.background3 {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("../public/images/line3.svg");
+  background-repeat: no-repeat;
+  background-size: 128px auto;
+  filter: var(--filter-value3);
+  z-index: 10;
+}
+
+#top2 .logo-4 {
   position: relative;
   width: 126px;
   height: 42px;
@@ -178,12 +217,12 @@ span {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-family: 'SeoulHangangEB';
+  font-family: "SeoulHangangEB";
   color: aliceblue;
 }
 
 #top3 #logo-donghang {
- margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 #top3 h1 {
@@ -209,37 +248,38 @@ span {
 }
 
 #top4 {
-  height: 25%;
+  height: 36%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  font-family: 'SeoulHangangEB';
+  font-family: "SeoulHangangEB";
   color: aliceblue;
 }
 
-#top4 #logo-donghang {
-  margin-bottom: 20px;
- }
- 
- #top4 h1 {
+#top4 .logo-4 {
+  position: relative;
+  top: 10px;
+}
+
+
+#top4 h1 {
   font-size: 27px;
   font-weight: 900;
   margin: 0;
- }
+}
 
 #middle4 {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 45%;
+  height: 32%;
 }
 
-#middle4 span {
+#top4 span {
   font-size: 20px;
-  font-family: 'SeoulHangangEB';
-  margin-bottom: 10px;
+  font-family: "SeoulHangangEB";
+  margin: 20px 0 10px;
 }
 
 #bottom4 {
@@ -247,7 +287,44 @@ span {
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: 30%;
+  height: 32%;
+  padding-bottom: 10px;
+}
+
+#top5 {
+  height: 36%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: "SeoulHangangEB";
+  color: aliceblue;
+}
+
+#top5 #logo-donghang {
+  width: 126px;
+  height: 50.39px;
+}
+
+#top5 span {
+  font-size: 20px;
+  font-family: "SeoulHangangEB";
+  margin: 20px 0 10px;
+}
+
+#middle5 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 32%;
+}
+
+#bottom5 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 32%;
   padding-bottom: 10px;
 }
 
@@ -256,7 +333,7 @@ span {
   display: flex;
   flex-direction: column;
   writing-mode: vertical-rl;
-  text-orientation: mixed; 
+  text-orientation: mixed;
   margin: 0 auto;
   text-align: center;
   gap: 10px;
@@ -292,6 +369,8 @@ span {
   border: none;
   cursor: pointer;
   border-radius: 5px;
+  font-family: "SeoulHangangEB";
+  font-weight: 400;
 }
 
 .section-controls button.active {
@@ -315,7 +394,7 @@ span {
   .banner-left h1 {
     font-size: 16px;
     align-items: center;
-    justify-content: center;  
+    justify-content: center;
   }
   .banner-mid button {
     font-size: 10px;
@@ -336,10 +415,6 @@ span {
   .section-controls button {
     width: 100px;
     font-size: 12px;
-    font-family: 'SeoulHangangEB';
-    font-weight: 400;
     padding: 5px;
   }
-
 }
-
