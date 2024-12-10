@@ -29,7 +29,7 @@
   }
 
   .stink-data-good h1 {
-    color: rgb(71, 131, 174);
+    color: rgb(0, 146, 215);
   }
   .stink-data-running h1 {
     color: rgb(255, 196, 25);
@@ -39,7 +39,7 @@
   .stink-data-running h2  {
     font-family: "SeoulHangangEB";
     font-weight: 400;
-    font-size: 28px;
+    font-size: 22px;
     margin: 0;
   }
 

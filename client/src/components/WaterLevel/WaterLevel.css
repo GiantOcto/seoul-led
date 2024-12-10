@@ -15,7 +15,7 @@
 
 .water-level img {
     position: relative;
-    bottom: 40px;
+    bottom: 25px;
     animation: blink 2s infinite;
 }
 

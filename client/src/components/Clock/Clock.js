@@ -4,14 +4,19 @@ import './Clock.css';
 function Clock() {
   const [time, setTime] = useState(new Date());
   const [date, setDate] = useState('');
+  const [dayOfWeek, setDayOfWeek] = useState('');
 
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
       setTime(now);
       
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
       const formattedDate = now.toLocaleDateString('en-CA');
+      const formattedDay = days[now.getDay()];
+      
       setDate(formattedDate);
+      setDayOfWeek(formattedDay);
     }, 1000);
 
     return () => clearInterval(interval);
@@ -36,7 +41,7 @@ function Clock() {
 
   return (
     <div className="clock-container">
-       <div className="date">{date}</div>
+      <div className="date">{date} ({dayOfWeek})</div>
       <div className="clock">
         <div className="marks">{minuteMarks}</div>
         <div className="hour-marks">{hourMarks}</div>

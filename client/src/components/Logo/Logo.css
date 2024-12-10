@@ -1,13 +1,21 @@
 .logo-1 {
-    text-align: center;
+   text-align: center;
   }
-  
+
+.logo-1 img {
+  width: 66px;
+  height: 42px;
+}
+
+.logo-2 img {
+  text-align: center;
+}
+
 .logo-3 img {
   text-align: center;
-  width: 126px;
+
 } 
 
 .logo-4 img {
   text-align: center;
-  width: 126px;
 } 

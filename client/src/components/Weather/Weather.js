@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import './Weather.css';
+import React, { useState, useEffect } from "react";
+import "./Weather.css";
 
-const API_KEY = '5eac919650d7cf8b33e02a273b7abdc6';
+const API_KEY = "5eac919650d7cf8b33e02a273b7abdc6";
 
 const districtCoordinates = {
   강남구: { latitude: 37.5006, longitude: 127.0508 },
@@ -28,7 +28,7 @@ const districtCoordinates = {
   은평구: { latitude: 37.6164, longitude: 126.9289 },
   종로구: { latitude: 37.5803, longitude: 126.9831 },
   중구: { latitude: 37.5637, longitude: 126.9975 },
-  중랑구: { latitude: 37.5980, longitude: 127.0927 }
+  중랑구: { latitude: 37.598, longitude: 127.0927 },
 };
 
 function Weather({ selectedDistrict, onWeatherUpdate }) {
@@ -39,15 +39,16 @@ function Weather({ selectedDistrict, onWeatherUpdate }) {
     const fetchData = async () => {
       if (!selectedDistrict) return;
 
-      const { latitude: lat, longitude: lon } = districtCoordinates[selectedDistrict];
-      
+      const { latitude: lat, longitude: lon } =
+        districtCoordinates[selectedDistrict];
+
       try {
         const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=kr`;
         const pollutionUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
 
         const [weatherResponse, pollutionResponse] = await Promise.all([
           fetch(weatherUrl),
-          fetch(pollutionUrl)
+          fetch(pollutionUrl),
         ]);
 
         const weatherJson = await weatherResponse.json();
@@ -58,16 +59,16 @@ function Weather({ selectedDistrict, onWeatherUpdate }) {
 
         const pm10 = pollutionJson.list[0].components.pm10;
         const o3 = pollutionJson.list[0].components.o3;
-        
+
         const pm10Grade = getPM10Grade(pm10);
         const o3Grade = getO3Grade(o3);
-        
+
         onWeatherUpdate({
-          pm10Grade: pm10Grade.text,  // "좋음", "보통" 등의 텍스트
-          o3Grade: o3Grade.text
+          pm10Grade: pm10Grade.text, // "좋음", "보통" 등의 텍스트
+          o3Grade: o3Grade.text,
         });
       } catch (error) {
-        console.error('에러 발생:', error);
+        console.error("에러 발생:", error);
       }
     };
 
@@ -75,29 +76,29 @@ function Weather({ selectedDistrict, onWeatherUpdate }) {
   }, [selectedDistrict, onWeatherUpdate]);
 
   const getO3Grade = (o3) => {
-    if (o3 <= 60) return { text: "좋 음", color: 'rgb(0, 146, 215)' };
-    if (o3 <= 90) return { text: "보 통", color: 'rgb(142, 195, 31)' };
-    if (o3 <= 150) return { text: "나 쁨", color: 'rgb(255, 196, 25)' };
-    return { text: "매우나쁨", color: 'lightcoral' };
+    if (o3 <= 60) return { text: "좋음", color: "rgb(0, 146, 215)" };
+    if (o3 <= 90) return { text: "보통", color: "rgb(142, 195, 31)" };
+    if (o3 <= 150) return { text: "나쁨", color: "rgb(255, 196, 25)" };
+    return { text: "매우나쁨", color: "lightcoral" };
   };
 
   const getPM10Grade = (pm10) => {
-    if (pm10 <= 30) return { text: "좋 음", color: 'rgb(0, 146, 215)' };
-    if (pm10 <= 80) return { text: "보 통", color: 'rgb(142, 195, 31)' };
-    if (pm10 <= 150) return { text: "나 쁨", color: 'rgb(255, 196, 25)' };
-    return { text: "매우나쁨", color: 'lightcoral' };
+    if (pm10 <= 30) return { text: "좋음", color: "rgb(0, 146, 215)" };
+    if (pm10 <= 80) return { text: "보통", color: "rgb(142, 195, 31)" };
+    if (pm10 <= 150) return { text: "나쁨", color: "rgb(255, 196, 25)" };
+    return { text: "매우나쁨", color: "lightcoral" };
   };
 
   const getTemperatureColor = (temp) => {
-    if (temp > 25) return 'lightcoral';
-    if (temp > 10) return 'orange';
-    return 'lightblue';
+    if (temp > 25) return "lightcoral";
+    if (temp > 10) return "orange";
+    return "lightblue";
   };
 
   const getKoreanDescription = (description) => {
     const translations = {
-      '튼구름': '구름보통',
-      '온흐림': '구름많음'
+      튼구름: "구름보통",
+      온흐림: "구름많음",
     };
     return translations[description] || description;
   };
@@ -106,7 +107,7 @@ function Weather({ selectedDistrict, onWeatherUpdate }) {
 
   const temperature = weatherData.main.temp;
   const description = getKoreanDescription(weatherData.weather[0].description);
-  const icon = weatherData.weather[0].icon.replace('n', 'd');
+  const icon = weatherData.weather[0].icon.replace("n", "d");
   const iconURL = `https://openweathermap.org/img/wn/${icon}@2x.png`;
 
   const pm10 = pollutionData.list[0].components.pm10;
@@ -118,19 +119,27 @@ function Weather({ selectedDistrict, onWeatherUpdate }) {
 
   return (
     <div className="weather-container">
- 
       <div className="air-quality">
         <div className="pm10">
-          <span style={{ color: pm10Grade.color }}>
-            미세먼지
-          </span>
+          <span style={{ color: pm10Grade.color }}>미세먼지</span>
 
           <div className="emoji">
-            <img src={`/images/${pm10Grade.text}.svg`} alt={pm10Grade.text} style={{ color: pm10Grade.color }}/>
+            <img
+              src={`/images/${pm10Grade.text}.svg`}
+              alt={pm10Grade.text}
+              style={{ color: pm10Grade.color }}
+            />
           </div>
 
           <div className="grade">
-            <p style={{ color: pm10Grade.color }}>{pm10Grade.text}</p>
+            <p
+              className={`grade-text ${
+                pm10Grade.text.length === 2 ? "two-chars" : ""
+              }`}
+              style={{ color: pm10Grade.color }}
+            >
+              {pm10Grade.text}
+            </p>
           </div>
         </div>
 
@@ -143,7 +152,16 @@ function Weather({ selectedDistrict, onWeatherUpdate }) {
             <img src={`/images/${o3Grade.text}.svg`} alt={pm10Grade.text} />
           </div>
 
-          <p style={{ color: o3Grade.color }}>{o3Grade.text}</p>
+          <div className="grade">
+            <p
+              className={`grade-text ${
+                o3Grade.text.length === 2 ? "two-chars" : ""
+              }`}
+              style={{ color: o3Grade.color }}
+            >
+              {o3Grade.text}
+            </p>
+          </div>
         </div>
       </div>
     </div>

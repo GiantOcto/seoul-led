@@ -1,6 +1,6 @@
 .air-quality {
   position: relative;
-  bottom: 55px;
+  bottom: 50px;
   background-size: auto 720px;
   background-position: center;
   background-repeat: no-repeat;
@@ -13,25 +13,24 @@
 
 .air-quality-text {
   position: relative;
-  top: 80px;
+  top: 85px;
   text-align: end;
   margin-right: 10px;
 }
 
 .air-quality-text h1 {
-  font-size: 27px;
+  font-size: 17px;
   font-weight: 400;
   margin: 0;
 }
 .air-quality-text p {
   font-size: 17px;
   font-weight: 400;
-  margin: 0;
 }
 
 .pm10 {
   position: relative;
-  top: 160px;
+  top: 140px;
   left: 15px;
   width: 100px;
   height: 150px;
@@ -45,7 +44,7 @@
 
 .o3 {
   position: relative;
-  top: 210px;
+  top: 190px;
   left: 15px;
   width: 100px;
   height: 150px;
@@ -67,7 +66,13 @@
 .o3 p {
   font-family: 'SeoulHangangEB';
   font-weight: 400;
-  font-size: 28px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.two-chars {
+  letter-spacing: 20px;
+  padding-left: 20px;
 }
 
 .emoji img {

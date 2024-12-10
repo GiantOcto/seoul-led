@@ -8,8 +8,8 @@
   }
   
   .clock {
-    width: 124px;
-    height: 124px;
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
     background: #1a1a1a;
     position: relative;
@@ -19,22 +19,25 @@
   
   /* ... 다른 스타일은 그대로 유지 ... */
 
-.marks div {
+  .marks div {
     position: absolute;
     width: 1px;
-    height: 4px;
-    background: #ffffff;
-    left: 48%;
-    transform-origin: 50% 62px;
+    height: 2px;
+    background: transparent;
+    left: 49%;
+    transform-origin: 1px 44px;
+    border-right: 1px solid #ffffff;
+    padding: 0;
 }
 
 .hour-marks div {
     position: absolute;
     width: 2px;
-    height: 8px;
-    background: #f08080;
-    left: 61px;
-    transform-origin: 50% 62px;
+    height: 4px;
+    background: transparent;  /* 배경을 투명하게 */
+    left: 49%;              /* marks와 동일하게 맞춤 */
+    transform-origin: 1px 44px;
+    border-right: 2px solid #ffffff;  /* 테두리로 변경 */
 }
 
 .hands {
@@ -45,33 +48,33 @@
 
 .hour {
     width: 3px;
-    height: 35px;
+    height: 25px;
     background: #fff;
     position: absolute;
     left: calc(50% - 1.5px);
-    top: 27px;
+    top: 20px;
     transform-origin: bottom;
     
 }
 
 .minute {
     width: 2px;
-    height: 45px;
+    height: 32px;
     background: #ccc;
     position: absolute;
     left: calc(50% - 1px);
-    top: 17px;
+    top: 12px;
     transform-origin: bottom;
     
 }
 
 .second {
     width: 1px;
-    height: 54px;
+    height: 35px;
     background: #ff6b6b;
     position: absolute;
     left: calc(50% - 0.5px);
-    top: 8px;
+    top: 9px;
     transform-origin: bottom;
 }
 
@@ -89,7 +92,7 @@
     color: #ffffff;
     font-family: 'SeoulNamsanB', sans-serif;
     font-weight: bold;
-    font-size: 18px;
+    font-size: 12px;
     margin-bottom: 10px;
     text-align: center;
 }

@@ -13,16 +13,19 @@ function WaterLevel({ onWaterLevelChange }) {
     // 초기 데이터 수신
     socket.on("initial_data", (data) => {
       if (data && data.length > 0) {
-        const level = data[data.length - 1].water_level;
-        setWaterLevel(level);
-        onWaterLevelChange(level);
+        const level = data[data.length - 1].water_level / 1000; // mm to m
+        const roundedLevel = parseFloat(level.toFixed(2)); // 소수점 둘째 자리 반올림
+        setWaterLevel(roundedLevel);
+        onWaterLevelChange(roundedLevel);
       }
     });
 
     // 실시간 데이터 수신
     socket.on("new_data", (data) => {
-      setWaterLevel(data.water_level);
-      onWaterLevelChange(data.water_level);
+      const level = data.water_level / 1000; // mm to m
+      const roundedLevel = parseFloat(level.toFixed(2)); // 소수점 둘째 자리 반올림
+      setWaterLevel(roundedLevel);
+      onWaterLevelChange(roundedLevel);
     });
 
     return () => {
