@@ -76,16 +76,16 @@ function Weather({ selectedDistrict, onWeatherUpdate }) {
   }, [selectedDistrict, onWeatherUpdate]);
 
   const getpm2_5Grade = (pm2_5) => {
-    if (pm2_5 <= 10) return { text: "좋음", color: "rgb(0, 146, 215)" };
-    if (pm2_5 <= 25) return { text: "보통", color: "rgb(142, 195, 31)" };
-    if (pm2_5 <= 50) return { text: "나쁨", color: "rgb(255, 196, 25)" };
+    if (pm2_5 <= 15) return { text: "좋음", color: "rgb(0, 146, 215)" };
+    if (pm2_5 <= 35) return { text: "보통", color: "rgb(142, 195, 31)" };
+    if (pm2_5 <= 75) return { text: "나쁨", color: "rgb(255, 196, 25)" };
     return { text: "매우나쁨", color: "lightcoral" };
   };
 
   const getPM10Grade = (pm10) => {
-    if (pm10 <= 20) return { text: "좋음", color: "rgb(0, 146, 215)" };
-    if (pm10 <= 50) return { text: "보통", color: "rgb(142, 195, 31)" };
-    if (pm10 <= 100) return { text: "나쁨", color: "rgb(255, 196, 25)" };
+    if (pm10 <= 30) return { text: "좋음", color: "rgb(0, 146, 215)" };
+    if (pm10 <= 80) return { text: "보통", color: "rgb(142, 195, 31)" };
+    if (pm10 <= 150) return { text: "나쁨", color: "rgb(255, 196, 25)" };
     return { text: "매우나쁨", color: "lightcoral" };
   };
 
