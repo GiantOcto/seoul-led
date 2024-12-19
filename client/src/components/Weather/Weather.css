@@ -42,9 +42,9 @@
   background-image: none;
 }
 
-.o3 {
+.pm2_5 {
   position: relative;
-  top: 190px;
+  top: 195px;
   left: 15px;
   width: 100px;
   height: 150px;
@@ -55,15 +55,19 @@
 }
 
 .pm10 span,
-.o3 span {
+.pm2_5 span {
   font-family: 'SeoulHangangEB';
   font-weight: 400;
   font-size: 22px;
   color: aliceblue;
 }
 
+.pm2_5 span {
+  font-size: 19px;
+}
+
 .grade p,
-.o3 p {
+.pm2_5 p {
   font-family: 'SeoulHangangEB';
   font-weight: 400;
   font-size: 24px;
@@ -86,7 +90,7 @@
 .dust-info,
 .ozone-info,
 .pm10,
-.o3,
+.pm2_5,
 .air-quality-text {
   background: none;
   background-image: none;

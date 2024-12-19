@@ -14,7 +14,7 @@ export const useSectionManager = (initialDistrict = "강남구", onWaterLevelCha
   const [activeSections, setActiveSections] = useState([0, 1, 2, 3,4]);
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
-    o3Grade: "좋음",
+    pm2_5Grade: "좋음",
   });
   const [machineStatus, setMachineStatus] = useState(false);
   const [showLogo1, setShowLogo1] = useState(true);
@@ -81,11 +81,11 @@ export const useSectionManager = (initialDistrict = "강남구", onWaterLevelCha
               ? "invert(76%) sepia(98%) saturate(2574%) hue-rotate(341deg) brightness(103%) contrast(104%)"
               : "invert(57%) sepia(44%) saturate(539%) hue-rotate(314deg) brightness(100%) contrast(89%)",
           "--filter-value2":
-            weatherData.o3Grade === "좋음"
+            weatherData.pm2_5Grade === "좋음"
               ? "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)"
-              : weatherData.o3Grade === "보통"
+              : weatherData.pm2_5Grade === "보통"
               ? "invert(35%) sepia(94%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
-              : weatherData.o3Grade === "나쁨"
+              : weatherData.pm2_5Grade === "나쁨"
               ? "invert(76%) sepia(98%) saturate(784%) hue-rotate(17deg) brightness(123%) contrast(104%)"
               : "invert(63%) sepia(48%) saturate(460%) hue-rotate(20deg) brightness(102%) contrast(180%)",
           "--filter-value3": machineStatus
