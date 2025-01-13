@@ -6,12 +6,12 @@ import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
 
-const INTERVALS = [30000, 20000, 20000, 20000, 20000];
+const INTERVALS = [30000, 20000, 20000, 20000, 20000, 20000];
 
 export const useSectionManager = (initialDistrict = "강남구", onWaterLevelChange, waterLevel) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0, 1, 2, 3,4]);
+  const [activeSections, setActiveSections] = useState([0, 1, 2, 3, 4, 5]);
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -170,6 +170,24 @@ export const useSectionManager = (initialDistrict = "강남구", onWaterLevelCha
          {showLogo1 ? <Logo1 /> : <Logo2 />}
         <Clock />
         <span style={{ color: "white" }}>NEWS</span>
+      </div>,
+      <div
+        key="top6"
+        className="section-top"
+        id="top6"
+        style={{
+          display:
+            currentSection === 5 && activeSections.includes(5)
+              ? "flex"
+              : "none",
+          backgroundImage: "url('/images/test.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          width: "100%",
+          height: "100%"
+        }}
+      >
       </div>,
     ],
 

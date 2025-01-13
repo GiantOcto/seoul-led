@@ -6,7 +6,7 @@ import "./App.css";
 
 function App() {
   const [waterLevel, setWaterLevel] = useState(0);
-  const [previousSections, setPreviousSections] = useState([0, 1, 2, 3, 4]);
+  const [previousSections, setPreviousSections] = useState([0, 1, 2, 3, 4, 5]);
 
   const handleWaterLevelChange = (level) => {
     setWaterLevel(level);
@@ -30,13 +30,13 @@ function App() {
   };
 
   useEffect(() => {
-    if (waterLevel >= 2) {
+    if (waterLevel >= 1) {
       if (!activeSections.includes(2)) {
         setPreviousSections([...activeSections]);
         setActiveSections([2]);
         setCurrentSection(2);
       }
-    } else if (waterLevel < 2 && activeSections.includes(2)) {
+    } else if (waterLevel < 1 && activeSections.includes(2)) {
       if (activeSections.length === 1) {
         setActiveSections([...previousSections]);
         setCurrentSection(previousSections[0]);
@@ -49,7 +49,7 @@ function App() {
   const getWaterButtonStyle = (index) => {
     const baseStyle = getButtonStyle(index);
     if (index === 2) {
-      if (waterLevel >= 2) {
+      if (waterLevel >= 1) {
         return {
           ...baseStyle,
           backgroundColor: "red",
@@ -158,6 +158,9 @@ function App() {
         </button>
         <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
           전체 이벤트
+        </button>
+        <button style={getWaterButtonStyle(5)} onClick={() => toggleSection(5)}>
+          테스트
         </button>
       </div>
     </>
