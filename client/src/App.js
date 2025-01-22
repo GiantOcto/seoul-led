@@ -30,13 +30,13 @@ function App() {
   };
 
   useEffect(() => {
-    if (waterLevel >= 1) {
+    if (waterLevel >= 0.2) {
       if (!activeSections.includes(2)) {
         setPreviousSections([...activeSections]);
         setActiveSections([2]);
         setCurrentSection(2);
       }
-    } else if (waterLevel < 1 && activeSections.includes(2)) {
+    } else if (waterLevel < 0.2 && activeSections.includes(2)) {
       if (activeSections.length === 1) {
         setActiveSections([...previousSections]);
         setCurrentSection(previousSections[0]);
@@ -49,17 +49,17 @@ function App() {
   const getWaterButtonStyle = (index) => {
     const baseStyle = getButtonStyle(index);
     if (index === 2) {
-      if (waterLevel >= 1) {
+      if (waterLevel >= 0.2) {
         return {
           ...baseStyle,
           backgroundColor: "red",
-          cursor: "pointer"  // 활성화 상태일 때 커서
+          cursor: "pointer"
         };
       } else if (waterLevel === 0) {
         return {
           ...baseStyle,
           opacity: 0.5,
-          cursor: "not-allowed"  // 비활성화 상태일 때 커서
+          cursor: "not-allowed"
         };
       }
     }
