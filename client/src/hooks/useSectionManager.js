@@ -8,7 +8,11 @@ import WaterLevel from "../components/WaterLevel/WaterLevel";
 
 const INTERVALS = [30000, 20000, 20000, 20000, 20000, 20000];
 
-export const useSectionManager = (initialDistrict = "강남구", onWaterLevelChange, waterLevel) => {
+export const useSectionManager = (
+  initialDistrict = "강남구",
+  onWaterLevelChange,
+  waterLevel
+) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
   const [activeSections, setActiveSections] = useState([0, 1, 2, 3, 4, 5]);
@@ -78,7 +82,7 @@ export const useSectionManager = (initialDistrict = "강남구", onWaterLevelCha
               : weatherData.pm10Grade === "보통"
               ? "invert(60%) sepia(84%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
               : weatherData.pm10Grade === "나쁨"
-              ? "invert(76%) sepia(98%) saturate(2574%) hue-rotate(341deg) brightness(103%) contrast(104%)"
+              ? "invert(10%) sepia(95%) saturate(2574%) hue-rotate(3deg) brightness(153%) contrast(95%)"
               : "invert(57%) sepia(44%) saturate(539%) hue-rotate(314deg) brightness(100%) contrast(89%)",
           "--filter-value2":
             weatherData.pm2_5Grade === "좋음"
@@ -87,10 +91,10 @@ export const useSectionManager = (initialDistrict = "강남구", onWaterLevelCha
               ? "invert(35%) sepia(94%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
               : weatherData.pm2_5Grade === "나쁨"
               ? "invert(76%) sepia(98%) saturate(784%) hue-rotate(17deg) brightness(123%) contrast(104%)"
-              : "invert(63%) sepia(48%) saturate(460%) hue-rotate(20deg) brightness(102%) contrast(180%)",
+              : "invert(62%) sepia(50%) saturate(420%) hue-rotate(20deg) brightness(122%) contrast(130%)",
           "--filter-value3": machineStatus
-              ? "invert(8%) sepia(90%) saturate(345%) hue-rotate(341deg) brightness(101%) contrast(102%)"
-              : "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)",
+            ? "invert(8%) sepia(90%) saturate(345%) hue-rotate(341deg) brightness(101%) contrast(102%)"
+            : "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)",
         }}
       >
         <div className="background3"></div>
@@ -113,10 +117,7 @@ export const useSectionManager = (initialDistrict = "강남구", onWaterLevelCha
             selectedDistrict={selectedDistrict}
             onWeatherUpdate={setWeatherData}
           />
-          <Stink 
-            id="stink-data-page2" 
-            onStatusChange={setMachineStatus}
-          />
+          <Stink id="stink-data-page2" onStatusChange={setMachineStatus} />
         </div>
       </div>,
       <div
@@ -167,7 +168,7 @@ export const useSectionManager = (initialDistrict = "강남구", onWaterLevelCha
               : "none",
         }}
       >
-         {showLogo1 ? <Logo1 /> : <Logo2 />}
+        {showLogo1 ? <Logo1 /> : <Logo2 />}
         <Clock />
         <span style={{ color: "white" }}>NEWS</span>
       </div>,
@@ -185,10 +186,9 @@ export const useSectionManager = (initialDistrict = "강남구", onWaterLevelCha
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           width: "100%",
-          height: "100%"
+          height: "100%",
         }}
-      >
-      </div>,
+      ></div>,
     ],
 
     middle: [
@@ -203,7 +203,32 @@ export const useSectionManager = (initialDistrict = "강남구", onWaterLevelCha
               : "none",
         }}
       >
-        <img src="/images/홍보문구.png" alt="middle1" />
+        <div
+          className="promotion-text"
+          style={{
+            width: "90%",
+            position: "absolute",
+            top: "26%",
+            left: "55%",
+            transform: "translate(-50%, -50%)",
+            display: "inline-block",
+            justifyContent: "center",
+            alignItems: "center",
+            color: "#FEFDFB",
+            zIndex: "1000",
+            fontFamily: "SeoulHangangEB",
+            fontSize: "14px",
+            textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+          }}
+        >
+          <p>환경신기술 제 466호</p>
+        </div>
+
+        <img
+          src="/images/홍보문구.png"
+          alt="middle1"
+          style={{ width: "100%", height: "100%", marginTop: "25%" }}
+        />
       </div>,
       <div
         key="middle2"
