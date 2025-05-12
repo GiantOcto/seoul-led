@@ -67,6 +67,7 @@ export const useSectionManager = (
       >
         {showLogo1 ? <Logo1 /> : <Logo2 />}
       </div>,
+
       <div
         key="top2"
         className="section-top"
@@ -100,11 +101,11 @@ export const useSectionManager = (
         <div className="background3"></div>
         {showLogo3 ? (
           <div className="logo-transition">
-            <Logo3 selectedDistrict={selectedDistrict} />
+            <Logo3/>
           </div>
         ) : (
           <div className="logo-transition">
-            <Logo4 selectedDistrict={selectedDistrict} />
+            <Logo4/>
           </div>
         )}
         <div className="air-quality">
@@ -120,6 +121,7 @@ export const useSectionManager = (
           <Stink id="stink-data-page2" onStatusChange={setMachineStatus} />
         </div>
       </div>,
+
       <div
         key="top3"
         className="section-top"
