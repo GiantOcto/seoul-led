@@ -6,7 +6,7 @@ import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
 
-const INTERVALS = [30000, 20000, 20000, 20000, 20000, 20000];
+const INTERVALS = [30000, 20000, 20000, 20000, 20000];
 
 export const useSectionManager = (
   initialDistrict = "강남구",
@@ -159,38 +159,6 @@ export const useSectionManager = (
         <Clock />
         <span style={{ color: "white" }}>NEWS</span>
       </div>,
-      <div
-        key="top5"
-        className="section-top"
-        id="top5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        {showLogo1 ? <Logo1 /> : <Logo2 />}
-        <Clock />
-        <span style={{ color: "white" }}>NEWS</span>
-      </div>,
-      <div
-        key="top6"
-        className="section-top"
-        id="top6"
-        style={{
-          display:
-            currentSection === 5 && activeSections.includes(5)
-              ? "flex"
-              : "none",
-          backgroundImage: "url('/images/test.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          width: "100%",
-          height: "100%",
-        }}
-      ></div>,
     ],
 
     middle: [
@@ -273,23 +241,6 @@ export const useSectionManager = (
           position="middle4"
         />
       </div>,
-      <div
-        key="middle5"
-        className="section-middle"
-        id="middle5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="middle5-event"
-          selectedDistrict={selectedDistrict}
-          position="middle5"
-        />
-      </div>,
     ],
 
     bottom: [
@@ -350,23 +301,6 @@ export const useSectionManager = (
           key="bottom4-event"
           selectedDistrict={selectedDistrict}
           position="bottom4"
-        />
-      </div>,
-      <div
-        key="bottom5"
-        className="section-bottom"
-        id="bottom5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="bottom5-event"
-          selectedDistrict={selectedDistrict}
-          position="bottom5"
         />
       </div>,
     ],

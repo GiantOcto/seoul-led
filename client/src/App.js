@@ -159,9 +159,6 @@ function App() {
         <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
           전체 이벤트
         </button>
-        <button style={getWaterButtonStyle(5)} onClick={() => toggleSection(5)}>
-          테스트
-        </button>
       </div>
     </>
   );
