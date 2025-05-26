@@ -15,7 +15,7 @@ export const useSectionManager = (
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0, 1, 2, 3, 4, 5]);
+  const [activeSections, setActiveSections] = useState([0, 1, 2, 3, 4]);
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -159,6 +159,21 @@ export const useSectionManager = (
         <Clock />
         <span style={{ color: "white" }}>NEWS</span>
       </div>,
+      <div
+        key="top5"
+        className="section-top"
+        id="top5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        {showLogo1 ? <Logo1 /> : <Logo2 />}
+        <Clock />
+        <span style={{ color: "white" }}>NEWS</span>
+      </div>,
     ],
 
     middle: [
@@ -241,6 +256,23 @@ export const useSectionManager = (
           position="middle4"
         />
       </div>,
+      <div
+        key="middle5"
+        className="section-middle"
+        id="middle5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <Event
+          key="middle5-event"
+          selectedDistrict={selectedDistrict}
+          position="middle5"
+        />
+      </div>,
     ],
 
     bottom: [
@@ -301,6 +333,23 @@ export const useSectionManager = (
           key="bottom4-event"
           selectedDistrict={selectedDistrict}
           position="bottom4"
+        />
+      </div>,
+      <div
+        key="bottom5"
+        className="section-bottom"
+        id="bottom5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <Event
+          key="bottom5-event"
+          selectedDistrict={selectedDistrict}
+          position="bottom5"
         />
       </div>,
     ],
