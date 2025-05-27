@@ -26,8 +26,8 @@ export function Logo3({ id, selectedDistrict }) {
     <div className="logo-3" id={id}>
       <img
         id="logo-gangnam"
-        src="/images/slogans/강남구.png"
-        alt="강남구 slogan"
+        src={`/images/slogans/${selectedDistrict}.png`}
+        alt={`${selectedDistrict} slogan`}
       />
     </div>
   );
@@ -38,8 +38,8 @@ export function Logo4({ id, selectedDistrict }) {
     <div className="logo-4" id={id}>
       <img
         id="logo-gangnamCI"
-        src="/images/강남구CI.png"
-        alt="강남구 CI"
+        src={`/images/${selectedDistrict}CI.png`}
+        alt={`${selectedDistrict} CI`}
       />
     </div>
   );
