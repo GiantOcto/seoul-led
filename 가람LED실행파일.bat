@@ -46,7 +46,7 @@ echo 프로그램을 시작합니다...
 echo.
 
 :: Python 앱 실행
-start /min "" "app.exe"
+start /b "" "app.exe"
 if errorlevel 1 (
     echo app.exe 실행 중 오류가 발생했습니다.
     pause
@@ -55,7 +55,7 @@ if errorlevel 1 (
 timeout /t 3 /nobreak > nul
 
 :: Node.js 서버 실행
-start /min "" "server.exe"
+start /b "" "server.exe" 
 if errorlevel 1 (
     echo server.exe 실행 중 오류가 발생했습니다.
     pause
@@ -65,7 +65,7 @@ timeout /t 3 /nobreak > nul
 
 :: React 앱을 위한 웹 서버 실행
 start http://localhost:3000
-cd build && start /min "" serve -s .
+cd build && start /b "" serve -s .
 
 echo 프로그램이 실행되었습니다.
 echo 종료하려면 아무 키나 누르세요...
