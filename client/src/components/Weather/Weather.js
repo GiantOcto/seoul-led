@@ -61,6 +61,25 @@ function Weather({ selectedDistrict, onWeatherUpdate }) {
     };
 
     fetchAllSeoulData();
+    
+    // 1시간마다 캐시 체크하여 자동 API 호출
+    const checkHourly = () => {
+      const hourlyInterval = setInterval(() => {
+        fetchAllSeoulData(); // 1시간마다 체크
+      }, 60 * 60 * 1000); // 1시간 (3600초)
+      
+      // cleanup 함수에서 interval 정리
+      return () => clearInterval(hourlyInterval);
+    };
+    
+    const cleanupHourly = checkHourly();
+    
+    // useEffect cleanup 함수
+    return () => {
+      if (cleanupHourly) {
+        cleanupHourly();
+      }
+    };
   }, []); // 앱 시작시 1회만
 
   // selectedDistrict 변경시 필터링만 수행 (API 호출 없음)

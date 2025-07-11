@@ -66,21 +66,21 @@ function Event({ selectedDistrict, position }) {
     if (!allEvents) return [];
     
     const today = new Date();
-    const oneWeekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const twoWeeksLater = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
     
     return allEvents
       .filter(event => {
         const startDate = new Date(event.STRTDATE);
         const endDate = new Date(event.ENDDATE);
         
-        // 진행 중이거나 일주일 내 시작하는 행사
+        // 진행 중이거나 2주일 내 시작하는 행사
         return (today >= startDate && today <= endDate) || 
-               (startDate >= today && startDate <= oneWeekLater);
+               (startDate >= today && startDate <= twoWeeksLater);
       })
       .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE)); // 날짜순 정렬
   };
 
-  // 앱 시작시 한 번만 전체 데이터 호출 (매달 1일에만 API 호출)
+  // 앱 시작시 + 매일 자정에 체크하여 매달 1일에만 API 호출
   useEffect(() => {
     const fetchAllEvents = async () => {
       // 3달 지난 캐시 정리
@@ -142,6 +142,38 @@ function Event({ selectedDistrict, position }) {
     };
 
     fetchAllEvents();
+    
+    // 매일 자정에 체크하여 매달 1일이면 API 호출
+    const checkDaily = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+      
+      const midnightTimeout = setTimeout(() => {
+        fetchAllEvents(); // 자정에 체크
+        
+        // 매일 자정마다 반복
+        const dailyInterval = setInterval(fetchAllEvents, 24 * 60 * 60 * 1000);
+        
+        // cleanup 함수에서 interval 정리
+        return () => clearInterval(dailyInterval);
+      }, timeUntilMidnight);
+      
+      // cleanup 함수에서 timeout 정리
+      return () => clearTimeout(midnightTimeout);
+    };
+    
+    const cleanupDaily = checkDaily();
+    
+    // useEffect cleanup 함수
+    return () => {
+      if (cleanupDaily) {
+        cleanupDaily();
+      }
+    };
   }, []); // 빈 의존성 배열 = 앱 시작시 1회만
 
   // selectedDistrict나 position 변경시 필터링만 수행 (API 호출 없음)
@@ -152,33 +184,35 @@ function Event({ selectedDistrict, position }) {
       return;
     }
 
-    // 1단계: 날짜별 필터링 (오늘부터 가장 가까운 행사들)
-    const upcomingEvents = getUpcomingEvents(allEventsData);
+    // 1단계: 먼저 구별로 이벤트 분류
+    let districtEvents;
     
-    // 2단계: position별 필터링
-    let filteredEvents;
-    
-    if (position === 'middle4') {
-      // 선택된 구의 홀수 인덱스 이벤트
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME === selectedDistrict && index % 2 === 1
-      );
-    } else if (position === 'bottom4') {
-      // 선택된 구의 짝수 인덱스 이벤트
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME === selectedDistrict && index % 2 === 0
-      );
-    } else if (position === 'middle5') {
-      // 선택된 구를 제외한 다른 구의 홀수 인덱스 이벤트
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 1
-      );
-    } else if (position === 'bottom5') {
-      // 선택된 구를 제외한 다른 구의 짝수 인덱스 이벤트
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 0
-      );
+    if (position === 'middle4' || position === 'bottom4') {
+      // 선택된 구의 이벤트들만 추출
+      districtEvents = allEventsData.filter(event => event.GUNAME === selectedDistrict);
+    } else if (position === 'middle5' || position === 'bottom5') {
+      // 선택된 구를 제외한 다른 구의 이벤트들만 추출
+      districtEvents = allEventsData.filter(event => event.GUNAME !== selectedDistrict);
     }
+    
+    // 2단계: 추출된 구의 이벤트들에서 홀수/짝수 인덱스 분할
+    let indexFilteredEvents;
+    
+    if (position === 'middle4' || position === 'middle5') {
+      // 홀수 인덱스 (1, 3, 5, ...)
+      indexFilteredEvents = districtEvents.filter((event, index) => index % 2 === 1);
+    } else if (position === 'bottom4' || position === 'bottom5') {
+      // 짝수 인덱스 (0, 2, 4, ...)
+      indexFilteredEvents = districtEvents.filter((event, index) => index % 2 === 0);
+    }
+    
+    // 2단계: 인덱스 필터링된 결과에서 날짜 필터링
+    const filteredEvents = getUpcomingEvents(indexFilteredEvents);
+    
+    // 디버깅: 필터링 결과 확인
+    console.log(`[${position}] 선택된 구: ${selectedDistrict}`);
+    console.log(`[${position}] 필터링된 이벤트 개수: ${filteredEvents ? filteredEvents.length : 0}`);
+    console.log(`[${position}] 필터링된 이벤트:`, filteredEvents);
     
     if (filteredEvents && filteredEvents.length > 0) {
       setEvents(filteredEvents);
