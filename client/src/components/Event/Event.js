@@ -66,16 +66,14 @@ function Event({ selectedDistrict, position }) {
     if (!allEvents) return [];
     
     const today = new Date();
-    const twoWeeksLater = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
     
     return allEvents
       .filter(event => {
         const startDate = new Date(event.STRTDATE);
         const endDate = new Date(event.ENDDATE);
         
-        // 진행 중이거나 2주일 내 시작하는 행사
-        return (today >= startDate && today <= endDate) || 
-               (startDate >= today && startDate <= twoWeeksLater);
+        // 진행 중이거나 오늘 이후 시작하는 행사만
+        return (today >= startDate && today <= endDate) || (startDate >= today);
       })
       .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE)); // 날짜순 정렬
   };
@@ -105,11 +103,12 @@ function Event({ selectedDistrict, position }) {
         
         // 이번 달 전체 데이터 요청
         const today = new Date();
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const formattedDate = startOfMonth.toLocaleDateString('en-CA');
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const formattedDate = `${year}-${month}`;
         
         const response = await fetch(
-          `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/1000///${formattedDate}`
+          `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/1000/%20/%20/${formattedDate}`
         );
         
         const data = await response.json();
