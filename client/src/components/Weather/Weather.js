@@ -5,44 +5,91 @@ const AIR_KOREA_KEY = "hdY4oBjOnFqA%2BJyW%2Bkzoyx0iCeR8iu5iz4L2gHBvK3C%2FzN8ATC5
 
 function Weather({ selectedDistrict, onWeatherUpdate }) {
   const [pollutionData, setPollutionData] = useState(null);
+  const [allSeoulData, setAllSeoulData] = useState(null);
 
+  // 캐시 관리 설정
+  const CACHE_DURATION = 60 * 60 * 1000; // 1시간
+  const CACHE_KEY = 'seoulAirQuality_cache';
+  const CACHE_TIME_KEY = 'seoulAirQuality_time';
+
+  // 앱 시작시 서울시 전체 미세먼지 데이터 호출 (1시간 캐싱)
   useEffect(() => {
-    const fetchData = async () => {
-      if (!selectedDistrict) return;
-
+    const fetchAllSeoulData = async () => {
       try {
-        // 에어코리아 시도별 API (PM2.5 포함)
+        // localStorage에서 캐시 확인
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+        
+        // 캐시가 있고 1시간 이내면 API 호출 안함
+        if (cachedData && cachedTime && 
+            (Date.now() - parseInt(cachedTime) < CACHE_DURATION)) {
+          const parsedData = JSON.parse(cachedData);
+          setAllSeoulData(parsedData);
+          setPollutionData(parsedData);
+          return;
+        }
+
+        // 1시간 지났거나 캐시 없으면 API 호출
         const pollutionUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?sidoName=서울&pageNo=1&numOfRows=100&returnType=json&ver=1.3&serviceKey=${AIR_KOREA_KEY}`;
 
         const pollutionResponse = await fetch(pollutionUrl);
         const pollutionJson = await pollutionResponse.json();
 
+        if (!pollutionJson?.response?.body?.items) {
+          console.error("날씨 API 응답 오류:", pollutionJson);
+          return;
+        }
+
+        // localStorage에 저장
+        localStorage.setItem(CACHE_KEY, JSON.stringify(pollutionJson));
+        localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+
+        setAllSeoulData(pollutionJson);
         setPollutionData(pollutionJson);
 
-        // 해당 구 데이터 찾기
-        const targetStation = pollutionJson.response.body.items.find(item => 
-          item.stationName === selectedDistrict
-        );
-
-        if (targetStation) {
-          const pm10 = parseInt(targetStation.pm10Value) || 0;
-          const pm2_5 = parseInt(targetStation.pm25Value) || 0;
-
-          const pm10Grade = getPM10Grade(pm10);
-          const pm2_5Grade = getpm2_5Grade(pm2_5);
-
-          onWeatherUpdate({
-            pm10Grade: pm10Grade.text,
-            pm2_5Grade: pm2_5Grade.text,
-          });
-        }
       } catch (error) {
-        console.error("에어코리아 API 에러:", error);
+        console.error("날씨 API 호출 실패:", error);
+        
+        // API 실패시 기존 캐시라도 사용
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          const parsedData = JSON.parse(cachedData);
+          setAllSeoulData(parsedData);
+          setPollutionData(parsedData);
+        }
       }
     };
 
-    fetchData();
-  }, [selectedDistrict, onWeatherUpdate]);
+    fetchAllSeoulData();
+  }, []); // 앱 시작시 1회만
+
+  // selectedDistrict 변경시 필터링만 수행 (API 호출 없음)
+  useEffect(() => {
+    if (!allSeoulData || !selectedDistrict) return;
+
+    try {
+      // 전체 서울시 데이터에서 해당 구 찾기
+      const targetStation = allSeoulData.response.body.items.find(item => 
+        item.stationName === selectedDistrict
+      );
+
+      if (targetStation) {
+        const pm10 = parseInt(targetStation.pm10Value) || 0;
+        const pm2_5 = parseInt(targetStation.pm25Value) || 0;
+
+        const pm10Grade = getPM10Grade(pm10);
+        const pm2_5Grade = getpm2_5Grade(pm2_5);
+
+        // 부모 컴포넌트에 데이터 전달
+        onWeatherUpdate({
+          pm10Grade: pm10Grade.text,
+          pm2_5Grade: pm2_5Grade.text,
+        });
+      }
+    } catch (error) {
+      console.error("데이터 필터링 오류:", error);
+    }
+  }, [selectedDistrict, allSeoulData, onWeatherUpdate]);
 
   const getpm2_5Grade = (pm2_5) => {
     if (pm2_5 <= 15) return { text: "좋음", color: "rgb(0, 146, 215)" };
@@ -58,14 +105,27 @@ function Weather({ selectedDistrict, onWeatherUpdate }) {
     return { text: "매우나쁨", color: "lightcoral" };
   };
 
-  if (!pollutionData) return <div>Loading...</div>;
+  // 로딩 상태
+  if (!pollutionData) {
+    return (
+      <div className="weather-container">
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   // 해당 구 데이터 찾기
   const targetStation = pollutionData.response.body.items.find(item => 
     item.stationName === selectedDistrict
   );
 
-  if (!targetStation) return <div>해당 지역 데이터를 찾을 수 없습니다.</div>;
+  if (!targetStation) {
+    return (
+      <div className="weather-container">
+        <div>해당 지역 데이터를 찾을 수 없습니다.</div>
+      </div>
+    );
+  }
 
   // 에어코리아 데이터 파싱
   const pm10 = parseInt(targetStation.pm10Value) || 0;
