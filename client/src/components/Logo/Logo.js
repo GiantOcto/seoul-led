@@ -21,7 +21,7 @@ export function Logo2({ id }) {
   );
 }
 
-export function Logo3({ id, selectedDistrict }) {
+export function Logo3({ id }) {
   return (
     <div className="logo-3" id={id}>
       <img
@@ -33,7 +33,7 @@ export function Logo3({ id, selectedDistrict }) {
   );
 }
 
-export function Logo4({ id, selectedDistrict }) {
+export function Logo4({ id }) {
   return (
     <div className="logo-4" id={id}>
       <img

@@ -149,11 +149,11 @@ export const useSectionManager = (
       >
         {showLogo3 ? (
           <div className="logo-transition" style={{ width: "126px", height: "50px" }}>
-            <Logo3 selectedDistrict={selectedDistrict} />
+            <Logo3 />
           </div>
         ) : (
           <div className="logo-transition" style={{ width: "126px", height: "50px" }}>
-            <Logo4 selectedDistrict={selectedDistrict} />
+            <Logo4 />
           </div>
         )}
         <Clock />
