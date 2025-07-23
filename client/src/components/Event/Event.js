@@ -1,6 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import './Event.css';
 
+// 전역 타이머 관리
+let globalTimer = null;
+let globalIndex = 0;
+let globalCallbacks = new Set();
+
+const startGlobalTimer = () => {
+  if (globalTimer) return; // 이미 실행 중이면 중복 시작 방지
+  
+  globalTimer = setInterval(() => {
+    globalIndex = (globalIndex + 1) % 1000; // 충분히 큰 수로 설정
+    globalCallbacks.forEach(callback => callback(globalIndex));
+  }, 5000);
+};
+
+const stopGlobalTimer = () => {
+  if (globalTimer) {
+    clearInterval(globalTimer);
+    globalTimer = null;
+  }
+};
+
 function Event({ selectedDistrict, position }) {
   const [events, setEvents] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -66,16 +87,14 @@ function Event({ selectedDistrict, position }) {
     if (!allEvents) return [];
     
     const today = new Date();
-    const oneWeekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
     
     return allEvents
       .filter(event => {
         const startDate = new Date(event.STRTDATE);
         const endDate = new Date(event.ENDDATE);
         
-        // 진행 중이거나 일주일 내 시작하는 행사
-        return (today >= startDate && today <= endDate) || 
-               (startDate >= today && startDate <= oneWeekLater);
+        // 진행 중이거나 오늘 이후 시작하는 행사만
+        return (today >= startDate && today <= endDate) || (startDate >= today);
       })
       .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE)); // 날짜순 정렬
   };
@@ -116,11 +135,15 @@ function Event({ selectedDistrict, position }) {
         
         // 이번 달 전체 데이터 요청
         const today = new Date();
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const formattedDate = startOfMonth.toLocaleDateString('en-CA');
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const formattedDate = `${year}`;
+        
+        console.log('📅 API 요청 날짜:', formattedDate);
+        console.log('📅 현재 날짜:', today.toISOString());
         
         const response = await fetch(
-          `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/1000///${formattedDate}`
+          `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/1000/%20/%20/${formattedDate}`
         );
         
         const data = await response.json();
@@ -131,7 +154,7 @@ function Event({ selectedDistrict, position }) {
         }
 
         // localStorage에 저장
-        localStorage.setItem(CACHE_KEY, JSON.stringify(data.culturalEventInfo.row));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(allEventsData));
         localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
         
         // ⭐⭐⭐ 서버로 이미지 다운로드 요청 (추가!)
@@ -139,7 +162,7 @@ function Event({ selectedDistrict, position }) {
           const response = await fetch('http://localhost:8000/api/process-cultural-events', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ events: data.culturalEventInfo.row })
+            body: JSON.stringify({ events: allEventsData })
           });
           
           if (response.ok) {
@@ -153,15 +176,15 @@ function Event({ selectedDistrict, position }) {
             localStorage.setItem(CACHE_KEY, JSON.stringify(processed.events));
           } else {
             // 서버 처리 실패시 원본 데이터 사용
-            setAllEventsData(data.culturalEventInfo.row);
+            setAllEventsData(allEventsData);
           }
         } catch (err) {
           console.error('서버 이미지 처리 실패:', err);
-          setAllEventsData(data.culturalEventInfo.row);
+          setAllEventsData(allEventsData);
         }
 
         // 이미지 프리로딩 (백그라운드에서 조용히 실행)
-        preloadImages(data.culturalEventInfo.row);
+        preloadImages(allEventsData);
         
       } catch (error) {
         console.error("문화행사 API 호출 실패:", error);
@@ -172,12 +195,16 @@ function Event({ selectedDistrict, position }) {
           console.log("API 실패, 기존 캐시 사용");
           const parsedCache = JSON.parse(cachedData);
           
+          // ⭐⭐⭐ 중복 제거 로직 추가
+          const uniqueEvents = removeDuplicates(parsedCache);
+          console.log(`🔄 중복 제거: ${parsedCache.length}개 → ${uniqueEvents.length}개`);
+          
           // ⭐⭐⭐ 서버로 이미지 처리 시도 (API는 실패했어도 서버는 살아있을 수 있음)
           try {
             const response = await fetch('http://localhost:8000/api/process-cultural-events', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ events: parsedCache })
+              body: JSON.stringify({ events: uniqueEvents })
             });
             
             if (response.ok) {
@@ -185,10 +212,10 @@ function Event({ selectedDistrict, position }) {
               setAllEventsData(processed.events);
               localStorage.setItem(CACHE_KEY, JSON.stringify(processed.events));
             } else {
-              setAllEventsData(parsedCache);
+              setAllEventsData(uniqueEvents);
             }
           } catch {
-            setAllEventsData(parsedCache);
+            setAllEventsData(uniqueEvents);
           }
         }
       }
@@ -196,6 +223,24 @@ function Event({ selectedDistrict, position }) {
 
     fetchAllEvents();
   }, []); // 빈 의존성 배열 = 앱 시작시 1회만
+
+  // 중복 제거 함수
+  const removeDuplicates = (events) => {
+    const seen = new Set();
+    const uniqueEvents = [];
+    
+    for (const event of events) {
+      // TITLE + STRTDATE + ENDDATE를 조합해서 고유 키 생성
+      const uniqueKey = `${event.TITLE}_${event.STRTDATE}_${event.ENDDATE}`;
+      
+      if (!seen.has(uniqueKey)) {
+        seen.add(uniqueKey);
+        uniqueEvents.push(event);
+      }
+    }
+    
+    return uniqueEvents;
+  };
 
   // selectedDistrict나 position 변경시 필터링만 수행 (API 호출 없음)
   useEffect(() => {
@@ -205,33 +250,35 @@ function Event({ selectedDistrict, position }) {
       return;
     }
 
-    // 1단계: 날짜별 필터링 (오늘부터 가장 가까운 행사들)
-    const upcomingEvents = getUpcomingEvents(allEventsData);
+    // 1단계: 먼저 구별로 이벤트 분류
+    let districtEvents;
     
-    // 2단계: position별 필터링
-    let filteredEvents;
-    
-    if (position === 'middle4') {
-      // 선택된 구의 홀수 인덱스 이벤트
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME === selectedDistrict && index % 2 === 1
-      );
-    } else if (position === 'bottom4') {
-      // 선택된 구의 짝수 인덱스 이벤트
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME === selectedDistrict && index % 2 === 0
-      );
-    } else if (position === 'middle5') {
-      // 선택된 구를 제외한 다른 구의 홀수 인덱스 이벤트
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 1
-      );
-    } else if (position === 'bottom5') {
-      // 선택된 구를 제외한 다른 구의 짝수 인덱스 이벤트
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 0
-      );
+    if (position === 'middle4' || position === 'bottom4') {
+      // 선택된 구의 이벤트들만 추출
+      districtEvents = allEventsData.filter(event => event.GUNAME === selectedDistrict);
+    } else if (position === 'middle5' || position === 'bottom5') {
+      // 선택된 구를 제외한 다른 구의 이벤트들만 추출
+      districtEvents = allEventsData.filter(event => event.GUNAME !== selectedDistrict);
     }
+    
+    // 2단계: 추출된 구의 이벤트들에서 홀수/짝수 인덱스 분할
+    let indexFilteredEvents;
+    
+    if (position === 'middle4' || position === 'middle5') {
+      // 홀수 인덱스 (1, 3, 5, ...)
+      indexFilteredEvents = districtEvents.filter((event, index) => index % 2 === 1);
+    } else if (position === 'bottom4' || position === 'bottom5') {
+      // 짝수 인덱스 (0, 2, 4, ...)
+      indexFilteredEvents = districtEvents.filter((event, index) => index % 2 === 0);
+    }
+    
+    // 2단계: 인덱스 필터링된 결과에서 날짜 필터링
+    const filteredEvents = getUpcomingEvents(indexFilteredEvents);
+    
+    // 디버깅: 필터링 결과 확인
+    console.log(`[${position}] 선택된 구: ${selectedDistrict}`);
+    console.log(`[${position}] 필터링된 이벤트 개수: ${filteredEvents ? filteredEvents.length : 0}`);
+    console.log(`[${position}] 필터링된 이벤트:`, filteredEvents);
     
     if (filteredEvents && filteredEvents.length > 0) {
       setEvents(filteredEvents);
@@ -243,19 +290,31 @@ function Event({ selectedDistrict, position }) {
     }
   }, [selectedDistrict, position, allEventsData]);
 
-  // 이벤트 순환 (5초마다)
+  // 이벤트 순환 (전역 타이머 사용)
   useEffect(() => {
     if (!events || events.length === 0) return;
 
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        const nextIndex = (prevIndex + 1) % events.length;
-        setCurrentEvent(events[nextIndex]);
-        return nextIndex;
-      });
-    }, 5000);
+    // 전역 타이머에 콜백 등록
+    const handleGlobalTimer = (globalIdx) => {
+      const localIndex = globalIdx % events.length;
+      setCurrentIndex(localIndex);
+      setCurrentEvent(events[localIndex]);
+    };
 
-    return () => clearInterval(interval);
+    globalCallbacks.add(handleGlobalTimer);
+    
+    // 전역 타이머 시작
+    startGlobalTimer();
+
+    // 컴포넌트 언마운트시 콜백 제거
+    return () => {
+      globalCallbacks.delete(handleGlobalTimer);
+      
+      // 더 이상 콜백이 없으면 타이머 정지
+      if (globalCallbacks.size === 0) {
+        stopGlobalTimer();
+      }
+    };
   }, [events]);
 
   const formatDate = (dateString) => {
