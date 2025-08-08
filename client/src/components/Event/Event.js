@@ -1,41 +1,91 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Event.css';
 
-// 전역 타이머 관리
-let globalTimer = null;
-let globalIndex = 0;
-let globalCallbacks = new Set();
-
-const startGlobalTimer = () => {
-  if (globalTimer) return; // 이미 실행 중이면 중복 시작 방지
-  
-  globalTimer = setInterval(() => {
-    globalIndex = (globalIndex + 1) % 1000; // 충분히 큰 수로 설정
-    globalCallbacks.forEach(callback => callback(globalIndex));
-  }, 5000);
-};
-
-const stopGlobalTimer = () => {
-  if (globalTimer) {
-    clearInterval(globalTimer);
-    globalTimer = null;
-  }
-};
 
 function Event({ selectedDistrict, position }) {
   const [events, setEvents] = useState([]);
+  const dailyPreloadDone = useRef(null);
+  const PRELOADED_URLS = useRef(new Set());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentEvent, setCurrentEvent] = useState(null);
   const [allEventsData, setAllEventsData] = useState(null);
 
   // 캐시 관리 설정
-  const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; // 30일
+  const CACHE_DURATION = 90 * 24 * 60 * 60 * 1000; // ⭐ 90일 (3개월)
   const CACHE_KEY = 'culturalEvents_cache';
   const CACHE_TIME_KEY = 'culturalEvents_time';
-  const MAX_CACHE_AGE = 90 * 24 * 60 * 60 * 1000; // 3달
+  const MAX_CACHE_AGE = 180 * 24 * 60 * 60 * 1000; // ⭐ 6달 (캐시 최대 보관)
+
+  // 매일 09:00에 4개 이미지만 프리로드
+  const dailyPreloadCheck = (eventData) => {
+  if (!eventData || eventData.length === 0) return;
+  
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  
+  if (dailyPreloadDone.current === today || now.getHours() < 9) {
+    return;
+  }
+  
+  console.log(`⏰ ${today} 09:00 데일리 프리로드 시작!`);
+  
+  let upcomingEvents = getUpcomingEvents(eventData);
+  
+  // ⭐ 서초구만 필터링
+  let seochoEvents = upcomingEvents
+    .filter(e => e.GUNAME === '서초구')
+    .slice(0, 2);
+  
+  // ⭐ 서초구 이벤트 부족시 범위 확장
+  if (seochoEvents.length < 2) {
+    console.log(`⚠️ 서초구 이벤트 ${seochoEvents.length}개뿐... 범위 확장!`);
+    
+    // 한달치로 범위 확장
+    const today = new Date();
+    const oneMonthLater = new Date();
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    
+    seochoEvents = eventData
+      .filter(event => {
+        const endDate = new Date(event.ENDDATE);
+        return event.GUNAME === '서초구' && endDate >= today;
+      })
+      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE))
+      .slice(0, 2);
+    
+    console.log(`📈 확장 후: 서초구 이벤트 ${seochoEvents.length}개`);
+  }
+  
+  // ⭐ 서초구 제외한 다른 구들
+  const others = upcomingEvents
+    .filter(e => e.GUNAME !== '서초구')
+    .slice(0, 2);
+  
+  const todayPreload = [...seochoEvents, ...others];
+    
+      todayPreload.forEach(event => {
+      if (event && event.MAIN_IMG) {
+        const imgUrl = event.MAIN_IMG;
+        
+        // ⭐ 중복 체크 추가
+        if (!PRELOADED_URLS.current.has(imgUrl)) {
+          const img = new Image();
+          img.src = imgUrl;
+          PRELOADED_URLS.current.add(imgUrl);  // ⭐ Set에 추가
+          console.log(`📥 새 이미지 프리로드: ${event.GUNAME} - ${event.TITLE}`);
+        } else {
+          console.log(`⏭️ 이미 프리로드됨: ${event.TITLE}`);
+        }
+      }
+    });
+    
+    dailyPreloadDone.current = today;
+    console.log(`✅ 데일리 프리로드 완료: ${todayPreload.length}개`);
+  };
+
 
   // 이미지 프리로딩 함수 (백그라운드에서 조용히 실행)
-  const preloadImages = async (eventData) => {
+  /* const preloadImages = async (eventData) => {
     if (!eventData || eventData.length === 0) return;
 
     // 중복 제거하고 유효한 이미지 URL만 추출
@@ -60,7 +110,7 @@ function Event({ selectedDistrict, position }) {
     });
 
     console.log(`✅ 이미지 프리로딩 백그라운드 시작 완료`);
-  };
+  }; */
 
   // 3달 지난 캐시 자동 삭제
   const cleanOldCache = () => {
@@ -74,12 +124,7 @@ function Event({ selectedDistrict, position }) {
     } catch (error) {
       console.error("캐시 정리 오류:", error);
     }
-  };
 
-  // 매달 1일인지 확인
-  const isFirstDayOfMonth = () => {
-    const today = new Date();
-    return today.getDate() === 1;
   };
 
   // 오늘부터 가장 가까운 행사들 필터링
@@ -87,16 +132,21 @@ function Event({ selectedDistrict, position }) {
     if (!allEvents) return [];
     
     const today = new Date();
+
+    const twoWeeksLater = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);  // ⭐ 7 → 14
     
     return allEvents
       .filter(event => {
         const startDate = new Date(event.STRTDATE);
         const endDate = new Date(event.ENDDATE);
         
-        // 진행 중이거나 오늘 이후 시작하는 행사만
-        return (today >= startDate && today <= endDate) || (startDate >= today);
+
+        // 진행 중이거나 2주 내 시작하는 행사  // ⭐ 주석도 수정
+        return (today >= startDate && today <= endDate) || 
+              (startDate >= today && startDate <= twoWeeksLater);  // ⭐ oneWeekLater → twoWeeksLater
       })
-      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE)); // 날짜순 정렬
+      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE));
+
   };
 
   // 앱 시작시 한 번만 전체 데이터 호출 (매달 1일에만 API 호출)
@@ -110,40 +160,41 @@ function Event({ selectedDistrict, position }) {
         const cachedData = localStorage.getItem(CACHE_KEY);
         const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
         
-        // 캐시가 있고 30일 이내이고 매달 1일이 아니면 API 호출 안함
+        // 캐시가 있고 90일 이내면 API 호출 안함
         if (cachedData && cachedTime && 
-            (Date.now() - parseInt(cachedTime) < CACHE_DURATION) && 
-            !isFirstDayOfMonth()) {
+            (Date.now() - parseInt(cachedTime) < CACHE_DURATION)) {
           console.log("localStorage 캐시 사용 중... (API 호출 없음)");
-          const parsedData = JSON.parse(cachedData);
-
-          // ⭐⭐⭐ 캐시된 데이터에 LOCAL_IMG가 있는지 확인
-          const hasLocalImages = parsedData.some(event => event.LOCAL_IMG);
           
-          if (hasLocalImages) {
-            console.log("✅ 로컬 이미지 캐시 확인됨!");
-          } else {
-            console.log("⚠️ 로컬 이미지 없음 - 오프라인시 이미지 안보일 수 있음");
+          try {
+            const parsedData = JSON.parse(cachedData);
+            
+            // 데이터 유효성 체크
+            if (Array.isArray(parsedData) && parsedData.length > 0) {
+              setAllEventsData(parsedData);
+              return;
+            } else {
+              console.warn('캐시 데이터 형식 이상함');
+              throw new Error('Invalid cache format');
+            }
+            
+          } catch (e) {
+            console.error('캐시 사용 실패, 새로 받아옴:', e);
+            localStorage.removeItem(CACHE_KEY);
+            localStorage.removeItem(CACHE_TIME_KEY);
+            // return 안하고 아래 API 호출 코드로 진행
           }
-          
-          setAllEventsData(parsedData);
-          return;
         }
 
-        // 매달 1일이거나 캐시 없거나 만료시에만 API 호출
-        console.log("문화행사 API 호출 중... (매달 1일 또는 캐시 만료)");
+        // 캐시 없거나 3개월 지났을 때만 API 호출
+        console.log("문화행사 API 호출 중... (캐시 만료)");
         
         // 이번 달 전체 데이터 요청
         const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const formattedDate = `${year}`;
-        
-        console.log('📅 API 요청 날짜:', formattedDate);
-        console.log('📅 현재 날짜:', today.toISOString());
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const formattedDate = startOfMonth.toLocaleDateString('en-CA');
         
         const response = await fetch(
-          `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/1000/%20/%20/${formattedDate}`
+          `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/1000///${formattedDate}`
         );
         
         const data = await response.json();
@@ -153,38 +204,45 @@ function Event({ selectedDistrict, position }) {
           return;
         }
 
-        // localStorage에 저장
-        localStorage.setItem(CACHE_KEY, JSON.stringify(allEventsData));
-        localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-        
-        // ⭐⭐⭐ 서버로 이미지 다운로드 요청 (추가!)
+        // localStorage 용량 체크 후 저장
         try {
-          const response = await fetch('http://localhost:8000/api/process-cultural-events', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ events: allEventsData })
-          });
+          const dataToStore = JSON.stringify(data.culturalEventInfo.row);
+          const sizeInMB = dataToStore.length / (1024 * 1024);
           
-          if (response.ok) {
-            const processed = await response.json();
-            console.log(`✅ 서버에서 이미지 ${processed.processed}개 처리 완료`);
-            
-            // 서버에서 처리된 데이터 사용 (LOCAL_IMG 포함)
-            setAllEventsData(processed.events);
-            
-            // localStorage도 업데이트
-            localStorage.setItem(CACHE_KEY, JSON.stringify(processed.events));
+          console.log(`📦 저장할 데이터 크기: ${sizeInMB.toFixed(2)}MB`);
+          
+          if (sizeInMB > 4) { // 4MB 넘으면 위험
+            console.warn("⚠️ 데이터 너무 큼, 500개만 저장");
+            const reduced = data.culturalEventInfo.row.slice(0, 500);
+            localStorage.setItem(CACHE_KEY, JSON.stringify(reduced));
+            setAllEventsData(reduced);
           } else {
-            // 서버 처리 실패시 원본 데이터 사용
-            setAllEventsData(allEventsData);
+            localStorage.setItem(CACHE_KEY, dataToStore);
+            setAllEventsData(data.culturalEventInfo.row);
           }
-        } catch (err) {
-          console.error('서버 이미지 처리 실패:', err);
-          setAllEventsData(allEventsData);
+          
+          localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+          
+        } catch (e) {
+          if (e.name === 'QuotaExceededError') {
+            console.error('💥 localStorage 꽉참! 오래된 데이터 삭제중...');
+            // 오래된 캐시들 삭제
+            localStorage.removeItem('seoulAirQuality_cache'); // 날씨 캐시
+            localStorage.removeItem('seoulAirQuality_time');
+            // 재시도
+            try {
+              localStorage.setItem(CACHE_KEY, JSON.stringify(data.culturalEventInfo.row));
+              setAllEventsData(data.culturalEventInfo.row);
+            } catch (e2) {
+              console.error('그래도 안됨, 포기');
+              setAllEventsData(data.culturalEventInfo.row);
+            }
+          }
         }
 
         // 이미지 프리로딩 (백그라운드에서 조용히 실행)
-        preloadImages(allEventsData);
+        // preloadImages(data.culturalEventInfo.row);
+
         
       } catch (error) {
         console.error("문화행사 API 호출 실패:", error);
@@ -193,29 +251,14 @@ function Event({ selectedDistrict, position }) {
         const cachedData = localStorage.getItem(CACHE_KEY);
         if (cachedData) {
           console.log("API 실패, 기존 캐시 사용");
-          const parsedCache = JSON.parse(cachedData);
-          
-          // ⭐⭐⭐ 중복 제거 로직 추가
-          const uniqueEvents = removeDuplicates(parsedCache);
-          console.log(`🔄 중복 제거: ${parsedCache.length}개 → ${uniqueEvents.length}개`);
-          
-          // ⭐⭐⭐ 서버로 이미지 처리 시도 (API는 실패했어도 서버는 살아있을 수 있음)
+
           try {
-            const response = await fetch('http://localhost:8000/api/process-cultural-events', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ events: uniqueEvents })
-            });
-            
-            if (response.ok) {
-              const processed = await response.json();
-              setAllEventsData(processed.events);
-              localStorage.setItem(CACHE_KEY, JSON.stringify(processed.events));
-            } else {
-              setAllEventsData(uniqueEvents);
-            }
-          } catch {
-            setAllEventsData(uniqueEvents);
+            const parsedCache = JSON.parse(cachedData);
+            setAllEventsData(parsedCache);
+          } catch (e) {
+            console.error('캐시 파싱 실패:', e);
+            localStorage.removeItem(CACHE_KEY);
+
           }
         }
       }
@@ -224,71 +267,106 @@ function Event({ selectedDistrict, position }) {
     fetchAllEvents();
   }, []); // 빈 의존성 배열 = 앱 시작시 1회만
 
-  // 중복 제거 함수
-  const removeDuplicates = (events) => {
-    const seen = new Set();
-    const uniqueEvents = [];
+
+    // 매일 09:00 체크 (정확한 시간에 한번만)
+  useEffect(() => {
+    if (!allEventsData) return;
     
-    for (const event of events) {
-      // TITLE + STRTDATE + ENDDATE를 조합해서 고유 키 생성
-      const uniqueKey = `${event.TITLE}_${event.STRTDATE}_${event.ENDDATE}`;
+    const scheduleNext9AM = () => {
+      const now = new Date();
+      const next9AM = new Date();
+      next9AM.setHours(9, 0, 0, 0);
       
-      if (!seen.has(uniqueKey)) {
-        seen.add(uniqueKey);
-        uniqueEvents.push(event);
+      // 이미 9시 지났으면 내일 9시로
+      if (now.getHours() >= 9) {
+        next9AM.setDate(next9AM.getDate() + 1);
       }
-    }
+      
+      const msUntilNext9AM = next9AM - now;
+      console.log(`⏰ 다음 프리로드까지 ${Math.floor(msUntilNext9AM / 1000 / 60)}분`);
+      
+      return setTimeout(() => {
+        dailyPreloadCheck(allEventsData);
+        scheduleNext9AM(); // 재귀로 다음 9시 예약
+      }, msUntilNext9AM);
+    };
     
-    return uniqueEvents;
-  };
+    // 처음 한번 체크
+    dailyPreloadCheck(allEventsData);
+    
+    // 다음 9시 예약
+    const timer = scheduleNext9AM();
+    
+    return () => clearTimeout(timer);
+  }, [allEventsData]);
+
 
   // selectedDistrict나 position 변경시 필터링만 수행 (API 호출 없음)
   useEffect(() => {
+
     if (!allEventsData || !selectedDistrict) {
       setEvents([]);
       setCurrentEvent(null);
       return;
     }
 
-    // 1단계: 먼저 구별로 이벤트 분류
-    let districtEvents;
+
+    // 1단계: 날짜별 필터링 (오늘부터 가장 가까운 행사들)
+    const upcomingEvents = getUpcomingEvents(allEventsData);
     
-    if (position === 'middle4' || position === 'bottom4') {
-      // 선택된 구의 이벤트들만 추출
-      districtEvents = allEventsData.filter(event => event.GUNAME === selectedDistrict);
-    } else if (position === 'middle5' || position === 'bottom5') {
-      // 선택된 구를 제외한 다른 구의 이벤트들만 추출
-      districtEvents = allEventsData.filter(event => event.GUNAME !== selectedDistrict);
+    // ⭐ 서초구 이벤트 부족시 범위 확장 (LED 표시용)
+    let districtEvents = upcomingEvents.filter(e => e.GUNAME === selectedDistrict);
+  
+    if (selectedDistrict === '서초구' && districtEvents.length < 2) {
+    console.log(`⚠️ LED용 서초구 이벤트 ${districtEvents.length}개 → 범위 확장`);
+    const today = new Date();
+    
+    districtEvents = allEventsData
+      .filter(event => {
+        const endDate = new Date(event.ENDDATE);
+        return event.GUNAME === '서초구' && endDate >= today;
+      })
+      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE));
+    
+    console.log(`📈 확장 완료: ${districtEvents.length}개 찾음`);
+  }
+    // 2단계: position별 필터링
+    let filteredEvents;
+    
+    if (position === 'middle4') {
+      filteredEvents = districtEvents.filter((_, index) => index % 2 === 1);
+    } else if (position === 'bottom4') {
+      filteredEvents = districtEvents.filter((_, index) => index % 2 === 0);
+    } else if (position === 'middle5') {
+      filteredEvents = upcomingEvents.filter(
+        (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 1
+      );
+    } else if (position === 'bottom5') {
+      filteredEvents = upcomingEvents.filter(
+        (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 0
+      );
     }
-    
-    // 2단계: 추출된 구의 이벤트들에서 홀수/짝수 인덱스 분할
-    let indexFilteredEvents;
-    
-    if (position === 'middle4' || position === 'middle5') {
-      // 홀수 인덱스 (1, 3, 5, ...)
-      indexFilteredEvents = districtEvents.filter((event, index) => index % 2 === 1);
-    } else if (position === 'bottom4' || position === 'bottom5') {
-      // 짝수 인덱스 (0, 2, 4, ...)
-      indexFilteredEvents = districtEvents.filter((event, index) => index % 2 === 0);
-    }
-    
-    // 2단계: 인덱스 필터링된 결과에서 날짜 필터링
-    const filteredEvents = getUpcomingEvents(indexFilteredEvents);
-    
-    // 디버깅: 필터링 결과 확인
-    console.log(`[${position}] 선택된 구: ${selectedDistrict}`);
-    console.log(`[${position}] 필터링된 이벤트 개수: ${filteredEvents ? filteredEvents.length : 0}`);
-    console.log(`[${position}] 필터링된 이벤트:`, filteredEvents);
+
+    // ⭐ 3단계: 프리로드된 이미지만 있는 이벤트로 제한
+    const preloadedEvents = filteredEvents?.filter(event => 
+      PRELOADED_URLS.current.has(event.MAIN_IMG)
+    ) || [];
     
     if (filteredEvents && filteredEvents.length > 0) {
-      setEvents(filteredEvents);
-      setCurrentEvent(filteredEvents[0]);
+      setEvents(preloadedEvents);
+      setCurrentEvent(preloadedEvents[0]);
+
       setCurrentIndex(0);
     } else {
       setEvents([]);
       setCurrentEvent(null);
     }
   }, [selectedDistrict, position, allEventsData]);
+
+  // 이벤트 순환 (5초마다)
+  useEffect(() => {
+    if (!events || events.length === 0) return;
+
 
   // 이벤트 순환 (전역 타이머 사용)
   useEffect(() => {
@@ -358,7 +436,9 @@ function Event({ selectedDistrict, position }) {
     <div className="event-container">
       <div className="event-image">
         <img 
-          src={currentEvent.LOCAL_IMG || currentEvent.MAIN_IMG}  // ⭐ 로컬 우선!
+
+          src={currentEvent.MAIN_IMG}
+
           alt={currentEvent.TITLE}
           onError={handleImageError}
           style={{

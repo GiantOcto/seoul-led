@@ -6,6 +6,7 @@ import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
 
+
 const INTERVALS = [30000, 20000, 20000, 20000, 20000];
 
 export const useSectionManager = (
@@ -15,7 +16,9 @@ export const useSectionManager = (
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
+
   const [activeSections, setActiveSections] = useState([0, 1, 2, 3, 4]);
+
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -100,12 +103,14 @@ export const useSectionManager = (
       >
         <div className="background3"></div>
         {showLogo3 ? (
+
           <div className="logo-transition" style={{ width: "126px" }}>
             <Logo3/>
           </div>
         ) : (
           <div className="logo-transition" style={{ width: "126px" }}>
             <Logo4/>
+
           </div>
         )}
         <div className="air-quality">
@@ -148,12 +153,14 @@ export const useSectionManager = (
         }}
       >
         {showLogo3 ? (
+
           <div className="logo-transition" style={{ width: "126px", height: "50px" }}>
             <Logo3 />
           </div>
         ) : (
           <div className="logo-transition" style={{ width: "126px", height: "50px" }}>
             <Logo4 />
+
           </div>
         )}
         <Clock />
@@ -174,6 +181,23 @@ export const useSectionManager = (
         <Clock />
         <span style={{ color: "white" }}>NEWS</span>
       </div>,
+      <div
+        key="top6"
+        className="section-top"
+        id="top6"
+        style={{
+          display:
+            currentSection === 5 && activeSections.includes(5)
+              ? "flex"
+              : "none",
+          backgroundImage: "url('/images/test.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          width: "100%",
+          height: "100%",
+        }}
+      ></div>,
     ],
 
     middle: [
@@ -393,6 +417,8 @@ export const useSectionManager = (
     activeSections,
     setActiveSections,
     setCurrentSection,
+
+
     machineStatus,
     setMachineStatus,
   };

@@ -3,6 +3,7 @@ import DistrictSelector from "./components/DistrictSelector/DistrictSelector";
 import { useSectionManager } from "./hooks/useSectionManager";
 import { useDarkMode } from "./hooks/useDarkMode";
 import "./App.css";
+import { useVoice } from "./hooks/useVoice";
 
 function App() {
   const [waterLevel, setWaterLevel] = useState(0);
@@ -23,6 +24,8 @@ function App() {
     setCurrentSection,
   } = useSectionManager("서초구", handleWaterLevelChange, waterLevel);
 
+  useVoice(currentSection);
+  
   const { isDarkMode, setIsDarkMode } = useDarkMode();
 
   const handleDistrictChange = (district) => {
@@ -159,6 +162,7 @@ function App() {
         <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
           전체 이벤트
         </button>
+
       </div>
     </>
   );

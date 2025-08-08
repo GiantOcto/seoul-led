@@ -21,25 +21,33 @@ export function Logo2({ id }) {
   );
 }
 
+
 export function Logo3({ id }) {
+
   return (
     <div className="logo-3" id={id}>
       <img
         id="logo-gangnam"
+
         src="/images/slogans/서초구.png"
         alt="서초구 slogan"
+
       />
     </div>
   );
 }
 
+
 export function Logo4({ id }) {
+
   return (
     <div className="logo-4" id={id}>
       <img
         id="logo-gangnamCI"
+
         src="/images/서초구CI.png"
         alt="서초구 CI"
+
       />
     </div>
   );
