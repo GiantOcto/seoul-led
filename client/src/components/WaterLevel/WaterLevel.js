@@ -14,15 +14,18 @@ function WaterLevel({ onWaterLevelChange }) {
     socket.on("initial_data", (data) => {
       if (data && data.length > 0) {
         const level = data[data.length - 1].water_level;
-        setWaterLevel(level);
-        onWaterLevelChange(level);
+        const roundedLevel = parseFloat(level.toFixed(0));
+        setWaterLevel(roundedLevel);
+        onWaterLevelChange(roundedLevel/1000);
       }
     });
 
     // 실시간 데이터 수신
     socket.on("new_data", (data) => {
-      setWaterLevel(data.water_level);
-      onWaterLevelChange(data.water_level);
+      const level = data.water_level;
+      const roundedLevel = parseFloat(level.toFixed(0));
+      setWaterLevel(roundedLevel);
+      onWaterLevelChange(roundedLevel/1000);
     });
 
     return () => {
@@ -37,7 +40,7 @@ function WaterLevel({ onWaterLevelChange }) {
       <p>현재 수위</p>
       <div>
         <span>{waterLevel}</span>
-        <span>m</span>
+        <span>mm</span>
       </div>
     </div>
   );

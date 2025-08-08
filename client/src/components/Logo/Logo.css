@@ -1,17 +1,21 @@
 .logo-1 {
-    text-align: center;
+   text-align: center;
   }
 
-  #logo2-page2 {
-    position: relative;
-    top: 7px;
-  }
+.logo-1 img {
+  width: 66px;
+  height: 42px;
+}
 
-  
-  @keyframes flip-multiple {
-    0%, 80% { transform: scalex(1); }
-    85% { transform: scalex(-1); }
-    90% { transform: scalex(1); }
-    95% { transform: scalex(-1); }
-    100% { transform: scalex(1); }
-  }
+.logo-2 img {
+  text-align: center;
+}
+
+.logo-3 img {
+  text-align: center;
+
+} 
+
+.logo-4 img {
+  text-align: center;
+} 

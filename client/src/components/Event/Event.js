@@ -130,7 +130,7 @@ function Event({ selectedDistrict, position }) {
     if (!allEvents) return [];
     
     const today = new Date();
-    const twoWeeksLater = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);  // ⭐ 7 → 14
+    const twoWeeksLater = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);  // ⭐ 7 → 14
     
     return allEvents
       .filter(event => {
@@ -335,10 +335,15 @@ function Event({ selectedDistrict, position }) {
         (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 0
       );
     }
+
+    // ⭐ 3단계: 프리로드된 이미지만 있는 이벤트로 제한
+    const preloadedEvents = filteredEvents?.filter(event => 
+      PRELOADED_URLS.current.has(event.MAIN_IMG)
+    ) || [];
     
     if (filteredEvents && filteredEvents.length > 0) {
-      setEvents(filteredEvents);
-      setCurrentEvent(filteredEvents[0]);
+      setEvents(preloadedEvents);
+      setCurrentEvent(preloadedEvents[0]);
       setCurrentIndex(0);
     } else {
       setEvents([]);

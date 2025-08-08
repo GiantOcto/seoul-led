@@ -1,6 +1,6 @@
 .air-quality {
   position: relative;
-  bottom: 55px;
+  bottom: 50px;
   background-size: auto 720px;
   background-position: center;
   background-repeat: no-repeat;
@@ -13,27 +13,26 @@
 
 .air-quality-text {
   position: relative;
-  top: 80px;
+  top: 85px;
   text-align: end;
   margin-right: 10px;
 }
 
 .air-quality-text h1 {
-  font-size: 27px;
+  font-size: 17px;
   font-weight: 400;
   margin: 0;
 }
 .air-quality-text p {
   font-size: 17px;
   font-weight: 400;
-  margin: 0;
 }
 
 .pm10 {
   position: relative;
-  top: 160px;
-  left: 5px;
-  width: 10 0px;
+  top: 140px;
+  left: 15px;
+  width: 100px;
   height: 150px;
   display: flex;
   flex-direction: column;
@@ -43,9 +42,9 @@
   background-image: none;
 }
 
-.o3 {
+.pm2_5 {
   position: relative;
-  top: 210px;
+  top: 195px;
   left: 15px;
   width: 100px;
   height: 150px;
@@ -56,24 +55,33 @@
 }
 
 .pm10 span,
-.o3 span {
+.pm2_5 span {
   font-family: 'SeoulHangangEB';
   font-weight: 400;
   font-size: 22px;
   color: aliceblue;
 }
 
+.pm2_5 span {
+  font-size: 19px;
+}
+
 .grade p,
-.o3 p {
+.pm2_5 p {
   font-family: 'SeoulHangangEB';
   font-weight: 400;
-  font-size: 28px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.two-chars {
+  letter-spacing: 20px;
+  padding-left: 20px;
 }
 
 .emoji img {
   width: 75px;
   height: 75px;
-  filter: brightness(0) invert(1);
   margin: 10px 0 15px 0;
 }
 
@@ -82,7 +90,7 @@
 .dust-info,
 .ozone-info,
 .pm10,
-.o3,
+.pm2_5,
 .air-quality-text {
   background: none;
   background-image: none;

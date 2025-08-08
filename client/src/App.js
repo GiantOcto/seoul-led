@@ -2,10 +2,17 @@ import React, { useState, useEffect } from "react";
 import DistrictSelector from "./components/DistrictSelector/DistrictSelector";
 import { useSectionManager } from "./hooks/useSectionManager";
 import { useDarkMode } from "./hooks/useDarkMode";
-import WaterLevel from "./components/WaterLevel/WaterLevel";
 import "./App.css";
+import { useVoice } from "./hooks/useVoice";
 
 function App() {
+  const [waterLevel, setWaterLevel] = useState(0);
+  const [previousSections, setPreviousSections] = useState([0, 1, 2, 3, 4, 5]);
+
+  const handleWaterLevelChange = (level) => {
+    setWaterLevel(level);
+  };
+
   const {
     selectedDistrict,
     setSelectedDistrict,
@@ -13,42 +20,50 @@ function App() {
     getButtonStyle,
     sections,
     activeSections,
-  } = useSectionManager();
+    setActiveSections,
+    setCurrentSection,
+    currentSection,
+  } = useSectionManager("서초구", handleWaterLevelChange, waterLevel);
 
+  useVoice(currentSection);
+  
   const { isDarkMode, setIsDarkMode } = useDarkMode();
-
-  const [waterLevel, setWaterLevel] = useState(0);
 
   const handleDistrictChange = (district) => {
     setSelectedDistrict(district);
   };
 
-  const handleWaterLevelChange = (level) => {
-    setWaterLevel(level);
-  };
-
   useEffect(() => {
-    if (waterLevel >= 1 && !activeSections.includes(2)) {
-      toggleSection(2);  // 수위가 1 이상일 때 강제로 활성화
-    } else if (waterLevel === 0 && activeSections.includes(2)) {
-      toggleSection(2);  // 수위가 0일 때 강제로 비활성화
+    if (waterLevel >= 0.2) {
+      if (!activeSections.includes(2)) {
+        setPreviousSections([...activeSections]);
+        setActiveSections([2]);
+        setCurrentSection(2);
+      }
+    } else if (waterLevel < 0.2 && activeSections.includes(2)) {
+      if (activeSections.length === 1) {
+        setActiveSections([...previousSections]);
+        setCurrentSection(previousSections[0]);
+      } else {
+        setActiveSections(activeSections.filter(section => section !== 2));
+      }
     }
-  }, [waterLevel, activeSections, toggleSection]);
+  }, [waterLevel, activeSections]);
 
   const getWaterButtonStyle = (index) => {
     const baseStyle = getButtonStyle(index);
     if (index === 2) {
-      if (waterLevel >= 1) {
+      if (waterLevel >= 0.2) {
         return {
           ...baseStyle,
           backgroundColor: "red",
-          cursor: "pointer"  // 활성화 상태일 때 커서
+          cursor: "pointer"
         };
       } else if (waterLevel === 0) {
         return {
           ...baseStyle,
           opacity: 0.5,
-          cursor: "not-allowed"  // 비활성화 상태일 때 커서
+          cursor: "not-allowed"
         };
       }
     }
@@ -145,8 +160,13 @@ function App() {
         <button style={getWaterButtonStyle(3)} onClick={() => toggleSection(3)}>
           구 이벤트
         </button>
+        <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
+          전체 이벤트
+        </button>
+        <button style={getWaterButtonStyle(5)} onClick={() => toggleSection(5)}>
+          테스트
+        </button>
       </div>
-      <WaterLevel onWaterLevelChange={handleWaterLevelChange} />
     </>
   );
 }
