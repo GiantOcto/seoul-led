@@ -21,7 +21,7 @@ function App() {
     activeSections,
     setActiveSections,
     setCurrentSection,
-  } = useSectionManager("서초구", handleWaterLevelChange, waterLevel);
+  } = useSectionManager("중구", handleWaterLevelChange, waterLevel);
 
   const { isDarkMode, setIsDarkMode } = useDarkMode();
 

@@ -30,14 +30,14 @@ function Event({ selectedDistrict, position }) {
   
   let upcomingEvents = getUpcomingEvents(eventData);
   
-  // ⭐ 서초구만 필터링
+  // ⭐ 중구만 필터링
   let seochoEvents = upcomingEvents
-    .filter(e => e.GUNAME === '서초구')
+    .filter(e => e.GUNAME === '중구')
     .slice(0, 2);
   
-  // ⭐ 서초구 이벤트 부족시 범위 확장
+  // ⭐ 중구 이벤트 부족시 범위 확장
   if (seochoEvents.length < 2) {
-    console.log(`⚠️ 서초구 이벤트 ${seochoEvents.length}개뿐... 범위 확장!`);
+    console.log(`⚠️ 중구 이벤트 ${seochoEvents.length}개뿐... 범위 확장!`);
     
     // 한달치로 범위 확장
     const today = new Date();
@@ -47,17 +47,17 @@ function Event({ selectedDistrict, position }) {
     seochoEvents = eventData
       .filter(event => {
         const endDate = new Date(event.ENDDATE);
-        return event.GUNAME === '서초구' && endDate >= today;
+        return event.GUNAME === '중구' && endDate >= today;
       })
       .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE))
       .slice(0, 2);
     
-    console.log(`📈 확장 후: 서초구 이벤트 ${seochoEvents.length}개`);
+    console.log(`📈 확장 후: 중구 이벤트 ${seochoEvents.length}개`);
   }
   
-  // ⭐ 서초구 제외한 다른 구들
+  // ⭐ 중구 제외한 다른 구들
   const others = upcomingEvents
-    .filter(e => e.GUNAME !== '서초구')
+    .filter(e => e.GUNAME !== '중구')
     .slice(0, 2);
   
   const todayPreload = [...seochoEvents, ...others];
@@ -303,17 +303,17 @@ function Event({ selectedDistrict, position }) {
     // 1단계: 날짜별 필터링 (오늘부터 가장 가까운 행사들)
     const upcomingEvents = getUpcomingEvents(allEventsData);
     
-    // ⭐ 서초구 이벤트 부족시 범위 확장 (LED 표시용)
+    // ⭐ 중구 이벤트 부족시 범위 확장 (LED 표시용)
     let districtEvents = upcomingEvents.filter(e => e.GUNAME === selectedDistrict);
   
-    if (selectedDistrict === '서초구' && districtEvents.length < 2) {
-    console.log(`⚠️ LED용 서초구 이벤트 ${districtEvents.length}개 → 범위 확장`);
+    if (selectedDistrict === '중구' && districtEvents.length < 2) {
+    console.log(`⚠️ LED용 중구 이벤트 ${districtEvents.length}개 → 범위 확장`);
     const today = new Date();
     
     districtEvents = allEventsData
       .filter(event => {
         const endDate = new Date(event.ENDDATE);
-        return event.GUNAME === '서초구' && endDate >= today;
+        return event.GUNAME === '중구' && endDate >= today;
       })
       .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE));
     

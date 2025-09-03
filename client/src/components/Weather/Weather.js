@@ -11,7 +11,7 @@ function Weather({ onWeatherUpdate }) {
   const CACHE_KEY = 'seochoAirQuality_cache';
   const CACHE_TIME_KEY = 'seoulAirQuality_time';
 
-  // 앱 시작시 서초구 미세먼지만 호출
+  // 앱 시작시 중구 미세먼지만 호출
   useEffect(() => {
     const fetchSeochoData = async () => {
       try {
@@ -27,8 +27,8 @@ function Weather({ onWeatherUpdate }) {
           return;
         }
 
-        // ⭐ 서초구만 받는 API
-        const pollutionUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?stationName=서초구&dataTerm=daily&pageNo=1&numOfRows=1&returnType=json&ver=1.3&serviceKey=${AIR_KOREA_KEY}`;
+        // ⭐ 중구만 받는 API
+        const pollutionUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?stationName=중구&dataTerm=daily&pageNo=1&numOfRows=1&returnType=json&ver=1.3&serviceKey=${AIR_KOREA_KEY}`;
 
         const pollutionResponse = await fetch(pollutionUrl);
         const pollutionJson = await pollutionResponse.json();
