@@ -9,7 +9,7 @@ import WaterLevel from "../components/WaterLevel/WaterLevel";
 const INTERVALS = [30000, 20000, 20000, 20000, 20000];
 
 export const useSectionManager = (
-  initialDistrict = "중구",
+  initialDistrict = "송파구",
   onWaterLevelChange,
   waterLevel
 ) => {
