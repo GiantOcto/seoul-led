@@ -1,0 +1,30 @@
+/* Gothic A1 */
+@font-face {
+  font-family: 'Gothic A1';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../../fonts/gothic-a1-v17-latin-regular.woff2') format('woff2');
+}
+
+/* Noto Sans KR */
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100;
+  src: url('../../fonts/noto-sans-kr-v36-latin-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../../fonts/noto-sans-kr-v36-latin-regular.woff2') format('woff2');
+}
+
+/* Noto Serif KR */
+@font-face {
+  font-family: 'Noto Serif KR';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../../fonts/noto-serif-kr-v28-latin-regular.woff2') format('woff2');
+}
