@@ -2,16 +2,17 @@ import React, { useState, useEffect } from "react";
 import "./Weather.css";
 
 const AIR_KOREA_KEY = "hdY4oBjOnFqA%2BJyW%2Bkzoyx0iCeR8iu5iz4L2gHBvK3C%2FzN8ATC5DxGOPBBimYveDh1LXwswQxuLEGQvxeNe1eg%3D%3D";
+const SEOUL_API_KEY = "465456775772656e3532726c4a4d74";
 
 function Weather({ onWeatherUpdate }) {
   const [pollutionData, setPollutionData] = useState(null);
 
   // 캐시 관리 설정
   const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3시간
-  const CACHE_KEY = 'seochoAirQuality_cache';
-  const CACHE_TIME_KEY = 'seoulAirQuality_time';
+  const CACHE_KEY = 'songpaAirQuality_cache';
+  const CACHE_TIME_KEY = 'songpaAirQuality_time';
 
-  // 앱 시작시 중구 미세먼지만 호출
+  // 앱 시작시 송파구 미세먼지만 호출
   useEffect(() => {
     const fetchSeochoData = async () => {
       try {
@@ -27,37 +28,69 @@ function Weather({ onWeatherUpdate }) {
           return;
         }
 
-        // ⭐ 중구만 받는 API
-        const pollutionUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?stationName=중구&dataTerm=daily&pageNo=1&numOfRows=1&returnType=json&ver=1.3&serviceKey=${AIR_KOREA_KEY}`;
+        // ⭐ 1단계: 에어코리아 API 시도
+        console.log("1단계: 에어코리아 API 시도...");
+        try {
+          const airKoreaUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?stationName=송파구&dataTerm=daily&pageNo=1&numOfRows=1&returnType=json&ver=1.3&serviceKey=${AIR_KOREA_KEY}`;
+          
+          const airKoreaResponse = await fetch(airKoreaUrl);
+          const airKoreaJson = await airKoreaResponse.json();
 
-        const pollutionResponse = await fetch(pollutionUrl);
-        const pollutionJson = await pollutionResponse.json();
-
-        if (!pollutionJson?.response?.body?.items?.[0]) {
-          console.error("날씨 API 응답 오류:", pollutionJson);
-          return;
+          if (airKoreaJson?.response?.body?.items?.[0]) {
+            console.log("✅ 에어코리아 API 성공");
+            const data = airKoreaJson.response.body.items[0];
+            
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+            setPollutionData(data);
+            return;
+          }
+        } catch (e) {
+          console.log("⚠️ 에어코리아 에러:", e.message);
         }
 
-        // ⭐ 첫번째 아이템만 저장
-        const seochoData = pollutionJson.response.body.items[0];
+        // ⭐ 2단계: 서울시 API 시도
+        console.log("⚠️ 에어코리아 실패, 서울시 API 시도...");
+        const seoulUrl = `http://openAPI.seoul.go.kr:8088/${SEOUL_API_KEY}/json/RealtimeCityAir/1/25/`;
         
-        // localStorage에 저장
-        localStorage.setItem(CACHE_KEY, JSON.stringify(seochoData));
-        localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+        const seoulResponse = await fetch(seoulUrl);
+        const seoulJson = await seoulResponse.json();
+        
+        if (seoulJson?.RealtimeCityAir?.row) {
+          const songpaData = seoulJson.RealtimeCityAir.row.find(
+            item => item.MSRSTE_NM === "송파구"
+          );
+          
+          if (songpaData) {
+            console.log("✅ 서울시 API 성공");
+            // 에어코리아 형식으로 변환
+            const converted = {
+              pm10Value: songpaData.PM10,
+              pm25Value: songpaData.PM25
+            };
+            
+            localStorage.setItem(CACHE_KEY, JSON.stringify(converted));
+            localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+            setPollutionData(converted);
+            return;
+          }
+        }
 
-        setPollutionData(seochoData);
+        throw new Error("모든 API 실패");
 
       } catch (error) {
-        console.error("날씨 API 호출 실패:", error);
+        console.error("❌ 모든 API 실패, 캐시 사용:", error);
         
-        // API 실패시 기존 캐시라도 사용
+        // ⭐ 3단계: 캐시 사용
         const cachedData = localStorage.getItem(CACHE_KEY);
         if (cachedData) {
           try {
+            console.log("📦 캐시 데이터 사용");
             setPollutionData(JSON.parse(cachedData));
           } catch (e) {
-            console.error('날씨 캐시 파싱 실패:', e);
+            console.error('캐시 파싱 실패:', e);
             localStorage.removeItem(CACHE_KEY);
+            localStorage.removeItem(CACHE_TIME_KEY);
           }
         }
       }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Event from "../components/Event/Event";
+// import Event from "../components/Event/Event";
 import { Logo1, Logo2, Logo3, Logo4 } from "../components/Logo/Logo";
 import Clock from "../components/Clock/Clock";
 import Weather from "../components/Weather/Weather";
@@ -9,13 +9,13 @@ import WaterLevel from "../components/WaterLevel/WaterLevel";
 const INTERVALS = [30000, 20000, 20000, 20000, 20000];
 
 export const useSectionManager = (
-  initialDistrict = "중구",
+  initialDistrict = "송파구",
   onWaterLevelChange,
   waterLevel
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0, 1, 2, 3, 4]);
+  const [activeSections, setActiveSections] = useState([0, 1, 2]); // [0,1,2,3,4]
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -239,40 +239,40 @@ export const useSectionManager = (
       >
         <WaterLevel onWaterLevelChange={onWaterLevelChange} />
       </div>,
-      <div
-        key="middle4"
-        className="section-middle"
-        id="middle4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="middle4-event"
-          selectedDistrict={selectedDistrict}
-          position="middle4"
-        />
-      </div>,
-      <div
-        key="middle5"
-        className="section-middle"
-        id="middle5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="middle5-event"
-          selectedDistrict={selectedDistrict}
-          position="middle5"
-        />
-      </div>,
+      // <div
+      //   key="middle4"
+      //   className="section-middle"
+      //   id="middle4"
+      //   style={{
+      //     display:
+      //       currentSection === 3 && activeSections.includes(3)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <Event
+      //     key="middle4-event"
+      //     selectedDistrict={selectedDistrict}
+      //     position="middle4"
+      //   />
+      // </div>,
+      // <div
+      //   key="middle5"
+      //   className="section-middle"
+      //   id="middle5"
+      //   style={{
+      //     display:
+      //       currentSection === 4 && activeSections.includes(4)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <Event
+      //     key="middle5-event"
+      //     selectedDistrict={selectedDistrict}
+      //     position="middle5"
+      //   />
+      // </div>,
     ],
 
     bottom: [
@@ -318,40 +318,40 @@ export const useSectionManager = (
           <img src="/images/우회 화살표.png" alt="우회 화살표" />
         </div>
       </div>,
-      <div
-        key="bottom4"
-        className="section-bottom"
-        id="bottom4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="bottom4-event"
-          selectedDistrict={selectedDistrict}
-          position="bottom4"
-        />
-      </div>,
-      <div
-        key="bottom5"
-        className="section-bottom"
-        id="bottom5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="bottom5-event"
-          selectedDistrict={selectedDistrict}
-          position="bottom5"
-        />
-      </div>,
+      // <div
+      //   key="bottom4"
+      //   className="section-bottom"
+      //   id="bottom4"
+      //   style={{
+      //     display:
+      //       currentSection === 3 && activeSections.includes(3)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <Event
+      //     key="bottom4-event"
+      //     selectedDistrict={selectedDistrict}
+      //     position="bottom4"
+      //   />
+      // </div>,
+      // <div
+      //   key="bottom5"
+      //   className="section-bottom"
+      //   id="bottom5"
+      //   style={{
+      //     display:
+      //       currentSection === 4 && activeSections.includes(4)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <Event
+      //     key="bottom5-event"
+      //     selectedDistrict={selectedDistrict}
+      //     position="bottom5"
+      //   />
+      // </div>,
     ],
   };
 

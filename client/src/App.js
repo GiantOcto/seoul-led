@@ -21,7 +21,7 @@ function App() {
     activeSections,
     setActiveSections,
     setCurrentSection,
-  } = useSectionManager("중구", handleWaterLevelChange, waterLevel);
+  } = useSectionManager("송파구", handleWaterLevelChange, waterLevel);
 
   const { isDarkMode, setIsDarkMode } = useDarkMode();
 
@@ -153,12 +153,12 @@ function App() {
         <button style={getWaterButtonStyle(2)} onClick={() => toggleSection(2)}>
           수위데이터
         </button>
-        <button style={getWaterButtonStyle(3)} onClick={() => toggleSection(3)}>
+        {/* <button style={getWaterButtonStyle(3)} onClick={() => toggleSection(3)}>
           구 이벤트
         </button>
         <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
           전체 이벤트
-        </button>
+        </button> */}
       </div>
     </>
   );
