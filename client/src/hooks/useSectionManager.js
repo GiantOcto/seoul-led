@@ -15,7 +15,7 @@ export const useSectionManager = (
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0, 1, 2]); // [0,1,2,3,4]
+  const [activeSections, setActiveSections] = useState([0,2]); // [0,1,2,3,4]
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -68,6 +68,7 @@ export const useSectionManager = (
         {showLogo1 ? <Logo1 /> : <Logo2 />}
       </div>,
 
+      /*
       <div
         key="top2"
         className="section-top"
@@ -121,6 +122,8 @@ export const useSectionManager = (
           <Stink id="stink-data-page2" onStatusChange={setMachineStatus} />
         </div>
       </div>,
+      */
+      ,
 
       <div
         key="top3"
@@ -215,6 +218,7 @@ export const useSectionManager = (
           style={{ width: "100%", height: "100%", marginTop: "25%" }}
         />
       </div>,
+      /*
       <div
         key="middle2"
         className="section-middle"
@@ -226,6 +230,8 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
+      */
+      ,
       <div
         key="middle3"
         className="section-middle"
@@ -287,6 +293,7 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
+      /*
       <div
         key="bottom2"
         className="section-bottom"
@@ -298,6 +305,8 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
+      */
+      ,
       <div
         key="bottom3"
         className="section-bottom"

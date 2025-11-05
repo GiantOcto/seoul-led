@@ -147,9 +147,11 @@ function App() {
         <button style={getWaterButtonStyle(0)} onClick={() => toggleSection(0)}>
           문구
         </button>
+        {/*
         <button style={getWaterButtonStyle(1)} onClick={() => toggleSection(1)}>
           미세먼지 및 오존
         </button>
+        */}
         <button style={getWaterButtonStyle(2)} onClick={() => toggleSection(2)}>
           수위데이터
         </button>
