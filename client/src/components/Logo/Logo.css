@@ -19,7 +19,6 @@
 .logo-4 img {
   text-align: center;
   position: relative;
-  top: 12%;
   left: 50%;
   transform: translateX(-50%);
 } 

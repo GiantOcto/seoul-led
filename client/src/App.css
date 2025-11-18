@@ -133,7 +133,6 @@ span {
 
 #top1 .logo-4 {
   position: relative;
-  height: 42px;
   margin-top: 8px;
 }
 
@@ -212,14 +211,14 @@ span {
 
 #top2 .logo-4 {
   position: relative;
-  width: 128px;
+  width: 126px;
   height: 42px;
   margin: 8px 0 8px;
 }
 
 #top2 .logo-3 {
   position: relative;
-  width: 128px;
+  width: 126px;
   height: 42px;
   margin: 8px 0 8px;
 }

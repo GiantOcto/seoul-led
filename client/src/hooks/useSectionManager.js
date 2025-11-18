@@ -230,9 +230,9 @@ export const useSectionManager = (
         </div>
 
         <img
-          src="/images/홍보문구_송파구.png"
+          src="/images/홍보문구.png"
           alt="middle1"
-          style={{ width: "78%", height: "100%", marginTop: "85%" }}
+          style={{ width: "80%", height: "100%", marginTop: "30%" }}
         />
       </div>,
       
