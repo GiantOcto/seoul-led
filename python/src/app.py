@@ -15,6 +15,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import gc
 from log_manager import LogManager
+import configparser
 
 class ServerThread(QThread):
     """웹소켓 서버 연결을 관리하는 스레드
@@ -194,6 +195,8 @@ class SerialGUI(QMainWindow):
         self.serial_thread = None
         self.server_thread = None
         self.filename = None
+        self.config_file = 'serial_config.ini'
+        self.load_config()
         self.threads = [] # 스레드 관리를 위한 리스트 추가
         
         # 서버 연결 초기화
@@ -204,7 +207,18 @@ class SerialGUI(QMainWindow):
         
         self.init_ui()
         self.update_ports()
-    
+
+        # 저장된 포트 또는 COM4 자동 연결
+        saved_port = 'COM4'  # 기본값
+        if self.config.has_section('Serial') and self.config.has_option('Serial', 'port'):
+            saved_port = self.config.get('Serial', 'port')
+
+        for i in range(self.port_cb.count()):
+            if saved_port in self.port_cb.itemText(i):
+                self.port_cb.setCurrentIndex(i)
+                QTimer.singleShot(500, self.connect)
+                break
+            
         
     def init_ui(self):
         central_widget = QWidget()
@@ -435,6 +449,20 @@ class SerialGUI(QMainWindow):
                  index = self.port_cb.count() - 1
                  self.port_cb.setItemData(index, Qt.lightGray, Qt.ForegroundRole)
     
+    def load_config(self):
+        """설정 파일에서 마지막 사용한 포트 로드"""
+        self.config = configparser.ConfigParser()
+        if os.path.exists(self.config_file):
+            self.config.read(self.config_file)
+
+    def save_config(self, port):
+        """현재 포트를 설정 파일에 저장"""
+        if not self.config.has_section('Serial'):
+            self.config.add_section('Serial')
+        self.config.set('Serial', 'port', port)
+        with open(self.config_file, 'w') as f:
+            self.config.write(f)    
+
     def start_thread(self, thread):
         self.threads.append(thread)
         thread.finished.connect(lambda: self.thread_finished(thread))
@@ -509,6 +537,7 @@ class SerialGUI(QMainWindow):
             self.connect_btn.setText('해제')
             status = f"연결됨: {port} @ {baudrate} baud"
             self.statusBar().showMessage(status)
+            self.save_config(port)
             
             if self.save_cb.isChecked():
                 self.filename = f"serial_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"

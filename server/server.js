@@ -93,7 +93,7 @@ function isValidSerialData(data) {
         }
 
         if (!Number.isInteger(data.water_level) || 
-            data.water_level < 0 ||
+            data.water_level < -100 ||
             data.water_level > 9999) {
             return false;
         }

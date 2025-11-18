@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['app.py'],
+    ['src\\app.py'],
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=['PyQt5', 'pyserial'],
+    hiddenimports=['PyQt5', 'serial.tools.list_ports', 'pyserial', 'requests', 'pyautogui', 'pynput', 'mouseinfo', 'socketio', 'engineio'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

@@ -1,4 +1,4 @@
-/* 
+
 import React, { useState, useEffect } from "react";
 import "./Weather.css";
 
@@ -201,4 +201,3 @@ function Weather({ onWeatherUpdate }) {
 }
 
 export default Weather;
-*/

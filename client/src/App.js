@@ -6,7 +6,7 @@ import "./App.css";
 
 function App() {
   const [waterLevel, setWaterLevel] = useState(0);
-  const [previousSections, setPreviousSections] = useState([0, 1, 2, 3, 4, 5]);
+  const [previousSections, setPreviousSections] = useState([0, 1]);
 
   const handleWaterLevelChange = (level) => {
     setWaterLevel(level);
@@ -30,13 +30,13 @@ function App() {
   };
 
   useEffect(() => {
-    if (waterLevel >= 0.2) {
+    if (waterLevel > 0.25) {
       if (!activeSections.includes(2)) {
         setPreviousSections([...activeSections]);
         setActiveSections([2]);
         setCurrentSection(2);
       }
-    } else if (waterLevel < 0.2 && activeSections.includes(2)) {
+    } else if (waterLevel <= 0.25 && activeSections.includes(2)) {
       if (activeSections.length === 1) {
         setActiveSections([...previousSections]);
         setCurrentSection(previousSections[0]);
@@ -44,7 +44,7 @@ function App() {
         setActiveSections(activeSections.filter(section => section !== 2));
       }
     }
-  }, [waterLevel, activeSections]);
+  }, [waterLevel]);
 
   const getWaterButtonStyle = (index) => {
     const baseStyle = getButtonStyle(index);
@@ -147,11 +147,11 @@ function App() {
         <button style={getWaterButtonStyle(0)} onClick={() => toggleSection(0)}>
           문구
         </button>
-        {/*
+        {
         <button style={getWaterButtonStyle(1)} onClick={() => toggleSection(1)}>
           미세먼지 및 오존
         </button>
-        */}
+        }
         <button style={getWaterButtonStyle(2)} onClick={() => toggleSection(2)}>
           수위데이터
         </button>

@@ -15,7 +15,7 @@ export const useSectionManager = (
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0,2]); // [0,1,2,3,4]
+  const [activeSections, setActiveSections] = useState([0,1]); // [0,1,2,3,4]
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -65,10 +65,18 @@ export const useSectionManager = (
               : "none",
         }}
       >
-        {showLogo1 ? <Logo1 /> : <Logo2 />}
+        {showLogo3 ? (
+          <div className="logo-transition" style={{ width: "126px" }}>
+            <Logo3/>
+          </div>
+        ) : (
+          <div className="logo-transition" style={{ width: "126px" }}>
+            <Logo4/>
+          </div>
+        )}
       </div>,
 
-      /*
+      
       <div
         key="top2"
         className="section-top"
@@ -122,8 +130,8 @@ export const useSectionManager = (
           <Stink id="stink-data-page2" onStatusChange={setMachineStatus} />
         </div>
       </div>,
-      */
-      ,
+      
+      
 
       <div
         key="top3"
@@ -136,9 +144,18 @@ export const useSectionManager = (
               : "none",
         }}
       >
-        <Logo2 />
+        {showLogo3 ? (
+          <div className="logo-transition" style={{ width: "126px" }}>
+            <Logo3/>
+          </div>
+        ) : (
+          <div className="logo-transition" style={{ width: "126px" }}>
+            <Logo4/>
+          </div>
+        )}
         <Clock />
       </div>,
+
       <div
         key="top4"
         className="section-top"
@@ -213,12 +230,12 @@ export const useSectionManager = (
         </div>
 
         <img
-          src="/images/홍보문구.png"
+          src="/images/홍보문구_송파구.png"
           alt="middle1"
-          style={{ width: "100%", height: "100%", marginTop: "25%" }}
+          style={{ width: "78%", height: "100%", marginTop: "85%" }}
         />
       </div>,
-      /*
+      
       <div
         key="middle2"
         className="section-middle"
@@ -230,8 +247,8 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
-      */
-      ,
+      
+      
       <div
         key="middle3"
         className="section-middle"
@@ -306,7 +323,7 @@ export const useSectionManager = (
         }}
       ></div>,
       */
-      ,
+      
       <div
         key="bottom3"
         className="section-bottom"
@@ -365,7 +382,7 @@ export const useSectionManager = (
   };
 
   const toggleSection = (index) => {
-    if (index === 2 && waterLevel < 2) {
+    if (index === 2 && waterLevel <= 0.25) {
       return;
     }
 
