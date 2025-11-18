@@ -232,9 +232,13 @@ span {
   color: aliceblue;
 }
 
-#top3 .logo-2 {
-  width: 126px;
-  height: 50px;
+#top3 .logo-3 {
+  position: relative;
+  margin-top: 8px;
+}
+
+#top3 .logo-4 {
+  position: relative;
   top: 8px;
 }
 

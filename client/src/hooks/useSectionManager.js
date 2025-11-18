@@ -147,7 +147,21 @@ export const useSectionManager = (
               : "none",
         }}
       >
-        <Logo2 />
+         {showLogo3 ? (
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "50px" }}
+          >
+            <Logo3 />
+          </div>
+        ) : (
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "50px" }}
+          >
+            <Logo4 />
+          </div>
+        )}
         <Clock />
       </div>,
       <div
