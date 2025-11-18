@@ -11,10 +11,22 @@
   text-align: center;
 }
 
+.logo-3 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .logo-3 img {
-  text-align: center;
+  width: 110px;
 } 
 
+.logo-4 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .logo-4 img {
-  text-align: center;
+  width: 100px;
 } 
