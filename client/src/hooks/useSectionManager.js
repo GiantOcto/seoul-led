@@ -59,15 +59,27 @@ export const useSectionManager = (
         className="section-top"
         id="top1"
         style={{
-          width: "128px",
-          height: "50px",
           display:
             currentSection === 0 && activeSections.includes(0)
               ? "flex"
               : "none",
         }}
       >
-        {showLogo1 ? <Logo3 /> : <Logo4 />}
+       {showLogo3 ? (
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "50px" }}
+          >
+            <Logo3 />
+          </div>
+        ) : (
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "50px" }}
+          >
+            <Logo4 />
+          </div>
+        )}
       </div>,
 
       <div
