@@ -30,37 +30,8 @@ function Event({ selectedDistrict, position }) {
   
   let upcomingEvents = getUpcomingEvents(eventData);
   
-  // ⭐ 서초구만 필터링
-  let seochoEvents = upcomingEvents
-    .filter(e => e.GUNAME === '서초구')
-    .slice(0, 2);
-  
-  // ⭐ 서초구 이벤트 부족시 범위 확장
-  if (seochoEvents.length < 2) {
-    console.log(`⚠️ 서초구 이벤트 ${seochoEvents.length}개뿐... 범위 확장!`);
-    
-    // 한달치로 범위 확장
-    const today = new Date();
-    const oneMonthLater = new Date();
-    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
-    
-    seochoEvents = eventData
-      .filter(event => {
-        const endDate = new Date(event.ENDDATE);
-        return event.GUNAME === '서초구' && endDate >= today;
-      })
-      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE))
-      .slice(0, 2);
-    
-    console.log(`📈 확장 후: 서초구 이벤트 ${seochoEvents.length}개`);
-  }
-  
-  // ⭐ 서초구 제외한 다른 구들
-  const others = upcomingEvents
-    .filter(e => e.GUNAME !== '서초구')
-    .slice(0, 2);
-  
-  const todayPreload = [...seochoEvents, ...others];
+  // 처음 4개만 프리로드
+  const todayPreload = upcomingEvents.slice(0, 4);
     
       todayPreload.forEach(event => {
       if (event && event.MAIN_IMG) {
@@ -125,23 +96,10 @@ function Event({ selectedDistrict, position }) {
     }
   };
 
-  // 오늘부터 가장 가까운 행사들 필터링
+  // 모든 이벤트 반환 (날짜 필터링 없음)
   const getUpcomingEvents = (allEvents) => {
     if (!allEvents) return [];
-    
-    const today = new Date();
-    const twoWeeksLater = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);  // ⭐ 7 → 14
-    
-    return allEvents
-      .filter(event => {
-        const startDate = new Date(event.STRTDATE);
-        const endDate = new Date(event.ENDDATE);
-        
-        // 진행 중이거나 2주 내 시작하는 행사  // ⭐ 주석도 수정
-        return (today >= startDate && today <= endDate) || 
-              (startDate >= today && startDate <= twoWeeksLater);  // ⭐ oneWeekLater → twoWeeksLater
-      })
-      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE));
+    return allEvents;
   };
 
   // 앱 시작시 한 번만 전체 데이터 호출 (매달 1일에만 API 호출)
@@ -189,31 +147,70 @@ function Event({ selectedDistrict, position }) {
         const formattedDate = startOfMonth.toLocaleDateString('en-CA');
         
         const response = await fetch(
-          `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/1000///${formattedDate}`
+          `https://openapi.gg.go.kr/GGCULTUREVENTSTUS?KEY=6b0a9955cc084709b11feb3ba41b8988&pIndex=1&pSize=100`
         );
         
-        const data = await response.json();
+        const xmlText = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
         
-        if (!data?.culturalEventInfo?.row) {
-          console.error("API 응답 데이터 형식이 올바르지 않습니다:", data);
+        // 모든 row 요소 가져오기
+        const rows = xmlDoc.querySelectorAll('row');
+        const allEvents = Array.from(rows).map(row => {
+          const getText = (tagName) => {
+            const element = row.querySelector(tagName);
+            return element ? element.textContent : '';
+          };
+          
+          return {
+            TITLE: getText('TITLE'),
+            HOST_INST_NM: getText('HOST_INST_NM'),
+            CATEGORY_NM: getText('CATEGORY_NM'),
+            URL: getText('URL'),
+            EVENT_TM_INFO: getText('EVENT_TM_INFO'),
+            PARTCPT_EXPN_INFO: getText('PARTCPT_EXPN_INFO'),
+            TELNO_INFO: getText('TELNO_INFO'),
+            HMPG_URL: getText('HMPG_URL'),
+            IMAGE_URL: getText('IMAGE_URL'),
+            BEGIN_DE: getText('BEGIN_DE'),
+            END_DE: getText('END_DE'),
+            WRITNG_DE: getText('WRITNG_DE'),
+            // 기존 필드명 호환성 유지
+            MAIN_IMG: getText('IMAGE_URL'),
+            DATE: `${getText('BEGIN_DE')}~${getText('END_DE')}`,
+            STRTDATE: getText('BEGIN_DE'),
+            ENDDATE: getText('END_DE'),
+            GUNAME: getText('HOST_INST_NM').includes('성남') ? '성남시' : ''
+          };
+        });
+        
+        // ⭐ "성남"이 포함된 데이터만 필터링 (TITLE 또는 HOST_INST_NM에 포함)
+        const seongnamEvents = allEvents.filter(event => 
+          event.TITLE.includes('성남') || event.HOST_INST_NM.includes('성남')
+        );
+        
+        console.log(`✅ 전체 ${allEvents.length}개 중 성남 관련 ${seongnamEvents.length}개 필터링됨`);
+        
+        if (seongnamEvents.length === 0) {
+          console.warn("성남 관련 이벤트가 없습니다.");
           return;
         }
 
         // localStorage 용량 체크 후 저장
         try {
-          const dataToStore = JSON.stringify(data.culturalEventInfo.row);
+          const dataToStore = JSON.stringify(seongnamEvents);
           const sizeInMB = dataToStore.length / (1024 * 1024);
           
           console.log(`📦 저장할 데이터 크기: ${sizeInMB.toFixed(2)}MB`);
           
           if (sizeInMB > 4) { // 4MB 넘으면 위험
             console.warn("⚠️ 데이터 너무 큼, 500개만 저장");
-            const reduced = data.culturalEventInfo.row.slice(0, 500);
+            const reduced = seongnamEvents.slice(0, 500);
             localStorage.setItem(CACHE_KEY, JSON.stringify(reduced));
             setAllEventsData(reduced);
           } else {
             localStorage.setItem(CACHE_KEY, dataToStore);
-            setAllEventsData(data.culturalEventInfo.row);
+            setAllEventsData(seongnamEvents);
           }
           
           localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
@@ -226,17 +223,17 @@ function Event({ selectedDistrict, position }) {
             localStorage.removeItem('seoulAirQuality_time');
             // 재시도
             try {
-              localStorage.setItem(CACHE_KEY, JSON.stringify(data.culturalEventInfo.row));
-              setAllEventsData(data.culturalEventInfo.row);
+              localStorage.setItem(CACHE_KEY, JSON.stringify(seongnamEvents));
+              setAllEventsData(seongnamEvents);
             } catch (e2) {
               console.error('그래도 안됨, 포기');
-              setAllEventsData(data.culturalEventInfo.row);
+              setAllEventsData(seongnamEvents);
             }
           }
         }
 
         // 이미지 프리로딩 (백그라운드에서 조용히 실행)
-        // preloadImages(data.culturalEventInfo.row);
+        // preloadImages(seongnamEvents);
         
       } catch (error) {
         console.error("문화행사 API 호출 실패:", error);
@@ -300,25 +297,11 @@ function Event({ selectedDistrict, position }) {
       return;
     }
 
-    // 1단계: 날짜별 필터링 (오늘부터 가장 가까운 행사들)
+    // 모든 이벤트 가져오기
     const upcomingEvents = getUpcomingEvents(allEventsData);
     
-    // ⭐ 서초구 이벤트 부족시 범위 확장 (LED 표시용)
+    // 지역별 필터링
     let districtEvents = upcomingEvents.filter(e => e.GUNAME === selectedDistrict);
-  
-    if (selectedDistrict === '서초구' && districtEvents.length < 2) {
-    console.log(`⚠️ LED용 서초구 이벤트 ${districtEvents.length}개 → 범위 확장`);
-    const today = new Date();
-    
-    districtEvents = allEventsData
-      .filter(event => {
-        const endDate = new Date(event.ENDDATE);
-        return event.GUNAME === '서초구' && endDate >= today;
-      })
-      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE));
-    
-    console.log(`📈 확장 완료: ${districtEvents.length}개 찾음`);
-  }
     // 2단계: position별 필터링
     let filteredEvents;
     

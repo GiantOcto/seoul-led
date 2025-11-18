@@ -15,7 +15,7 @@ export const useSectionManager = (
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0, 1, 2, 3, 4]);
+  const [activeSections, setActiveSections] = useState([0, 1, 3]); // 2, 4 주석처리
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -136,20 +136,20 @@ export const useSectionManager = (
         </div>
       </div>,
 
-      <div
-        key="top3"
-        className="section-top"
-        id="top3"
-        style={{
-          display:
-            currentSection === 2 && activeSections.includes(2)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Logo2 />
-        <Clock />
-      </div>,
+      // <div
+      //   key="top3"
+      //   className="section-top"
+      //   id="top3"
+      //   style={{
+      //     display:
+      //       currentSection === 2 && activeSections.includes(2)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <Logo2 />
+      //   <Clock />
+      // </div>,
       <div
         key="top4"
         className="section-top"
@@ -179,35 +179,35 @@ export const useSectionManager = (
         <Clock />
         <span style={{ color: "white" }}>문화행사</span>
       </div>,
-      <div
-        key="top5"
-        className="section-top"
-        id="top5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        {showLogo1 ? (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
-          >
-            <Logo3 />
-          </div>
-        ) : (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
-          >
-            <Logo4 />
-          </div>
-        )}
-          <Clock />
-        <span style={{ color: "white" }}>문화행사</span>
-      </div>,
+      // <div
+      //   key="top5"
+      //   className="section-top"
+      //   id="top5"
+      //   style={{
+      //     display:
+      //       currentSection === 4 && activeSections.includes(4)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   {showLogo1 ? (
+      //     <div
+      //       className="logo-transition"
+      //       style={{ width: "126px", height: "50px" }}
+      //     >
+      //       <Logo3 />
+      //     </div>
+      //   ) : (
+      //     <div
+      //       className="logo-transition"
+      //       style={{ width: "126px", height: "50px" }}
+      //     >
+      //       <Logo4 />
+      //     </div>
+      //   )}
+      //     <Clock />
+      //   <span style={{ color: "white" }}>문화행사</span>
+      // </div>,
     ],
 
     middle: [
@@ -260,19 +260,19 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
-      <div
-        key="middle3"
-        className="section-middle"
-        id="middle3"
-        style={{
-          display:
-            currentSection === 2 && activeSections.includes(2)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <WaterLevel onWaterLevelChange={onWaterLevelChange} />
-      </div>,
+      // <div
+      //   key="middle3"
+      //   className="section-middle"
+      //   id="middle3"
+      //   style={{
+      //     display:
+      //       currentSection === 2 && activeSections.includes(2)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <WaterLevel onWaterLevelChange={onWaterLevelChange} />
+      // </div>,
       <div
         key="middle4"
         className="section-middle"
@@ -290,23 +290,23 @@ export const useSectionManager = (
           position="middle4"
         />
       </div>,
-      <div
-        key="middle5"
-        className="section-middle"
-        id="middle5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="middle5-event"
-          selectedDistrict={selectedDistrict}
-          position="middle5"
-        />
-      </div>,
+      // <div
+      //   key="middle5"
+      //   className="section-middle"
+      //   id="middle5"
+      //   style={{
+      //     display:
+      //       currentSection === 4 && activeSections.includes(4)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <Event
+      //     key="middle5-event"
+      //     selectedDistrict={selectedDistrict}
+      //     position="middle5"
+      //   />
+      // </div>,
     ],
 
     bottom: [
@@ -332,26 +332,26 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
-      <div
-        key="bottom3"
-        className="section-bottom"
-        id="bottom3"
-        style={{
-          display:
-            currentSection === 2 && activeSections.includes(2)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <div className="water-level-warning">
-          <p>
-            다른 도로로
-            <br />
-            우회하세요
-          </p>
-          <img src="/images/우회 화살표.png" alt="우회 화살표" />
-        </div>
-      </div>,
+      // <div
+      //   key="bottom3"
+      //   className="section-bottom"
+      //   id="bottom3"
+      //   style={{
+      //     display:
+      //       currentSection === 2 && activeSections.includes(2)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <div className="water-level-warning">
+      //     <p>
+      //       다른 도로로
+      //       <br />
+      //       우회하세요
+      //     </p>
+      //     <img src="/images/우회 화살표.png" alt="우회 화살표" />
+      //   </div>
+      // </div>,
       <div
         key="bottom4"
         className="section-bottom"
@@ -369,23 +369,23 @@ export const useSectionManager = (
           position="bottom4"
         />
       </div>,
-      <div
-        key="bottom5"
-        className="section-bottom"
-        id="bottom5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="bottom5-event"
-          selectedDistrict={selectedDistrict}
-          position="bottom5"
-        />
-      </div>,
+      // <div
+      //   key="bottom5"
+      //   className="section-bottom"
+      //   id="bottom5"
+      //   style={{
+      //     display:
+      //       currentSection === 4 && activeSections.includes(4)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <Event
+      //     key="bottom5-event"
+      //     selectedDistrict={selectedDistrict}
+      //     position="bottom5"
+      //   />
+      // </div>,
     ],
   };
 

@@ -21,7 +21,7 @@ function App() {
     activeSections,
     setActiveSections,
     setCurrentSection,
-  } = useSectionManager("서초구", handleWaterLevelChange, waterLevel);
+  } = useSectionManager("성남시", handleWaterLevelChange, waterLevel);
 
   const { isDarkMode, setIsDarkMode } = useDarkMode();
 
@@ -150,15 +150,15 @@ function App() {
         <button style={getWaterButtonStyle(1)} onClick={() => toggleSection(1)}>
           미세먼지 및 오존
         </button>
-        <button style={getWaterButtonStyle(2)} onClick={() => toggleSection(2)}>
+        {/* <button style={getWaterButtonStyle(2)} onClick={() => toggleSection(2)}>
           수위데이터
-        </button>
+        </button> */}
         <button style={getWaterButtonStyle(3)} onClick={() => toggleSection(3)}>
-          구 이벤트
+          이벤트
         </button>
-        <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
+        {/* <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
           전체 이벤트
-        </button>
+        </button> */}
       </div>
     </>
   );
