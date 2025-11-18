@@ -292,7 +292,8 @@ span {
 #top4 span {
   font-size: 20px;
   font-family: "SeoulHangangEB";
-  margin: 20px 0 10px;
+  font-weight: 100;
+  margin: 30px 0 0px;
 }
 
 #bottom4 {
@@ -313,25 +314,29 @@ span {
   color: aliceblue;
 }
 
-#top5 .logo-1 {
+#top5 .logo-3 {
   width: 128px;
   height: 50px;
 }
 
-#top5 .logo-1 img {
+#top5 .logo-3 img {
   margin-top: 8px;
 }
 
-#top5 .logo-2 {
-  width: 126px;
+#top5 .logo-4 {
+  width: 128px;
   height: 50px;
-  top: 8px;
+}
+
+#top5 .logo-4 img {
+  margin-top: 8px;
 }
 
 #top5 span {
   font-size: 20px;
   font-family: "SeoulHangangEB";
-  margin: 20px 0 5px;
+  font-weight: 100;
+  margin: 30px 0 0px;
 }
 
 #middle5 {

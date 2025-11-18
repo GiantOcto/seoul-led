@@ -59,13 +59,15 @@ export const useSectionManager = (
         className="section-top"
         id="top1"
         style={{
+          width: "128px",
+          height: "50px",
           display:
             currentSection === 0 && activeSections.includes(0)
               ? "flex"
               : "none",
         }}
       >
-        {showLogo1 ? <Logo1 /> : <Logo2 />}
+        {showLogo1 ? <Logo3 /> : <Logo4 />}
       </div>,
 
       <div
@@ -101,11 +103,11 @@ export const useSectionManager = (
         <div className="background3"></div>
         {showLogo3 ? (
           <div className="logo-transition" style={{ width: "126px" }}>
-            <Logo3/>
+            <Logo3 />
           </div>
         ) : (
           <div className="logo-transition" style={{ width: "126px" }}>
-            <Logo4/>
+            <Logo4 />
           </div>
         )}
         <div className="air-quality">
@@ -148,16 +150,22 @@ export const useSectionManager = (
         }}
       >
         {showLogo3 ? (
-          <div className="logo-transition" style={{ width: "126px", height: "50px" }}>
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "50px" }}
+          >
             <Logo3 />
           </div>
         ) : (
-          <div className="logo-transition" style={{ width: "126px", height: "50px" }}>
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "50px" }}
+          >
             <Logo4 />
           </div>
         )}
         <Clock />
-        <span style={{ color: "white" }}>NEWS</span>
+        <span style={{ color: "white" }}>문화행사</span>
       </div>,
       <div
         key="top5"
@@ -170,9 +178,23 @@ export const useSectionManager = (
               : "none",
         }}
       >
-        {showLogo1 ? <Logo1 /> : <Logo2 />}
-        <Clock />
-        <span style={{ color: "white" }}>NEWS</span>
+        {showLogo1 ? (
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "50px" }}
+          >
+            <Logo3 />
+          </div>
+        ) : (
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "50px" }}
+          >
+            <Logo4 />
+          </div>
+        )}
+          <Clock />
+        <span style={{ color: "white" }}>문화행사</span>
       </div>,
     ],
 
@@ -199,7 +221,7 @@ export const useSectionManager = (
             display: "inline-block",
             justifyContent: "center",
             alignItems: "center",
-            color: "#E9BC35", 
+            color: "#E9BC35",
             zIndex: "1000",
             fontFamily: "SeoulHangangEB",
             fontSize: "14px",
@@ -212,7 +234,7 @@ export const useSectionManager = (
         <img
           src="/images/홍보문구.png"
           alt="middle1"
-          style={{ width: "100%", height: "100%", marginTop: "25%" }}
+          style={{ width: "85%", height: "100%", marginTop: "30%" }}
         />
       </div>,
       <div
