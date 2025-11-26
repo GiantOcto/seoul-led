@@ -96,83 +96,68 @@ class SerialThread(QThread):
         self.serial = serial_port
         self.running = True
 
+        # 추가: 센서 명령어
+        self.command = bytes([0xFF, 0x01, 0x87, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78])
+        self.last_send_time = 0
+
     def run(self):
         while self.running and self.serial.is_open:
             try:
-                if self.serial.in_waiting:
-                    data = self.serial.readline()  # 한 줄 읽기
-                    try:
-                        # ASCII로 디코딩
-                        decoded_data = data.decode('ascii').strip()
-                        
-                        # 데이터 파싱
-                        parsed_data = self.parse_serial_data(decoded_data)
-                        
-                        # 현재 시간
-                        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-
-                        # 로그 메시지 생성
-                        output = f"[{timestamp}] 수신: {decoded_data}\n"
-                        output += f"  수위: {parsed_data['water_level']}mm, "
-                        output += f"기계 상태: {'작동중' if parsed_data['machine_status'] == 1 else '멈춤'}"
+                # 1초마다 명령 전송
+                current_time = time.time()
+                if current_time - self.last_send_time >= 1.0:
+                    self.serial.write(self.command)
+                    self.last_send_time = current_time
                 
-                        self.data_received.emit(output)
-
-                    except UnicodeDecodeError as e:
-                        # ASCII 디코딩 실패 시
-                        hex_data = ' '.join([f"{byte:02X}" for byte in data])
+                # 13바이트 수신 대기
+                if self.serial.in_waiting >= 13:
+                    data = self.serial.read(13)
+                    parsed = self.parse_h2s_data(data)
+                    
+                    if parsed:
                         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-                        output = f"[{timestamp}] 잘못된 데이터 형식 (HEX): {hex_data}"
+                        output = f"[{timestamp}] H2S: {parsed['concentration']} ppm, "
+                        output += f"온도: {parsed['temperature']}°C, 습도: {parsed['humidity']}%"
                         self.data_received.emit(output)
-
+                        
             except serial.SerialException as e:
                 self.error_occurred.emit(str(e))
                 break
 
-    def parse_serial_data(self, data_string):
-
-        """시리얼 데이터 문자열을 파싱하여 수위와 기계 상태를 추출
-    
+    def parse_h2s_data(self, data):
+        """황화수소 센서 데이터 파싱
+        
         Args:
-             data_string (str): 파싱할 데이터 문자열 (예: "WL:0123,MS:1")
-          
+            data (bytes): 13바이트 센서 응답 데이터
+            
         Returns:
-             dict: 파싱된 데이터를 담은 딕셔너리
+            dict: 파싱된 데이터 또는 None
             {
-                'water_level': int,  # 수위값 (mm)
-                'machine_status': int  # 기계 상태 (1=작동중, 0=멈춤)
+                'concentration': float,  # 농도 (ppm)
+                'temperature': float,    # 온도 (°C)
+                'humidity': float        # 습도 (%)
             }
         """
+        if len(data) != 13 or data[0] != 0xFF or data[1] != 0x87:
+            return None
         
-        try:
-            # ASCII 데이터 예시: "WL:0123,MS:1"
-            # WL = Water Level (수위)
-            # MS = Machine Status (1=작동중, 0=멈춤)
-            parts = data_string.strip().split(',')  # 쉼표로 구분
-            
-            # 첫 4바이트는 수위 데이터 파싱
-            water_level_str = parts[0]
-            if len(water_level_str) != 4:
-                raise ValueError("수위 데이터는 4자리여야 합니다")
-            water_level = int(water_level_str)
-            
-            # 마지막 1바이트는 기계 상태 파싱
-            machine_status_str = parts[1]
-            if machine_status_str not in ['0', '1']:
-                raise ValueError("기계 상태는 0 또는 1이어야 합니다")
-            machine_status = int(machine_status_str)
-
-
-            return {
-                'water_level': water_level,
-                'machine_status': machine_status
-            }
-        except Exception as e:
-            print(f"데이터 파싱 오류: {e}")
-            return {
-                'water_level': -1, # 에러 시 기본값
-                'machine_status': 0
-            }
+        # 농도 (바이트 6-7)
+        concentration = data[6] * 256 + data[7]
+        
+        # 온도 (바이트 8-9, signed)
+        temp_raw = data[8] * 256 + data[9]
+        if temp_raw >= 32768:
+            temp_raw -= 65536
+        temperature = temp_raw / 100.0
+        
+        # 습도 (바이트 10-11)
+        humidity = (data[10] * 256 + data[11]) / 100.0
+        
+        return {
+            'concentration': concentration,
+            'temperature': temperature,
+            'humidity': humidity
+        }
 
     def stop(self):
         self.running = False
@@ -583,22 +568,22 @@ class SerialGUI(QMainWindow):
 
         self.log_text.append(output)
         
-        # 서버로 데이터 전송
+       # 서버로 데이터 전송
         if self.server_thread and self.server_thread.sio.connected:
             try:
-                # 출력에서 파싱된 데이터 추출
-                timestamp = output[1:24]  # [YYYY-MM-DD HH:MM:SS.mmm] 형식
-                water_level = int(output.split("수위: ")[1].split("mm")[0])
-                machine_status = "작동중" in output
-                ascii_values = output.split("ASCII: ")[1].split("\n")[0] if "ASCII: " in output else ""
-                
-                data = {
-                    'timestamp': datetime.now().isoformat(),
-                    'water_level': water_level,
-                    'machine_status': machine_status,
-                    'ascii_data': ascii_values,
-                    'raw_data': output
-                }
+                # H2S 데이터 파싱
+                if "H2S:" in output:
+                    conc = float(output.split("H2S: ")[1].split(" ppm")[0])
+                    temp = float(output.split("온도: ")[1].split("°C")[0])
+                    hum = float(output.split("습도: ")[1].split("%")[0])
+                    
+                    data = {
+                        'timestamp': datetime.now().isoformat(),
+                        'concentration': conc,
+                        'temperature': temp,
+                        'humidity': hum,
+                        'raw_data': output
+                    }
                 self.server_thread.send_data(data)
                 print(f"서버로 전송된 데이터: {data}")  # 전송 확인용 로그
 
