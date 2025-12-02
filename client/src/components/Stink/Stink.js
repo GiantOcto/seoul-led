@@ -1,11 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import lottie from "lottie-web";
-import io from "socket.io-client";
+import { getSensorData } from "../../services/relayApi";
 import "./Stink.css";
-
-const socket = io("http://localhost:8000", {
-  transports: ["websocket"],
-});
 
 function StinkGood() {
   return (
@@ -54,31 +50,32 @@ function StinkRunning() {
 }
 
 function Stink({ id, onStatusChange = () => {} }) {
-  const [machineStatus, setMachineStatus] = useState(0);
+  const [relay4Status, setRelay4Status] = useState(false);
   const container = useRef(null);
 
   useEffect(() => {
-    socket.on("initial_data", (data) => {
-      if (data && data.length > 0) {
-        const status = data[data.length - 1].machine_status;
-        setMachineStatus(status);
+    const fetchData = async () => {
+      try {
+        const data = await getSensorData();
+        const status = data?.relay4Status || false;
+        setRelay4Status(status);
         if (onStatusChange) onStatusChange(status);
+      } catch (err) {
+        console.error("릴레이 상태 가져오기 실패:", err);
       }
-    });
-
-    socket.on("new_data", (data) => {
-      setMachineStatus(data.machine_status);
-      if (onStatusChange) onStatusChange(data.machine_status);
-    });
-
-    return () => {
-      socket.off("initial_data");
-      socket.off("new_data");
     };
+
+    // 초기 데이터 로드
+    fetchData();
+
+    // 2초마다 데이터 갱신 (RelayWebApi의 백그라운드 서비스와 동기화)
+    const interval = setInterval(fetchData, 2000);
+
+    return () => clearInterval(interval);
   }, [onStatusChange]);
 
   return (
-    <div id={id}>{machineStatus === true ? <StinkRunning /> : <StinkGood />}</div>
+    <div id={id}>{relay4Status === true ? <StinkRunning /> : <StinkGood />}</div>
   );
 }
 

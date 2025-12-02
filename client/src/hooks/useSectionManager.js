@@ -5,6 +5,8 @@ import Clock from "../components/Clock/Clock";
 import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
+import SentrionSensor from "../components/SentrionSensor/SentrionSensor";
+import ECSensor from "../components/ECSensor/ECSensor";
 
 const INTERVALS = [30000, 20000, 20000, 20000, 20000];
 
@@ -123,10 +125,8 @@ export const useSectionManager = (
             <p>오늘의 대기질</p>
           </div>
 
-          <Weather
-            selectedDistrict={selectedDistrict}
-            onWeatherUpdate={setWeatherData}
-          />
+          <SentrionSensor />
+          <ECSensor />
           <Stink id="stink-data-page2" onStatusChange={setMachineStatus} />
         </div>
       </div>,
