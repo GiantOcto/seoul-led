@@ -1,16 +1,23 @@
 using RelayWebApi.Services;
 using System.Diagnostics;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 포트 설정 (프로덕션 환경에서도 5130 사용)
 builder.WebHost.UseUrls("http://localhost:5130");
 
-// EventLog 로깅 제거 (권한 문제 방지)
+// 로깅 완전 재구성 - Microsoft.AspNetCore 로그 완전 차단, RelayWebApi만 출력
 builder.Logging.ClearProviders();
+
+// Microsoft 관련 로그 완전 차단 (Console 로거 추가 전에 필터 설정)
+builder.Logging.AddFilter("Microsoft", LogLevel.None);
+// RelayWebApi만 Information 레벨로 출력
+builder.Logging.AddFilter("RelayWebApi", LogLevel.Information);
+
+// Console 로거 추가
 builder.Logging.AddConsole();
-builder.Logging.AddDebug();
 
 // 백그라운드 서비스 예외 처리 설정 (서비스가 예외를 던져도 호스트가 중지되지 않도록)
 builder.Services.Configure<HostOptions>(options =>
