@@ -15,7 +15,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 import gc
 from log_manager import LogManager
-import configparser
 
 class ServerThread(QThread):
     """웹소켓 서버 연결을 관리하는 스레드
@@ -99,8 +98,14 @@ class SerialThread(QThread):
     def run(self):
         while self.running and self.serial.is_open:
             try:
-                if self.serial.in_waiting:
-                    data = self.serial.readline()  # 한 줄 읽기
+                # 모니터링 명령 전송
+                self.serial.write(b'![M]')
+                time.sleep(0.1)  # 센서 응답 대기
+                
+                # 응답 읽기 (타임아웃 1초)
+                data = self.serial.read_until(b']', size=200)  # 최대 200바이트
+                
+                if data:
                     try:
                         # ASCII로 디코딩
                         decoded_data = data.decode('ascii').strip()
@@ -113,8 +118,12 @@ class SerialThread(QThread):
 
                         # 로그 메시지 생성
                         output = f"[{timestamp}] 수신: {decoded_data}\n"
-                        output += f"  수위: {parsed_data['water_level']}mm, "
-                        output += f"기계 상태: {'작동중' if parsed_data['machine_status'] == 1 else '멈춤'}"
+                        output += f"  H2S: {parsed_data['h2s_ppm']}ppm, "
+                        output += f"온도: {parsed_data['temperature']}℃, "
+                        output += f"습도: {parsed_data['humidity']}%, "
+                        output += f"수위: {parsed_data['water_level']}mm, "
+                        output += f"동작모드: {['수동','자동','정지'][parsed_data['operation_mode']]}, "
+                        output += f"동작상태: {'동작중' if parsed_data['operation_status'] == 1 else '정지'}"
                 
                         self.data_received.emit(output)
 
@@ -130,49 +139,90 @@ class SerialThread(QThread):
                 break
 
     def parse_serial_data(self, data_string):
-
-        """시리얼 데이터 문자열을 파싱하여 수위와 기계 상태를 추출
-    
+        """황화수소 센서 데이터 파싱
+        
         Args:
-             data_string (str): 파싱할 데이터 문자열 (예: "WL:0123,MS:1")
-          
+            data_string (str): 센서 응답 (예: "![m,00.000,+00.00,12.34,1,1,1000,...]")
+            
         Returns:
-             dict: 파싱된 데이터를 담은 딕셔너리
+            dict: 파싱된 센서 데이터
             {
-                'water_level': int,  # 수위값 (mm)
-                'machine_status': int  # 기계 상태 (1=작동중, 0=멈춤)
+                'h2s_ppm': float,        # 황화수소 농도
+                'temperature': float,     # 온도
+                'humidity': float,        # 습도
+                'operation_mode': int,    # 0=수동, 1=자동, 2=정지
+                'operation_status': int,  # 0=정지, 1=동작중
+                'water_level': int,       # 수위 (mm)
+                'voltage': float,         # 전압
+                'current': float,         # 전류
+                'active_power': float,    # 유효전력
+                'reactive_power': float,  # 무효전력
+                'total_active': float,    # 총유효전력량
+                'total_reactive': float,  # 총무효전력량
+                'frequency': float,       # 주파수
+                'power_factor': float,    # 역율
+                'serial_number': str,     # 시리얼번호
+                'reserved': str           # 예약영역
             }
         """
         
+        # 기본값 설정
+        result = {
+            'h2s_ppm': 0.0,
+            'temperature': 0.0,
+            'humidity': 0.0,
+            'operation_mode': 0,
+            'operation_status': 0,
+            'water_level': 0,
+            'voltage': 0.0,
+            'current': 0.0,
+            'active_power': 0.0,
+            'reactive_power': 0.0,
+            'total_active': 0.0,
+            'total_reactive': 0.0,
+            'frequency': 0.0,
+            'power_factor': 0.0,
+            'serial_number': '',
+            'reserved': ''
+        }
+        
         try:
-            # ASCII 데이터 예시: "WL:0123,MS:1"
-            # WL = Water Level (수위)
-            # MS = Machine Status (1=작동중, 0=멈춤)
-            parts = data_string.strip().split(',')  # 쉼표로 구분
+            # 시작/끝 마커 제거: ![m,...] → m,...
+            if data_string.startswith('![') and data_string.endswith(']'):
+                data_string = data_string[2:-1]
             
-            # 첫 4바이트는 수위 데이터 파싱
-            water_level_str = parts[0]
-            if len(water_level_str) != 4:
-                raise ValueError("수위 데이터는 4자리여야 합니다")
-            water_level = int(water_level_str)
+            parts = data_string.split(',')
             
-            # 마지막 1바이트는 기계 상태 파싱
-            machine_status_str = parts[1]
-            if machine_status_str not in ['0', '1']:
-                raise ValueError("기계 상태는 0 또는 1이어야 합니다")
-            machine_status = int(machine_status_str)
-
-
-            return {
-                'water_level': water_level,
-                'machine_status': machine_status
-            }
-        except Exception as e:
-            print(f"데이터 파싱 오류: {e}")
-            return {
-                'water_level': -1, # 에러 시 기본값
-                'machine_status': 0
-            }
+            # 최소 17개 파트 필요 (명령어 m + 16개 데이터)
+            if len(parts) < 17:
+                raise ValueError(f"데이터 길이 부족: {len(parts)}개")
+            
+            # 명령어 확인
+            if parts[0] != 'm':
+                raise ValueError(f"잘못된 명령어: {parts[0]}")
+            
+            # 데이터 파싱
+            result['h2s_ppm'] = float(parts[1])
+            result['temperature'] = float(parts[2])
+            result['humidity'] = float(parts[3])
+            result['operation_mode'] = int(parts[4])
+            result['operation_status'] = int(parts[5])
+            result['water_level'] = int(parts[6])
+            result['voltage'] = float(parts[7])
+            result['current'] = float(parts[8])
+            result['active_power'] = float(parts[9])
+            result['reactive_power'] = float(parts[10])
+            result['total_active'] = float(parts[11])
+            result['total_reactive'] = float(parts[12])
+            result['frequency'] = float(parts[13])
+            result['power_factor'] = float(parts[14])
+            result['serial_number'] = parts[15]
+            result['reserved'] = parts[16]
+            
+        except (ValueError, IndexError) as e:
+            print(f"데이터 파싱 오류: {e}, 원본: {data_string}")
+        
+        return result
 
     def stop(self):
         self.running = False
@@ -195,8 +245,6 @@ class SerialGUI(QMainWindow):
         self.serial_thread = None
         self.server_thread = None
         self.filename = None
-        self.config_file = 'serial_config.ini'
-        self.load_config()
         self.threads = [] # 스레드 관리를 위한 리스트 추가
         
         # 서버 연결 초기화
@@ -208,13 +256,9 @@ class SerialGUI(QMainWindow):
         self.init_ui()
         self.update_ports()
 
-        # 저장된 포트 또는 COM4 자동 연결
-        saved_port = 'COM4'  # 기본값
-        if self.config.has_section('Serial') and self.config.has_option('Serial', 'port'):
-            saved_port = self.config.get('Serial', 'port')
-
+        # COM2 자동 연결
         for i in range(self.port_cb.count()):
-            if saved_port in self.port_cb.itemText(i):
+            if 'COM2' in self.port_cb.itemText(i):
                 self.port_cb.setCurrentIndex(i)
                 QTimer.singleShot(500, self.connect)
                 break
@@ -348,8 +392,8 @@ class SerialGUI(QMainWindow):
         """연결 상태 확인 및 복구"""
         try:
             if self.serial and self.serial.is_open:
-                # 시리얼 연결 테스트
-                self.serial.write(b'\x00')
+                pass
+
         except Exception as e:
             self.logger.error(f"시리얼 연결 오류 감지: {e}")
             self.reconnect_serial()
@@ -449,20 +493,6 @@ class SerialGUI(QMainWindow):
                  index = self.port_cb.count() - 1
                  self.port_cb.setItemData(index, Qt.lightGray, Qt.ForegroundRole)
     
-    def load_config(self):
-        """설정 파일에서 마지막 사용한 포트 로드"""
-        self.config = configparser.ConfigParser()
-        if os.path.exists(self.config_file):
-            self.config.read(self.config_file)
-
-    def save_config(self, port):
-        """현재 포트를 설정 파일에 저장"""
-        if not self.config.has_section('Serial'):
-            self.config.add_section('Serial')
-        self.config.set('Serial', 'port', port)
-        with open(self.config_file, 'w') as f:
-            self.config.write(f)    
-
     def start_thread(self, thread):
         self.threads.append(thread)
         thread.finished.connect(lambda: self.thread_finished(thread))
@@ -537,7 +567,6 @@ class SerialGUI(QMainWindow):
             self.connect_btn.setText('해제')
             status = f"연결됨: {port} @ {baudrate} baud"
             self.statusBar().showMessage(status)
-            self.save_config(port)
             
             if self.save_cb.isChecked():
                 self.filename = f"serial_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
