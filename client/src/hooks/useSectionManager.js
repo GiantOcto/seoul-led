@@ -164,9 +164,9 @@ export const useSectionManager = (
         {showLogo3 ? (
           <div
             className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
+            style={{ width: "126px", height: "50px"}}
           >
-            <Logo3 />
+            <Logo3 style={{ marginTop: "4px" }} />
           </div>
         ) : (
           <div

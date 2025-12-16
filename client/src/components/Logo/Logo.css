@@ -14,7 +14,6 @@
 .logo-3 img {
   position: relative;
   text-align: center;
-  width: 110px;
   left: 50%;
   transform: translateX(-50%);
 } 
@@ -22,7 +21,6 @@
 .logo-4 img {
   position: relative;
   text-align: center;
-  width: 110px;
   left: 50%;
   transform: translateX(-50%);
 } 

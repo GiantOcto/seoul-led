@@ -21,13 +21,14 @@ export function Logo2({ id }) {
   );
 }
 
-export function Logo3({ id }) {
+export function Logo3({ id, style }) {
   return (
     <div className="logo-3" id={id}>
       <img
         id="logo-gangnam"
         src="/images/slogans/성남시.png"
         alt="성남시 slogan"
+        style={style}
       />
     </div>
   );

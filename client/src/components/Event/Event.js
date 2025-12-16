@@ -15,7 +15,7 @@ function Event({ selectedDistrict, position }) {
   const CACHE_TIME_KEY = 'culturalEvents_time';
   const MAX_CACHE_AGE = 180 * 24 * 60 * 60 * 1000; // ⭐ 6달 (캐시 최대 보관)
 
-  // 매일 09:00에 4개 이미지만 프리로드
+  // 매일 09:00에 성남시 이벤트만 프리로드
   const dailyPreloadCheck = (eventData) => {
   if (!eventData || eventData.length === 0) return;
   
@@ -26,14 +26,15 @@ function Event({ selectedDistrict, position }) {
     return;
   }
   
-  console.log(`⏰ ${today} 09:00 데일리 프리로드 시작!`);
-  
   let upcomingEvents = getUpcomingEvents(eventData);
   
-  // 처음 4개만 프리로드
-  const todayPreload = upcomingEvents.slice(0, 4);
+  // ⭐ 성남시 이벤트만 필터링
+  const seongnamEvents = upcomingEvents.filter(e => e.GUNAME === '성남시');
+  
+  // 성남시 이벤트 전체 프리로드
+  const todayPreload = seongnamEvents;
     
-      todayPreload.forEach(event => {
+      todayPreload.forEach((event, idx) => {
       if (event && event.MAIN_IMG) {
         const imgUrl = event.MAIN_IMG;
         
@@ -42,15 +43,11 @@ function Event({ selectedDistrict, position }) {
           const img = new Image();
           img.src = imgUrl;
           PRELOADED_URLS.current.add(imgUrl);  // ⭐ Set에 추가
-          console.log(`📥 새 이미지 프리로드: ${event.GUNAME} - ${event.TITLE}`);
-        } else {
-          console.log(`⏭️ 이미 프리로드됨: ${event.TITLE}`);
         }
       }
     });
     
     dailyPreloadDone.current = today;
-    console.log(`✅ 데일리 프리로드 완료: ${todayPreload.length}개`);
   };
 
 
@@ -302,6 +299,7 @@ function Event({ selectedDistrict, position }) {
     
     // 지역별 필터링
     let districtEvents = upcomingEvents.filter(e => e.GUNAME === selectedDistrict);
+    
     // 2단계: position별 필터링
     let filteredEvents;
     
