@@ -15,7 +15,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 import gc
 from log_manager import LogManager
-import configparser
 
 class ServerThread(QThread):
     """웹소켓 서버 연결을 관리하는 스레드
@@ -130,49 +129,43 @@ class SerialThread(QThread):
                 break
 
     def parse_serial_data(self, data_string):
-
         """시리얼 데이터 문자열을 파싱하여 수위와 기계 상태를 추출
     
         Args:
-             data_string (str): 파싱할 데이터 문자열 (예: "WL:0123,MS:1")
+             data_string (str): 파싱할 데이터 문자열 (예: "0123,1" 또는 ",1")
           
         Returns:
              dict: 파싱된 데이터를 담은 딕셔너리
             {
-                'water_level': int,  # 수위값 (mm)
+                'water_level': int,  # 수위값 (mm), 없으면 -1
                 'machine_status': int  # 기계 상태 (1=작동중, 0=멈춤)
             }
         """
         
+        water_level = -1
+        machine_status = 0
+        
         try:
-            # ASCII 데이터 예시: "WL:0123,MS:1"
-            # WL = Water Level (수위)
-            # MS = Machine Status (1=작동중, 0=멈춤)
-            parts = data_string.strip().split(',')  # 쉼표로 구분
+            parts = data_string.strip().split(',')
             
-            # 첫 4바이트는 수위 데이터 파싱
-            water_level_str = parts[0]
-            if len(water_level_str) != 4:
-                raise ValueError("수위 데이터는 4자리여야 합니다")
-            water_level = int(water_level_str)
+            # 수위 데이터 파싱 (있는 경우만)
+            if len(parts) > 0 and parts[0].strip():
+                if len(parts[0]) == 4:
+                    water_level = int(parts[0])
             
-            # 마지막 1바이트는 기계 상태 파싱
-            machine_status_str = parts[1]
-            if machine_status_str not in ['0', '1']:
-                raise ValueError("기계 상태는 0 또는 1이어야 합니다")
-            machine_status = int(machine_status_str)
+            # 기계 상태 파싱 (필수)
+            if len(parts) > 1:
+                machine_status_str = parts[1].strip()
+                if machine_status_str in ['0', '1']:
+                    machine_status = int(machine_status_str)
 
-
-            return {
-                'water_level': water_level,
-                'machine_status': machine_status
-            }
         except Exception as e:
             print(f"데이터 파싱 오류: {e}")
-            return {
-                'water_level': -1, # 에러 시 기본값
-                'machine_status': 0
-            }
+
+        return {
+            'water_level': water_level,
+            'machine_status': machine_status
+        }
 
     def stop(self):
         self.running = False
@@ -195,8 +188,6 @@ class SerialGUI(QMainWindow):
         self.serial_thread = None
         self.server_thread = None
         self.filename = None
-        self.config_file = 'serial_config.ini'
-        self.load_config()
         self.threads = [] # 스레드 관리를 위한 리스트 추가
         
         # 서버 연결 초기화
@@ -208,13 +199,9 @@ class SerialGUI(QMainWindow):
         self.init_ui()
         self.update_ports()
 
-        # 저장된 포트 또는 COM4 자동 연결
-        saved_port = 'COM4'  # 기본값
-        if self.config.has_section('Serial') and self.config.has_option('Serial', 'port'):
-            saved_port = self.config.get('Serial', 'port')
-
+        # COM6 자동 연결
         for i in range(self.port_cb.count()):
-            if saved_port in self.port_cb.itemText(i):
+            if 'COM6' in self.port_cb.itemText(i):
                 self.port_cb.setCurrentIndex(i)
                 QTimer.singleShot(500, self.connect)
                 break
@@ -315,7 +302,7 @@ class SerialGUI(QMainWindow):
         log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         
         # 파일 핸들러 설정 (최대 10MB, 30일치 보관)
-        log_file = 'serial_monitor.log'
+        log_file = 'D:/serial_monitor.log'
         file_handler = RotatingFileHandler(
             log_file,
             maxBytes=10*1024*1024,  # 10MB
@@ -389,7 +376,7 @@ class SerialGUI(QMainWindow):
             machine_status = "작동중" in output
             
             return {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
                 'water_level': water_level,
                 'machine_status': machine_status,
                 'raw_data': output
@@ -449,20 +436,6 @@ class SerialGUI(QMainWindow):
                  index = self.port_cb.count() - 1
                  self.port_cb.setItemData(index, Qt.lightGray, Qt.ForegroundRole)
     
-    def load_config(self):
-        """설정 파일에서 마지막 사용한 포트 로드"""
-        self.config = configparser.ConfigParser()
-        if os.path.exists(self.config_file):
-            self.config.read(self.config_file)
-
-    def save_config(self, port):
-        """현재 포트를 설정 파일에 저장"""
-        if not self.config.has_section('Serial'):
-            self.config.add_section('Serial')
-        self.config.set('Serial', 'port', port)
-        with open(self.config_file, 'w') as f:
-            self.config.write(f)    
-
     def start_thread(self, thread):
         self.threads.append(thread)
         thread.finished.connect(lambda: self.thread_finished(thread))
@@ -537,10 +510,9 @@ class SerialGUI(QMainWindow):
             self.connect_btn.setText('해제')
             status = f"연결됨: {port} @ {baudrate} baud"
             self.statusBar().showMessage(status)
-            self.save_config(port)
             
             if self.save_cb.isChecked():
-                self.filename = f"serial_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                self.filename = f"D:/serial_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
                 full_path = os.path.abspath(self.filename)
                 print(f"파일 저장 시작: {full_path}")
                 self.log_text.append(f"데이터를 {full_path}에 저장합니다.")
@@ -593,7 +565,7 @@ class SerialGUI(QMainWindow):
                 ascii_values = output.split("ASCII: ")[1].split("\n")[0] if "ASCII: " in output else ""
                 
                 data = {
-                    'timestamp': datetime.now().isoformat(),
+                    'timestamp': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
                     'water_level': water_level,
                     'machine_status': machine_status,
                     'ascii_data': ascii_values,
@@ -609,7 +581,7 @@ class SerialGUI(QMainWindow):
             try:
                 # 오늘 날짜로 파일명 생성
                 today = datetime.now().strftime('%Y%m%d')
-                self.filename = f"serial_data_{today}.txt"
+                self.filename = f"D:/serial_data_{today}.txt"
 
                 # 파일 저장
                 full_path = os.path.abspath(self.filename)
@@ -638,7 +610,7 @@ class SerialGUI(QMainWindow):
             three_months_ago = datetime.now() - timedelta(days=90)
 
             # 로그 파일이 있는 디렉토리 검사
-            current_dir = os.path.dirname(os.path.abspath(self.filename))
+            current_dir = 'D:/'
 
             for filename in os.listdir(current_dir):
                 if filename.startswith("serial_data_") and filename.endswith(".txt"):

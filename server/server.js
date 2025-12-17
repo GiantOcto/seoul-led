@@ -88,34 +88,24 @@ function isValidSerialData(data) {
     try {
         if (!data || typeof data !== 'object') return false;
 
+        // 타임스탬프 자동 수정 (파싱 실패 시)
         if (!data.timestamp || isNaN(new Date(data.timestamp).getTime())) {
+            data.timestamp = new Date().toISOString();
+        }
+
+        // water_level 범위 체크만
+        if (!Number.isInteger(data.water_level) || 
+            data.water_level < -100 ||
+            data.water_level > 9999) {
             return false;
         }
 
-        // 필수 필드 검증
-        const requiredFields = [
-            'h2s_ppm', 'temperature', 'humidity', 
-            'operation_mode', 'operation_status', 'water_level',
-            'voltage', 'current', 'active_power', 'reactive_power',
-            'total_active', 'total_reactive', 'frequency', 'power_factor'
-        ];
-
-        for (const field of requiredFields) {
-            if (!(field in data)) {
-                return false;
-            }
+        // machine_status 타입 체크만
+        if (typeof data.machine_status !== 'boolean') {
+            return false;
         }
 
-        // 타입 검증
-        if (typeof data.h2s_ppm !== 'number' || data.h2s_ppm < 0) return false;
-        if (typeof data.temperature !== 'number') return false;
-        if (typeof data.humidity !== 'number' || data.humidity < 0 || data.humidity > 100) return false;
-        if (![0, 1, 2].includes(data.operation_mode)) return false;
-        if (![0, 1].includes(data.operation_status)) return false;
-        if (!Number.isInteger(data.water_level) || data.water_level < 0) return false;
-
         return true;
-        
     } catch (error) {
         console.error('Data validation error', error);
         return false;
