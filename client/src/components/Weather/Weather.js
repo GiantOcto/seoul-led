@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import "./Weather.css";
 
@@ -12,7 +13,7 @@ function Weather({ onWeatherUpdate }) {
   const CACHE_KEY = 'songpaAirQuality_cache';
   const CACHE_TIME_KEY = 'songpaAirQuality_time';
 
-  // 앱 시작시 성남시 미세먼지만 호출
+  // 앱 시작시 구로구 미세먼지만 호출
   useEffect(() => {
     const fetchSeochoData = async () => {
       try {
@@ -31,7 +32,7 @@ function Weather({ onWeatherUpdate }) {
         // ⭐ 1단계: 에어코리아 API 시도
         console.log("1단계: 에어코리아 API 시도...");
         try {
-          const airKoreaUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?stationName=수내동&dataTerm=daily&pageNo=1&numOfRows=1&returnType=json&ver=1.3&serviceKey=${AIR_KOREA_KEY}`;
+          const airKoreaUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?stationName=구로구&dataTerm=daily&pageNo=1&numOfRows=1&returnType=json&ver=1.3&serviceKey=${AIR_KOREA_KEY}`;
           
           const airKoreaResponse = await fetch(airKoreaUrl);
           const airKoreaJson = await airKoreaResponse.json();
@@ -50,31 +51,31 @@ function Weather({ onWeatherUpdate }) {
         }
 
         // ⭐ 2단계: 서울시 API 시도
-        // console.log("⚠️ 에어코리아 실패, 서울시 API 시도...");
-        // const seoulUrl = `http://openAPI.seoul.go.kr:8088/${SEOUL_API_KEY}/json/RealtimeCityAir/1/25/`;
+        console.log("⚠️ 에어코리아 실패, 서울시 API 시도...");
+        const seoulUrl = `http://openAPI.seoul.go.kr:8088/${SEOUL_API_KEY}/json/RealtimeCityAir/1/25/`;
         
-        // const seoulResponse = await fetch(seoulUrl);
-        // const seoulJson = await seoulResponse.json();
+        const seoulResponse = await fetch(seoulUrl);
+        const seoulJson = await seoulResponse.json();
         
-        // if (seoulJson?.RealtimeCityAir?.row) {
-        //   const songpaData = seoulJson.RealtimeCityAir.row.find(
-        //     item => item.MSRSTE_NM === "서초구"
-        //   );
+        if (seoulJson?.RealtimeCityAir?.row) {
+          const songpaData = seoulJson.RealtimeCityAir.row.find(
+            item => item.MSRSTE_NM === "구로구"
+          );
           
-        //   if (songpaData) {
-        //     console.log("✅ 서울시 API 성공");
-        //     // 에어코리아 형식으로 변환
-        //     const converted = {
-        //       pm10Value: songpaData.PM10,
-        //       pm25Value: songpaData.PM25
-        //     };
+          if (songpaData) {
+            console.log("✅ 서울시 API 성공");
+            // 에어코리아 형식으로 변환
+            const converted = {
+              pm10Value: songpaData.PM10,
+              pm25Value: songpaData.PM25
+            };
             
-        //     localStorage.setItem(CACHE_KEY, JSON.stringify(converted));
-        //     localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-        //     setPollutionData(converted);
-        //     return;
-        //   }
-        // }
+            localStorage.setItem(CACHE_KEY, JSON.stringify(converted));
+            localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+            setPollutionData(converted);
+            return;
+          }
+        }
 
         throw new Error("모든 API 실패");
 

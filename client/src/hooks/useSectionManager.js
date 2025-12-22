@@ -15,7 +15,7 @@ export const useSectionManager = (
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0, 1, 3]); // 2, 4 주석처리
+  const [activeSections, setActiveSections] = useState([0, 1, 3, 4]); 
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -164,14 +164,14 @@ export const useSectionManager = (
         {showLogo3 ? (
           <div
             className="logo-transition"
-            style={{ width: "126px", height: "50px"}}
+            style={{ width: "126px", height: "70px"}}
           >
-            <Logo3 style={{ marginTop: "4px" }} />
+            <Logo3/>
           </div>
         ) : (
           <div
             className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
+            style={{ width: "126px", height: "70px" }}
           >
             <Logo4 />
           </div>
@@ -179,35 +179,35 @@ export const useSectionManager = (
         <Clock />
         <span style={{ color: "white" }}>문화행사</span>
       </div>,
-      // <div
-      //   key="top5"
-      //   className="section-top"
-      //   id="top5"
-      //   style={{
-      //     display:
-      //       currentSection === 4 && activeSections.includes(4)
-      //         ? "flex"
-      //         : "none",
-      //   }}
-      // >
-      //   {showLogo1 ? (
-      //     <div
-      //       className="logo-transition"
-      //       style={{ width: "126px", height: "50px" }}
-      //     >
-      //       <Logo3 />
-      //     </div>
-      //   ) : (
-      //     <div
-      //       className="logo-transition"
-      //       style={{ width: "126px", height: "50px" }}
-      //     >
-      //       <Logo4 />
-      //     </div>
-      //   )}
-      //     <Clock />
-      //   <span style={{ color: "white" }}>문화행사</span>
-      // </div>,
+      <div
+        key="top5"
+        className="section-top"
+        id="top5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        {showLogo1 ? (
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "70px" }}
+          >
+            <Logo3 />
+          </div>
+        ) : (
+          <div
+            className="logo-transition"
+            style={{ width: "126px", height: "70px" }}
+          >
+            <Logo4 />
+          </div>
+        )}
+          <Clock />
+        <span style={{ color: "white" }}>문화행사</span>
+      </div>,
     ],
 
     middle: [
@@ -290,23 +290,23 @@ export const useSectionManager = (
           position="middle4"
         />
       </div>,
-      // <div
-      //   key="middle5"
-      //   className="section-middle"
-      //   id="middle5"
-      //   style={{
-      //     display:
-      //       currentSection === 4 && activeSections.includes(4)
-      //         ? "flex"
-      //         : "none",
-      //   }}
-      // >
-      //   <Event
-      //     key="middle5-event"
-      //     selectedDistrict={selectedDistrict}
-      //     position="middle5"
-      //   />
-      // </div>,
+      <div
+        key="middle5"
+        className="section-middle"
+        id="middle5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <Event
+          key="middle5-event"
+          selectedDistrict={selectedDistrict}
+          position="middle5"
+        />
+      </div>,
     ],
 
     bottom: [
@@ -369,23 +369,23 @@ export const useSectionManager = (
           position="bottom4"
         />
       </div>,
-      // <div
-      //   key="bottom5"
-      //   className="section-bottom"
-      //   id="bottom5"
-      //   style={{
-      //     display:
-      //       currentSection === 4 && activeSections.includes(4)
-      //         ? "flex"
-      //         : "none",
-      //   }}
-      // >
-      //   <Event
-      //     key="bottom5-event"
-      //     selectedDistrict={selectedDistrict}
-      //     position="bottom5"
-      //   />
-      // </div>,
+      <div
+        key="bottom5"
+        className="section-bottom"
+        id="bottom5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <Event
+          key="bottom5-event"
+          selectedDistrict={selectedDistrict}
+          position="bottom5"
+        />
+      </div>,
     ],
   };
 

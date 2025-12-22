@@ -66,6 +66,12 @@ span {
   font-size: 20px;
 }
 
+.banner-mid button:hover {
+  background-color: transparent;
+  border: 1px solid coral;
+  color: aliceblue;
+}
+
 .banner-right {
   display: flex;
   justify-content: end;
@@ -297,7 +303,8 @@ span {
   font-size: 20px;
   font-family: "SeoulHangangEB";
   font-weight: 100;
-  margin: 30px 0 0px;
+  position: relative;
+  top: 15px;
 }
 
 #bottom4 {
@@ -332,7 +339,8 @@ span {
   font-size: 20px;
   font-family: "SeoulHangangEB";
   font-weight: 100;
-  margin: 30px 0 0px;
+  position: relative;
+  top: 15px;
 }
 
 #middle5 {
