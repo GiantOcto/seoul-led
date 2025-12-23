@@ -84,23 +84,23 @@ const DataStore = {
     }
 };
 
+// 검증만 하는 함수
 function isValidSerialData(data) {
     try {
         if (!data || typeof data !== 'object') return false;
 
-        // 타임스탬프 자동 수정 (파싱 실패 시)
+        // 타임스탬프 체크 (수정 안 함)
         if (!data.timestamp || isNaN(new Date(data.timestamp).getTime())) {
-            data.timestamp = new Date().toISOString();
+            return false;  // 그냥 거부
         }
 
-        // water_level 범위 체크만
+        // water_level: -1 또는 0~9999
         if (!Number.isInteger(data.water_level) || 
-            data.water_level < -100 ||
-            data.water_level > 9999) {
+            (data.water_level < -1 || data.water_level > 9999)) {
             return false;
         }
 
-        // machine_status 타입 체크만
+        // machine_status 타입 체크
         if (typeof data.machine_status !== 'boolean') {
             return false;
         }
@@ -110,6 +110,15 @@ function isValidSerialData(data) {
         console.error('Data validation error', error);
         return false;
     }
+}
+
+// 보정하는 함수 (새로 추가)
+function normalizeSerialData(data) {
+    // 타임스탬프 없거나 잘못되면 현재 시간으로
+    if (!data.timestamp || isNaN(new Date(data.timestamp).getTime())) {
+        data.timestamp = new Date().toISOString();
+    }
+    return data;
 }
 
 // Socket.IO 연결 처리
@@ -122,18 +131,22 @@ io.on('connection', (socket) => {
 
     // 파이썬에서 보낸 시리얼 데이터 처리
     socket.on('serial_data', (data) => {
-        if (!isValidSerialData(data)) {
+        // 1. 먼저 보정
+        const normalized = normalizeSerialData(data);
+        
+        // 2. 그 다음 검증
+        if (!isValidSerialData(normalized)) {
             console.error('Invalid serial data received:', data);
             return;
         }
 
-        console.log('Received serial data:', data);
+        console.log('Received serial data:', normalized);
         
         // 데이터 저장
-        DataStore.addData(data);
+        DataStore.addData(normalized);
 
         // 연결된 모든 클라이언트에 데이터 브로드캐스트
-        io.emit('new_data', data);
+        io.emit('new_data', normalized);
     });
 
     // 연결 해제 처리

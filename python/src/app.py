@@ -14,7 +14,6 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import gc
-from log_manager import LogManager
 
 class ServerThread(QThread):
     """웹소켓 서버 연결을 관리하는 스레드
@@ -150,9 +149,10 @@ class SerialThread(QThread):
             
             # 수위 데이터 파싱 (있는 경우만)
             if len(parts) > 0 and parts[0].strip():
-                if len(parts[0]) == 4:
-                    water_level = int(parts[0])
-            
+                water_level_str = parts[0].strip()
+                if len(water_level_str) == 4:
+                    water_level = int(water_level_str)
+                
             # 기계 상태 파싱 (필수)
             if len(parts) > 1:
                 machine_status_str = parts[1].strip()
@@ -199,14 +199,45 @@ class SerialGUI(QMainWindow):
         self.init_ui()
         self.update_ports()
 
-        # COM6 자동 연결
-        for i in range(self.port_cb.count()):
-            if 'COM6' in self.port_cb.itemText(i):
-                self.port_cb.setCurrentIndex(i)
-                QTimer.singleShot(500, self.connect)
-                break
+        # 특정 장치 자동 연결
+        QTimer.singleShot(1500, self.auto_connect_device)
             
-        
+    def auto_connect_device(self):
+        """장치 자동 인식 및 연결"""
+        try:
+            target_port = None
+            
+            # 실제 연결된 포트에서만 찾기
+            for port in serial.tools.list_ports.comports():
+                # COM6 찾기
+                if port.device == 'COM6':
+                    target_port = port.device
+                    break
+            
+            if target_port:
+                # 콤보박스에서 해당 포트 선택
+                for i in range(self.port_cb.count()):
+                    if target_port in self.port_cb.itemText(i):
+                        self.port_cb.setCurrentIndex(i)
+                        # 연결 시도
+                        QTimer.singleShot(1000, self.safe_auto_connect)
+                        return
+                
+            print("자동 연결할 장치를 찾을 수 없습니다")
+            
+        except Exception as e:
+            print(f"자동 연결 중 오류: {e}")
+
+    def safe_auto_connect(self):
+        """안전한 자동 연결 시도"""
+        try:
+            if self.serial is None or not self.serial.is_open:
+                self.connect()
+                print("자동 연결 성공")
+        except Exception as e:
+            print(f"자동 연결 실패: {e}")
+            self.log_text.append(f"자동 연결 실패 - 수동으로 연결하세요")
+                
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -336,7 +367,7 @@ class SerialGUI(QMainWindow):
         try:
             if self.serial and self.serial.is_open:
                 # 시리얼 연결 테스트
-                self.serial.write(b'\x00')
+                _ = self.serial.in_waiting
         except Exception as e:
             self.logger.error(f"시리얼 연결 오류 감지: {e}")
             self.reconnect_serial()
@@ -344,23 +375,6 @@ class SerialGUI(QMainWindow):
         if self.server_thread and not self.server_thread.sio.connected:
             self.logger.warning("서버 연결 끊김 감지")
             self.reconnect_server()
-
-    def update_log(self, output):
-        """로그 업데이트 최적화"""
-        # 로그 파일에 기록
-        self.logger.info(output)
-        
-        # GUI에는 최근 로그만 표시
-        self.log_text.append(output)
-        
-        # 서버 전송
-        if self.server_thread and self.server_thread.sio.connected:
-            try:
-                # 데이터 파싱 및 전송
-                parsed_data = self.parse_log_data(output)
-                self.server_thread.send_data(parsed_data)
-            except Exception as e:
-                self.logger.error(f"데이터 전송 오류: {e}")
 
     def parse_log_data(self, output):
         """로그 데이터 파싱 최적화"""
@@ -558,24 +572,15 @@ class SerialGUI(QMainWindow):
         # 서버로 데이터 전송
         if self.server_thread and self.server_thread.sio.connected:
             try:
-                # 출력에서 파싱된 데이터 추출
-                timestamp = output[1:24]  # [YYYY-MM-DD HH:MM:SS.mmm] 형식
-                water_level = int(output.split("수위: ")[1].split("mm")[0])
-                machine_status = "작동중" in output
-                ascii_values = output.split("ASCII: ")[1].split("\n")[0] if "ASCII: " in output else ""
-                
-                data = {
-                    'timestamp': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
-                    'water_level': water_level,
-                    'machine_status': machine_status,
-                    'ascii_data': ascii_values,
-                    'raw_data': output
-                }
-                self.server_thread.send_data(data)
-                print(f"서버로 전송된 데이터: {data}")  # 전송 확인용 로그
-
+                # parse_log_data 함수 사용
+                data = self.parse_log_data(output)
+                if data:
+                    self.server_thread.send_data(data)
+                    print(f"서버로 전송된 데이터: {data}")
+                else:
+                    print(f"데이터 파싱 실패")
             except Exception as e:
-                print(f"데이터 처리 오류: {e}")
+                print(f"데이터 전송 오류: {e}")
         
         if self.save_cb.isChecked() and self.filename:
             try:
