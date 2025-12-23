@@ -30,13 +30,13 @@ function App() {
   };
 
   useEffect(() => {
-    if (waterLevel >= 0.2) {
+    if (waterLevel > 0.25) {
       if (!activeSections.includes(2)) {
         setPreviousSections([...activeSections]);
         setActiveSections([2]);
         setCurrentSection(2);
       }
-    } else if (waterLevel < 0.2 && activeSections.includes(2)) {
+    } else if (waterLevel <= 0.25 && activeSections.includes(2)) {
       if (activeSections.length === 1) {
         setActiveSections([...previousSections]);
         setCurrentSection(previousSections[0]);
@@ -49,7 +49,7 @@ function App() {
   const getWaterButtonStyle = (index) => {
     const baseStyle = getButtonStyle(index);
     if (index === 2) {
-      if (waterLevel >= 0.2) {
+      if (waterLevel > 0.25) {
         return {
           ...baseStyle,
           backgroundColor: "red",

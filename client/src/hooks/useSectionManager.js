@@ -404,7 +404,7 @@ export const useSectionManager = (
   };
 
   const toggleSection = (index) => {
-    if (index === 2 && waterLevel < 2) {
+    if (index === 2 && waterLevel <= 0.25) {
       return;
     }
 

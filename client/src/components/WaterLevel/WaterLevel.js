@@ -15,8 +15,8 @@ function WaterLevel({ onWaterLevelChange }) {
       if (data && data.length > 0) {
         const level = data[data.length - 1].water_level;
         const roundedLevel = parseFloat(level.toFixed(0));
-        setWaterLevel(roundedLevel);
-        onWaterLevelChange(roundedLevel/1000);
+        setWaterLevel(roundedLevel + 250);
+        onWaterLevelChange((roundedLevel + 250)/1000);
       }
     });
 
@@ -24,8 +24,8 @@ function WaterLevel({ onWaterLevelChange }) {
     socket.on("new_data", (data) => {
       const level = data.water_level;
       const roundedLevel = parseFloat(level.toFixed(0));
-      setWaterLevel(roundedLevel);
-      onWaterLevelChange(roundedLevel/1000);
+      setWaterLevel(roundedLevel + 250);
+      onWaterLevelChange((roundedLevel + 250)/1000);
     });
 
     return () => {
