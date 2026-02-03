@@ -26,7 +26,7 @@ export function Logo3({ id, style }) {
     <div className="logo-3" id={id}>
       <img
         id="logo-gangnam"
-        src="/images/slogans/구로구.png"
+        src="/images/구로구CI.png"
         alt="구로구 slogan"
         style={style}
       />

@@ -20,9 +20,10 @@ const PROTECTED_SECTIONS = [0, 1, 3, 4]; // 제거 불가능한 기본 섹션들
 const MAX_SECTIONS = 16; // 최대 섹션 개수
 
 export const useSectionManager = (
-  initialDistrict = "서초구",
+  initialDistrict = "구로구",
   onWaterLevelChange,
-  waterLevel
+  waterLevel,
+  sectionOrder = null
 ) => {
   // localStorage에서 커스텀 섹션 정보 불러오기 (섹션 목록, 인터벌, 이름, 시계 타입, 레이아웃, 활성화 여부)
   const loadFromStorage = () => {
@@ -171,9 +172,16 @@ export const useSectionManager = (
     }
 
     const showNextContainer = () => {
-      const currentIdx = activeSections.indexOf(currentSection);
-      const nextIdx = (currentIdx + 1) % activeSections.length;
-      setCurrentSection(activeSections[nextIdx]);
+      // sectionOrder가 있으면 그 순서를 따르고, 없으면 activeSections 순서 사용
+      let orderedActiveSections = activeSections;
+      if (sectionOrder && sectionOrder.length > 0) {
+        // sectionOrder에서 활성화된 섹션만 필터링하고 순서 유지
+        orderedActiveSections = sectionOrder.filter(section => activeSections.includes(section));
+      }
+      
+      const currentIdx = orderedActiveSections.indexOf(currentSection);
+      const nextIdx = (currentIdx + 1) % orderedActiveSections.length;
+      setCurrentSection(orderedActiveSections[nextIdx]);
     };
 
     autoTransitionTimerRef.current = setTimeout(showNextContainer, getSectionInterval(currentSection));
@@ -182,7 +190,7 @@ export const useSectionManager = (
         clearTimeout(autoTransitionTimerRef.current);
       }
     };
-  }, [currentSection, activeSections, customIntervals]);
+  }, [currentSection, activeSections, customIntervals, sectionOrder]);
 
   useEffect(() => {
     const interval1 = setInterval(() => {
@@ -561,9 +569,8 @@ export const useSectionManager = (
                 src={media.url}
                 alt={`Custom section ${sectionIndex}`}
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
+                  width: "128px",
+                  height: "768px",
                   display: "block",
                   visibility: "visible",
                   opacity: 1,
@@ -682,22 +689,47 @@ export const useSectionManager = (
                 }
                 
                 if (media.type === "image") {
+                  // 레이아웃에 맞는 정확한 크기 계산
+                  let imageHeight = 768; // 기본값: MIDDLE only
+                  let marginTop = 0;
+                  
+                  if (layout === 'top-middle') {
+                    imageHeight = 698;
+                    marginTop = -(768 - 698); // -70px (위로 올림)
+                  } else if (layout === 'top-middle-bottom') {
+                    imageHeight = 560;
+                    marginTop = -(768 - 560); // -208px (위로 올림)
+                  }
+                  
                   return (
                     <img
                       key={`img-middle-${sectionIndex}`}
                       src={media.url}
                       alt={`Custom section ${sectionIndex}`}
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
+                        width: "128px",
+                        height: `${imageHeight}px`,
                         display: "block",
+                        marginTop: `${marginTop}px`,
                       }}
                     />
                   );
                 }
                 
+                // 동영상은 원본 크기로 재생되면서 잘리도록 설정
                 if (media.type === "video") {
+                  // 레이아웃에 맞는 높이 계산
+                  let videoHeight = 768; // 기본값: MIDDLE only
+                  let marginTop = 0;
+                  
+                  if (layout === 'top-middle') {
+                    videoHeight = 698;
+                    marginTop = -(768 - 698); // -70px (위로 올림)
+                  } else if (layout === 'top-middle-bottom') {
+                    videoHeight = 560;
+                    marginTop = -(768 - 560); // -208px (위로 올림)
+                  }
+                  
                   return (
                     <video
                       key={`video-middle-${sectionIndex}`}
@@ -707,10 +739,10 @@ export const useSectionManager = (
                       muted
                       playsInline
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
+                        width: "auto",
+                        height: `${videoHeight}px`,
                         display: "block",
+                        marginTop: `${marginTop}px`,
                       }}
                     />
                   );
@@ -777,22 +809,47 @@ export const useSectionManager = (
                 }
                 
                 if (media.type === "image") {
+                  // 레이아웃에 맞는 정확한 크기 계산
+                  let imageHeight = 768; // 기본값: MIDDLE only
+                  let marginTop = 0;
+                  
+                  if (layout === 'top-middle') {
+                    imageHeight = 698;
+                    marginTop = -(768 - 698); // -70px (위로 올림)
+                  } else if (layout === 'top-middle-bottom') {
+                    imageHeight = 560;
+                    marginTop = -(768 - 560); // -208px (위로 올림)
+                  }
+                  
                   return (
                     <img
                       key={`img-middle-${sectionIndex}`}
                       src={media.url}
                       alt={`Custom section ${sectionIndex}`}
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
+                        width: "128px",
+                        height: `${imageHeight}px`,
                         display: "block",
+                        marginTop: `${marginTop}px`,
                       }}
                     />
                   );
                 }
                 
+                // 동영상은 원본 크기로 재생되면서 잘리도록 설정
                 if (media.type === "video") {
+                  // 레이아웃에 맞는 높이 계산
+                  let videoHeight = 768; // 기본값: MIDDLE only
+                  let marginTop = 0;
+                  
+                  if (layout === 'top-middle') {
+                    videoHeight = 698;
+                    marginTop = -(768 - 698); // -70px (위로 올림)
+                  } else if (layout === 'top-middle-bottom') {
+                    videoHeight = 560;
+                    marginTop = -(768 - 560); // -208px (위로 올림)
+                  }
+                  
                   return (
                     <video
                       key={`video-middle-${sectionIndex}`}
@@ -802,10 +859,10 @@ export const useSectionManager = (
                       muted
                       playsInline
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
+                        width: "auto",
+                        height: `${videoHeight}px`,
                         display: "block",
+                        marginTop: `${marginTop}px`,
                       }}
                     />
                   );
@@ -836,7 +893,77 @@ export const useSectionManager = (
                 zIndex: isActive ? 1000 : 0,
               }}
             >
-              {renderMedia()}
+              {(() => {
+                if (!media || !media.url) {
+                  return (
+                    <div style={{ color: "#fff", padding: "10px", fontSize: "12px" }}>
+                      미디어 없음 (섹션 {sectionIndex})
+                    </div>
+                  );
+                }
+                
+                if (media.type === "image") {
+                  // 레이아웃에 맞는 정확한 크기 계산
+                  let imageHeight = 768; // 기본값: MIDDLE only
+                  let marginTop = 0;
+                  
+                  if (layout === 'top-middle') {
+                    imageHeight = 698;
+                    marginTop = -(768 - 698); // -70px (위로 올림)
+                  } else if (layout === 'top-middle-bottom') {
+                    imageHeight = 560;
+                    marginTop = -(768 - 560); // -208px (위로 올림)
+                  }
+                  
+                  return (
+                    <img
+                      key={`img-middle-${sectionIndex}`}
+                      src={media.url}
+                      alt={`Custom section ${sectionIndex}`}
+                      style={{
+                        width: "128px",
+                        height: `${imageHeight}px`,
+                        display: "block",
+                        marginTop: `${marginTop}px`,
+                      }}
+                    />
+                  );
+                }
+                
+                // 동영상은 원본 크기로 재생되면서 잘리도록 설정
+                if (media.type === "video") {
+                  // 레이아웃에 맞는 높이 계산
+                  let videoHeight = 768; // 기본값: MIDDLE only
+                  let marginTop = 0;
+                  
+                  if (layout === 'top-middle') {
+                    videoHeight = 698;
+                    marginTop = -(768 - 698); // -70px (위로 올림)
+                  } else if (layout === 'top-middle-bottom') {
+                    videoHeight = 560;
+                    marginTop = -(768 - 560); // -208px (위로 올림)
+                  }
+                  
+                  return (
+                    <video
+                      key={`video-middle-${sectionIndex}`}
+                      src={media.url}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      style={{
+                        width: "auto",
+                        height: `${videoHeight}px`,
+                        display: "block",
+                        marginTop: `${marginTop}px`,
+                      }}
+                    />
+                  );
+                }
+                
+                return null;
+              })()}
             </div>
           );
         }
@@ -876,7 +1003,7 @@ export const useSectionManager = (
       }
     }
     // 비활성화된 섹션은 클릭해도 아무 동작 안 함
-  }, [activeSections, currentSection]);
+  }, [activeSections, currentSection, sectionOrder]);
 
   // 커스텀 섹션 추가 (보호된 섹션 제외)
   const addCustomSection = (index, interval = DEFAULT_CUSTOM_INTERVAL, media = null) => {
@@ -893,7 +1020,16 @@ export const useSectionManager = (
       return false;
     }
     
-    setActiveSections([...activeSections, index].sort());
+    // sectionOrder가 있으면 그 순서를 따르고, 없으면 sort() 사용
+    let newActiveSections = [...activeSections, index];
+    if (sectionOrder && sectionOrder.length > 0) {
+      // sectionOrder에서 활성화된 섹션만 필터링하고 순서 유지
+      newActiveSections = sectionOrder.filter(section => newActiveSections.includes(section));
+    } else {
+      newActiveSections.sort();
+    }
+    setActiveSections(newActiveSections);
+    
     setCustomSections([...customSections, index].sort());
     setCustomIntervals({ ...customIntervals, [index]: interval });
     if (media) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSectionManager } from "./hooks/useSectionManager";
 import "./App.css";
 
@@ -30,6 +30,19 @@ function App() {
     setWaterLevel(level);
   };
 
+  // 모든 섹션의 순서를 관리하는 state (localStorage에 저장)
+  const [sectionOrder, setSectionOrder] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sectionOrder');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('sectionOrder 로드 실패:', error);
+    }
+    return null; // 초기값은 null로 설정하고, allSections로 초기화
+  });
+
   const {
     selectedDistrict,
     setSelectedDistrict,
@@ -58,7 +71,7 @@ function App() {
     setCustomSectionLayout,
     getCustomSectionLayout,
     customSectionLayouts,
-  } = useSectionManager("구로구", handleWaterLevelChange, waterLevel);
+  } = useSectionManager("구로구", handleWaterLevelChange, waterLevel, sectionOrder);
 
   const [newSectionName, setNewSectionName] = useState("");
   const [newSectionInterval, setNewSectionInterval] = useState(defaultCustomInterval / 1000); // 초 단위로 표시
@@ -72,19 +85,6 @@ function App() {
   const dragStartPos = useRef({ x: 0, y: 0 });
   const draggedButtonRef = useRef(null);
   const sectionControlsRef = useRef(null);
-  
-  // 모든 섹션의 순서를 관리하는 state (localStorage에 저장)
-  const [sectionOrder, setSectionOrder] = useState(() => {
-    try {
-      const saved = localStorage.getItem('sectionOrder');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.error('sectionOrder 로드 실패:', error);
-    }
-    return null; // 초기값은 null로 설정하고, allSections로 초기화
-  });
 
   // 항상 다크 모드 적용
   useEffect(() => {
@@ -125,34 +125,223 @@ function App() {
     }
   };
 
+  // base64를 Blob으로 변환하는 헬퍼 함수
+  const dataURLtoBlob = (dataURL) => {
+    const arr = dataURL.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  };
+
+  // 이미지를 레이아웃에 맞춰 리사이징하는 함수 (Canvas API 사용 - 정확한 크기 보장)
+  const resizeImageForLayout = (imageBase64, layout, callback) => {
+    let targetWidth = 128;
+    let targetHeight = 768; // 기본값: MIDDLE only
+    
+    if (layout === 'top-middle') {
+      targetHeight = 698;
+    } else if (layout === 'top-middle-bottom') {
+      targetHeight = 560;
+    } else {
+      targetHeight = 768;
+    }
+    
+    console.log(`리사이징 시작: 레이아웃=${layout}, 목표 크기=${targetWidth}x${targetHeight}`);
+    
+    const img = new Image();
+    img.onload = () => {
+      console.log(`원본 이미지 크기: ${img.width}x${img.height}`);
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      
+      // 이미지 스무딩 품질 향상
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // 비율 무시하고 강제로 targetWidth x targetHeight 크기에 맞춤
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      
+      // PNG로 저장하여 무손실 압축 (화질 최대 보존)
+      const resizedBase64 = canvas.toDataURL('image/png');
+      const resizedBlob = dataURLtoBlob(resizedBase64);
+      const resizedUrl = URL.createObjectURL(resizedBlob);
+      
+      // 리사이징된 이미지 크기 확인
+      const resizedImg = new Image();
+      resizedImg.onload = () => {
+        console.log(`리사이징 완료: ${resizedImg.width}x${resizedImg.height}`);
+        if (resizedImg.width === targetWidth && resizedImg.height === targetHeight) {
+          callback(resizedBase64, resizedUrl);
+        } else {
+          console.error(`리사이징 크기 불일치: 예상 ${targetWidth}x${targetHeight}, 실제 ${resizedImg.width}x${resizedImg.height}`);
+          callback(resizedBase64, resizedUrl);
+        }
+      };
+      resizedImg.onerror = () => {
+        console.error('리사이징된 이미지 검증 실패');
+        callback(resizedBase64, resizedUrl);
+      };
+      resizedImg.src = resizedBase64;
+    };
+    img.onerror = (error) => {
+      console.error('이미지 리사이징 실패:', error);
+      callback(null, null);
+    };
+    img.src = imageBase64;
+  };
+
   const handleMediaChange = (sectionIndex, e) => {
     const file = e.target.files[0];
     if (file) {
       const fileType = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : null;
       if (fileType) {
-        // 파일을 base64로 변환하여 저장 (새로고침 후에도 유지)
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const base64 = event.target.result;
-          const url = URL.createObjectURL(file); // 즉시 표시를 위한 blob URL
-          setCustomSectionMedia(sectionIndex, { 
-            type: fileType, 
-            url, // 즉시 표시용 blob URL
-            base64, // 저장용 base64 데이터
-            fileName: file.name // 파일 이름 저장
-          });
-        };
-        reader.onerror = (error) => {
-          console.error('파일 읽기 실패:', error);
-          alert("파일 읽기 실패");
-        };
-        reader.readAsDataURL(file);
+        if (fileType === "image") {
+          // 이미지는 리사이징
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const originalBase64 = event.target.result;
+            const layout = getCustomSectionLayout(sectionIndex);
+            
+            console.log(`섹션 ${sectionIndex} 이미지 업로드, 레이아웃: ${layout}`);
+            
+            // 레이아웃에 맞춰 리사이징
+            resizeImageForLayout(originalBase64, layout, async (resizedBase64, resizedUrl) => {
+              if (resizedBase64 && resizedUrl) {
+                console.log(`섹션 ${sectionIndex} 이미지 리사이징 완료`);
+                setCustomSectionMedia(sectionIndex, { 
+                  type: fileType, 
+                  url: resizedUrl, // 리사이징된 이미지 URL
+                  base64: resizedBase64, // 리사이징된 base64 데이터
+                  originalBase64: originalBase64, // 원본 base64 저장 (나중에 레이아웃 변경 시 사용)
+                  fileName: file.name // 파일 이름 저장
+                });
+              } else {
+                console.error(`섹션 ${sectionIndex} 이미지 리사이징 실패`);
+                alert("이미지 리사이징 실패");
+              }
+            });
+          };
+          reader.onerror = (error) => {
+            console.error('파일 읽기 실패:', error);
+            alert("파일 읽기 실패");
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // 비디오는 리사이징 없이 그대로 저장
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64 = event.target.result;
+            const url = URL.createObjectURL(file);
+            setCustomSectionMedia(sectionIndex, { 
+              type: fileType, 
+              url,
+              base64,
+              fileName: file.name
+            });
+          };
+          reader.onerror = (error) => {
+            console.error('파일 읽기 실패:', error);
+            alert("파일 읽기 실패");
+          };
+          reader.readAsDataURL(file);
+        }
       } else {
         alert("이미지 또는 동영상 파일만 선택할 수 있습니다.");
         e.target.value = "";
       }
     }
   };
+
+  // 레이아웃 변경 핸들러 (이미지가 있으면 다시 리사이징)
+  const handleLayoutChange = (sectionIndex, newLayout) => {
+    setCustomSectionLayout(sectionIndex, newLayout);
+    
+    // 이미지가 있으면 새로운 레이아웃에 맞춰 다시 리사이징
+    if (customMedia[sectionIndex] && customMedia[sectionIndex].type === 'image' && customMedia[sectionIndex].base64) {
+      // 원본 이미지가 있으면 원본 사용, 없으면 현재 base64 사용
+      const imageToResize = customMedia[sectionIndex].originalBase64 || customMedia[sectionIndex].base64;
+      
+      resizeImageForLayout(imageToResize, newLayout, (resizedBase64, resizedUrl) => {
+        if (resizedBase64 && resizedUrl) {
+          setCustomSectionMedia(sectionIndex, { 
+            ...customMedia[sectionIndex],
+            url: resizedUrl,
+            base64: resizedBase64,
+            // 원본 base64 유지
+            originalBase64: customMedia[sectionIndex].originalBase64 || customMedia[sectionIndex].base64,
+          });
+        }
+      });
+    }
+  };
+
+  // 이미 업로드된 이미지를 현재 레이아웃에 맞춰 리사이징
+  useEffect(() => {
+    if (!customSections.length) return;
+    
+    console.log('useEffect 트리거: 이미지 리사이징 확인 시작');
+    
+    customSections.forEach((sectionIndex) => {
+      if (customMedia[sectionIndex] && customMedia[sectionIndex].type === 'image' && customMedia[sectionIndex].base64) {
+        const layout = getCustomSectionLayout(sectionIndex);
+        // 원본 이미지가 있으면 원본 사용, 없으면 현재 base64 사용
+        const imageToResize = customMedia[sectionIndex].originalBase64 || customMedia[sectionIndex].base64;
+        
+        let targetWidth = 128;
+        let targetHeight = 768;
+        
+        if (layout === 'top-middle') {
+          targetHeight = 698;
+        } else if (layout === 'top-middle-bottom') {
+          targetHeight = 560;
+        } else {
+          targetHeight = 768;
+        }
+        
+        console.log(`섹션 ${sectionIndex} 레이아웃: ${layout}, 목표 크기: ${targetWidth}x${targetHeight}`);
+        
+        // 현재 표시 중인 이미지 크기 확인
+        const currentImg = new Image();
+        currentImg.onload = () => {
+          console.log(`섹션 ${sectionIndex} 현재 이미지 크기: ${currentImg.width}x${currentImg.height}, 목표: ${targetWidth}x${targetHeight}`);
+          
+          // 이미지가 리사이징되지 않았거나 다른 크기면 리사이징
+          if (Math.abs(currentImg.width - targetWidth) > 1 || Math.abs(currentImg.height - targetHeight) > 1) {
+            console.log(`섹션 ${sectionIndex} 이미지 리사이징 필요: ${currentImg.width}x${currentImg.height} -> ${targetWidth}x${targetHeight}`);
+            resizeImageForLayout(imageToResize, layout, (resizedBase64, resizedUrl) => {
+              if (resizedBase64 && resizedUrl) {
+                console.log(`섹션 ${sectionIndex} 이미지 리사이징 완료: ${targetWidth}x${targetHeight}`);
+                setCustomSectionMedia(sectionIndex, { 
+                  ...customMedia[sectionIndex],
+                  url: resizedUrl,
+                  base64: resizedBase64,
+                  // 원본 base64 유지
+                  originalBase64: customMedia[sectionIndex].originalBase64 || imageToResize,
+                });
+              } else {
+                console.error(`섹션 ${sectionIndex} 이미지 리사이징 실패`);
+              }
+            });
+          } else {
+            console.log(`섹션 ${sectionIndex} 이미지 크기 확인: ${currentImg.width}x${currentImg.height} (정상)`);
+          }
+        };
+        currentImg.onerror = () => {
+          console.error(`이미지 로드 실패: 섹션 ${sectionIndex}`);
+        };
+        currentImg.src = customMedia[sectionIndex].base64; // 현재 표시 중인 이미지 크기 확인
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customSections.join(','), JSON.stringify(customSectionLayouts), Object.keys(customMedia).join(',')]);
 
   const handleRemoveSection = (index) => {
     removeCustomSection(index);
@@ -166,14 +355,25 @@ function App() {
         return;
       }
       const newActiveSections = activeSections.filter((i) => i !== index);
-      setActiveSections(newActiveSections);
+      // sectionOrder가 있으면 그 순서를 유지
+      let orderedNewActiveSections = newActiveSections;
+      if (sectionOrder && sectionOrder.length > 0) {
+        orderedNewActiveSections = sectionOrder.filter(section => newActiveSections.includes(section));
+      }
+      setActiveSections(orderedNewActiveSections);
       if (currentSection === index) {
         // 현재 섹션이 비활성화되면 다른 섹션으로 전환
-        setCurrentSection(newActiveSections[0]);
+        setCurrentSection(orderedNewActiveSections[0]);
       }
     } else {
       // 활성화 (페이지 이동하지 않음)
-      const newActiveSections = [...activeSections, index].sort();
+      let newActiveSections = [...activeSections, index];
+      // sectionOrder가 있으면 그 순서를 따르고, 없으면 sort() 사용
+      if (sectionOrder && sectionOrder.length > 0) {
+        newActiveSections = sectionOrder.filter(section => newActiveSections.includes(section));
+      } else {
+        newActiveSections.sort();
+      }
       setActiveSections(newActiveSections);
       // setCurrentSection(index); // 제거: 활성화만 하고 페이지 이동하지 않음
     }
@@ -1061,7 +1261,7 @@ function App() {
                                       name={`layout-${index}`}
                                       value="top-middle-bottom"
                                       checked={getCustomSectionLayout(index) === 'top-middle-bottom'}
-                                      onChange={() => setCustomSectionLayout(index, 'top-middle-bottom')}
+                                      onChange={() => handleLayoutChange(index, 'top-middle-bottom')}
                                       style={{ margin: 0, cursor: "pointer" }}
                                     />
                                     <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -1086,7 +1286,7 @@ function App() {
                                       name={`layout-${index}`}
                                       value="top-middle"
                                       checked={getCustomSectionLayout(index) === 'top-middle'}
-                                      onChange={() => setCustomSectionLayout(index, 'top-middle')}
+                                      onChange={() => handleLayoutChange(index, 'top-middle')}
                                       style={{ margin: 0, cursor: "pointer" }}
                                     />
                                     <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -1111,7 +1311,7 @@ function App() {
                                       name={`layout-${index}`}
                                       value="middle"
                                       checked={getCustomSectionLayout(index) === 'middle'}
-                                      onChange={() => setCustomSectionLayout(index, 'middle')}
+                                      onChange={() => handleLayoutChange(index, 'middle')}
                                       style={{ margin: 0, cursor: "pointer" }}
                                     />
                                     <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
