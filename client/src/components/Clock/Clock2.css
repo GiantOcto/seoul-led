@@ -41,7 +41,7 @@
   height: 3px;
   background: #000000;
   left: calc(50% - 0.5px);
-  top: 3px;
+  top: 0px;
   transform-origin: 0.5px 42px;
 }
 
