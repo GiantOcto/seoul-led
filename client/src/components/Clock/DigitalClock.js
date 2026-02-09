@@ -55,9 +55,9 @@ function DigitalClock() {
     return () => clearInterval(interval);
   }, []);
 
-  // 캡처용: 12시 30분으로 고정
-  const hours = '12'; // String(time.getHours()).padStart(2, '0');
-  const minutes = '30'; // String(time.getMinutes()).padStart(2, '0');
+  
+  const hours = String(time.getHours()).padStart(2, '0');
+  const minutes = String(time.getMinutes()).padStart(2, '0');
   const seconds = String(time.getSeconds()).padStart(2, '0');
 
   const firstDigit = parseInt(hours[0]);

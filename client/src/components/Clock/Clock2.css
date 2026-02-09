@@ -10,7 +10,7 @@
 
 .clock2-date {
   color: #ffffff;
-  font-family: 'SeoulNamsanB', sans-serif;
+  font-family: 'SeoulHangangL', sans-serif;
   font-weight: bold;
   font-size: 12px;
   margin-bottom: 10px;
@@ -28,7 +28,7 @@
 }
 
 .clock2-hour-number {
-  font-family: 'SeoulNamsanB', sans-serif;
+  font-family: 'SeoulHangangL', sans-serif;
   font-weight: bold;
   font-size: 11px;
   color: #000000;

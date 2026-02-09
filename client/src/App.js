@@ -1234,7 +1234,7 @@ function App() {
                                     <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>
                                       {activeSections.includes(index) ? "check_circle" : "pause_circle"}
                                     </span>
-                                    {activeSections.includes(index) ? "활성" : "대기 중"}
+                                    {activeSections.includes(index) ? "활성" : "대기중"}
                                   </span>
                                 </div>
                               </div>
