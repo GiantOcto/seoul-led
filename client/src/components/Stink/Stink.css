@@ -11,6 +11,68 @@
     left: 1px;
   }
   
+  #stink-data-page1 .stink-data-good,
+  #stink-data-page1 .stink-data-running {
+    width: 100px;
+    height: 170px;
+    margin-top: 90px;
+    flex-shrink: 0;
+  }
+
+  #stink-data-page1 .stink-data-good {
+    border-color: rgb(0, 146, 215);
+  }
+
+  #stink-data-page1 .stink-data-running {
+    border-color: rgb(255, 196, 25);
+  }
+
+  #stink-data-page1 .stink-images {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+  }
+
+  #stink-data-page1 .stink-data-running > div {
+    position: relative;
+    top: 10px;
+    margin-left: -5px;
+  }
+
+  #stink-data-page1 .stink-image-front {
+    width: 75px;
+    height: 75px;
+    left: 3px;
+    bottom: 110px;
+  }
+
+  #stink-data-page1 .stink-image-back {
+    width: 75px;
+    height: 75px;
+  }
+
+  #stink-data-page1 .stink-data-good h1,
+  #stink-data-page1 .stink-data-running h1 {
+    margin-bottom: 5px;
+    font-size: 22px;
+  }
+
+  #stink-data-page1 .stink-data-good h2,
+  #stink-data-page1 .stink-data-running h2 {
+    margin-top: 5px;
+    font-size: 22px;
+  }
+
+  #stink-data-page1 .stink-data-running h1 {
+    position: absolute;
+    bottom: 135px;
+  }
+
+  #stink-data-page1 .stink-data-running h2 {
+    position: relative;
+    top: 5px;
+  }
+
   #stink-data-page2 .stink-data-good,
   #stink-data-page2 .stink-data-running {
     position: absolute;

@@ -4,7 +4,10 @@ import "./Logo.css";
 export function Logo1({ id }) {
   return (
     <div className="logo-1" id={id}>
-      <img id="logo-seoul" src="/images/서울1.png" alt="Seoul Logo" />
+      <img id="logo-seoul" 
+      src="/images/서초구CI.png"
+       alt="Seoul Logo" 
+       />
     </div>
   );
 }
@@ -14,7 +17,7 @@ export function Logo2({ id }) {
     <div className="logo-2" id={id}>
       <img
         id="logo-donghang"
-        src="/images/동행·매력_특별시_서울.png"
+        src="/images/서초구CI.png"
         alt="Seoul Logo"
       />
     </div>
@@ -38,7 +41,7 @@ export function Logo4({ id }) {
     <div className="logo-4" id={id}>
       <img
         id="logo-gangnamCI"
-        src="/images/서초구CI.png"
+        src="/images/slogans/서초구_세로형.png"
         alt="서초구 CI"
       />
     </div>

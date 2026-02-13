@@ -145,20 +145,29 @@ function App() {
 
       <div className="section-controls">
         <button style={getWaterButtonStyle(0)} onClick={() => toggleSection(0)}>
-          문구
+          기본화면(1)
         </button>
+        {/* 미세먼지 버튼 주석처리
         <button style={getWaterButtonStyle(1)} onClick={() => toggleSection(1)}>
           미세먼지 및 오존
+        </button>
+        */}
+        <button style={getWaterButtonStyle(5)} onClick={() => toggleSection(5)}>
+          기본화면(2)
         </button>
         <button style={getWaterButtonStyle(2)} onClick={() => toggleSection(2)}>
           수위데이터
         </button>
+        {/* 구이벤트 버튼 주석처리
         <button style={getWaterButtonStyle(3)} onClick={() => toggleSection(3)}>
           구 이벤트
         </button>
+        */}
+        {/* 전체이벤트 버튼 주석처리
         <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
           전체 이벤트
         </button>
+        */}
       </div>
     </>
   );
