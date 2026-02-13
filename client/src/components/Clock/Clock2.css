@@ -42,7 +42,7 @@
   background: #000000;
   left: calc(50% - 0.5px);
   top: 0px;
-  transform-origin: 0.5px 42px;
+  transform-origin: 0.5px 45px;
 }
 
 .clock2-hands {
@@ -68,7 +68,7 @@
   background: #000000;
   position: absolute;
   left: calc(50% - 1px);
-  top: 16px;
+  top: 14px;
   transform-origin: bottom;
   border-radius: 1px 1px 0 0;
 }
@@ -79,7 +79,7 @@
   background: #000000;
   position: absolute;
   left: calc(50% - 0.5px);
-  top: 11px;
+  top: 7px;
   transform-origin: bottom;
 }
 

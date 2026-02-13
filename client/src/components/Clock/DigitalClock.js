@@ -61,17 +61,22 @@ function DigitalClock() {
   const seconds = String(time.getSeconds()).padStart(2, '0');
 
   const firstDigit = parseInt(hours[0]);
+  const firstMinuteDigit = parseInt(minutes[0]);
   const isCentered = firstDigit === 0 || firstDigit === 2;
+  const isMinuteShifted = firstMinuteDigit === 1;
+  const isBothOne = firstDigit === 1 && firstMinuteDigit === 1;
 
   return (
     <div className="digital-clock-container">
       <div className="digital-date">{date} ({dayOfWeek})</div>
-      <div className={`digital-time ${isCentered ? 'centered' : ''}`}>
+      <div className={`digital-time ${isCentered ? 'centered' : ''} ${isBothOne ? 'both-one' : ''}`}>
         <SevenSegmentDigit digit={firstDigit} />
         <SevenSegmentDigit digit={parseInt(hours[1])} />
         <span className="digital-separator"></span>
-        <SevenSegmentDigit digit={parseInt(minutes[0])} />
-        <SevenSegmentDigit digit={parseInt(minutes[1])} />
+        <div className={`digital-minutes ${isMinuteShifted ? 'shifted' : ''}`}>
+          <SevenSegmentDigit digit={firstMinuteDigit} />
+          <SevenSegmentDigit digit={parseInt(minutes[1])} />
+        </div>
       </div>
     </div>
   );
