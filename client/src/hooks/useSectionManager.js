@@ -6,7 +6,7 @@ import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
 
-const INTERVALS = [30000, 20000, 20000, 20000, 20000, 20000];
+const INTERVALS = [30000, 20000, 20000, 20000, 20000, 20000, 20000, 20000];
 
 export const useSectionManager = (
   initialDistrict = "서초구",
@@ -15,7 +15,7 @@ export const useSectionManager = (
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0, 2, 5]); // 미세먼지(1), 구이벤트(3), 전체이벤트(4) 주석처리
+  const [activeSections, setActiveSections] = useState([0, 2, 5, 6, 7]); // 미세먼지(1), 구이벤트(3), 전체이벤트(4) 주석처리
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -63,23 +63,17 @@ export const useSectionManager = (
             currentSection === 0 && activeSections.includes(0)
               ? "flex"
               : "none",
+          height: "100%",
+          position: "relative",
+          backgroundImage: "url(/images/홍보문구.png)",
+          backgroundSize: "100% 100%",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
         }}
       >
-       {showLogo3 ? (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
-          >
-            <Logo3 />
-          </div>
-        ) : (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
-          >
-            <Logo4 />
-          </div>
-        )}
+        <div style={{ position: "absolute", top: "70%", left: "50%", transform: "translateX(-50%)", zIndex: 10 }}>
+          <Stink id="stink-data-page1" onStatusChange={setMachineStatus} />
+        </div>
       </div>,
 
       /* 미세먼지 페이지 주석처리
@@ -236,23 +230,47 @@ export const useSectionManager = (
             currentSection === 5 && activeSections.includes(5)
               ? "flex"
               : "none",
+          height: "100%",
+          backgroundImage: "url(/images/홍보문구2.png)",
+          backgroundSize: "100% 100%",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
         }}
       >
-        {showLogo3 ? (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
-          >
-            <Logo1 />
-          </div>
-        ) : (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
-          >
-            <Logo2 />
-          </div>
-        )}
+      </div>,
+      <div
+        key="top7"
+        className="section-top"
+        id="top7"
+        style={{
+          display:
+            currentSection === 6 && activeSections.includes(6)
+              ? "flex"
+              : "none",
+          height: "100%",
+          backgroundImage: "url(/images/홍보문구3.png)",
+          backgroundSize: "100% 100%",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+      </div>,
+      <div
+        key="top8"
+        className="section-top"
+        id="top8"
+        style={{
+          display:
+            currentSection === 7 && activeSections.includes(7)
+              ? "flex"
+              : "none",
+          height: "100%",
+          backgroundImage: "url(/images/홍보문구4.png)",
+          backgroundSize: "100% 100%",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
       </div>,
     ],
 
@@ -262,41 +280,10 @@ export const useSectionManager = (
         className="section-middle"
         id="middle1"
         style={{
-          display:
-            currentSection === 0 && activeSections.includes(0)
-              ? "flex"
-              : "none",
-          flexDirection: "column",
+          display: "none",
+          height: 0,
         }}
-      >
-        <div
-          className="promotion-text"
-          style={{
-            width: "90%",
-            position: "absolute",
-            top: "24%",
-            left: "55%",
-            transform: "translate(-50%, -50%)",
-            display: "inline-block",
-            justifyContent: "center",
-            alignItems: "center",
-            color: "#E9BC35",
-            zIndex: "1000",
-            fontFamily: "SeoulHangangEB",
-            fontSize: "14px",
-            textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
-          }}
-        >
-
-        </div>
-
-        <img
-          src="/images/홍보문구.png"
-          alt="middle1"
-          style={{ width: "85%", height: "100%", marginTop: "30%", bottom: "-9%" }}
-        />
-        <Stink id="stink-data-page1" onStatusChange={setMachineStatus} />
-      </div>,
+      ></div>,
       /* 미세먼지 페이지 주석처리
       <div
         key="middle2"
@@ -366,65 +353,28 @@ export const useSectionManager = (
         className="section-middle"
         id="middle6"
         style={{
-          display:
-            currentSection === 5 && activeSections.includes(5)
-              ? "flex"
-              : "none",
-          justifyContent: "center",
-          alignItems: "center",
+          display: "none",
+          height: 0,
         }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            gap: "8px",
-            justifyContent: "center",
-            alignItems: "flex-start",
-            height: "100%",
-          }}
-        >
-          <span
-            style={{
-              writingMode: "vertical-rl",
-              textOrientation: "mixed",
-              fontFamily: "SeoulHangangEB",
-              fontSize: "32px",
-              color: "white",
-              letterSpacing: "0.1em",
-              marginTop: "100px",
-            }}
-          >
-            오늘 행복하고
-          </span>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              marginTop: "170px",
-            }}
-          >
-            <img
-              src="/images/별사탕.png"
-              alt="별사탕"
-              style={{ width: "30px", height: "auto", marginBottom: "15px" }}
-            />
-            <span
-              style={{
-                writingMode: "vertical-rl",
-                textOrientation: "mixed",
-                fontFamily: "SeoulHangangEB",
-                fontSize: "32px",
-                color: "white",
-                letterSpacing: "0.1em",
-              }}
-            >
-              내일이 기다려지는
-            </span>
-          </div>
-        </div>
-      </div>,
+      ></div>,
+      <div
+        key="middle7"
+        className="section-middle"
+        id="middle7"
+        style={{
+          display: "none",
+          height: 0,
+        }}
+      ></div>,
+      <div
+        key="middle8"
+        className="section-middle"
+        id="middle8"
+        style={{
+          display: "none",
+          height: 0,
+        }}
+      ></div>,
     ],
 
     bottom: [
@@ -433,10 +383,8 @@ export const useSectionManager = (
         className="section-bottom"
         id="bottom1"
         style={{
-          display:
-            currentSection === 0 && activeSections.includes(0)
-              ? "flex"
-              : "none",
+          display: "none",
+          height: 0,
         }}
       ></div>,
       /* 미세먼지 페이지 주석처리
@@ -515,20 +463,28 @@ export const useSectionManager = (
         className="section-bottom"
         id="bottom6"
         style={{
-          display:
-            currentSection === 5 && activeSections.includes(5)
-              ? "flex"
-              : "none",
-          justifyContent: "center",
-          alignItems: "center",
+          display: "none",
+          height: 0,
         }}
-      >
-        <img
-          src="/images/서초구_상징.png"
-          alt="서초구 상징"
-          style={{ marginTop: "40px" }}
-        />
-      </div>,
+      ></div>,
+      <div
+        key="bottom7"
+        className="section-bottom"
+        id="bottom7"
+        style={{
+          display: "none",
+          height: 0,
+        }}
+      ></div>,
+      <div
+        key="bottom8"
+        className="section-bottom"
+        id="bottom8"
+        style={{
+          display: "none",
+          height: 0,
+        }}
+      ></div>,
     ],
   };
 

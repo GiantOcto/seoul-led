@@ -155,6 +155,12 @@ function App() {
         <button style={getWaterButtonStyle(5)} onClick={() => toggleSection(5)}>
           기본화면(2)
         </button>
+        <button style={getWaterButtonStyle(6)} onClick={() => toggleSection(6)}>
+          기본화면(3)
+        </button>
+        <button style={getWaterButtonStyle(7)} onClick={() => toggleSection(7)}>
+          기본화면(4)
+        </button>
         <button style={getWaterButtonStyle(2)} onClick={() => toggleSection(2)}>
           수위데이터
         </button>

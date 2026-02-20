@@ -14,8 +14,8 @@
   #stink-data-page1 .stink-data-good,
   #stink-data-page1 .stink-data-running {
     width: 100px;
-    height: 170px;
-    margin-top: 90px;
+    height: 150px;
+    margin-top: 65px;
     flex-shrink: 0;
   }
 
@@ -40,32 +40,32 @@
   }
 
   #stink-data-page1 .stink-image-front {
-    width: 75px;
-    height: 75px;
-    left: 3px;
-    bottom: 110px;
+    width: 70px;
+    height: 70px;
+    left: 5px;
+    bottom: 6px;
   }
 
   #stink-data-page1 .stink-image-back {
-    width: 75px;
-    height: 75px;
+    width: 70px;
+    height: 70px;
   }
 
   #stink-data-page1 .stink-data-good h1,
   #stink-data-page1 .stink-data-running h1 {
-    margin-bottom: 5px;
-    font-size: 22px;
+    margin-bottom: 3px;
+    font-size: 18px;
   }
 
   #stink-data-page1 .stink-data-good h2,
   #stink-data-page1 .stink-data-running h2 {
-    margin-top: 5px;
-    font-size: 22px;
+    margin-top: 3px;
+    font-size: 18px;
   }
 
   #stink-data-page1 .stink-data-running h1 {
     position: absolute;
-    bottom: 135px;
+    bottom: 115px;
   }
 
   #stink-data-page1 .stink-data-running h2 {
@@ -126,8 +126,8 @@
   } 
 
   .stink-data-running img {
-    width: 75px;
-    height: 75px;
+    width: 70px;
+    height: 70px;
     margin: 15px 0 15px 0;
     animation: rotateClockwise 5s infinite linear;
     transform-origin: center;
