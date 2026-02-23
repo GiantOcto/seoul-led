@@ -6,7 +6,7 @@ import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
 
-const INTERVALS = [30000, 20000, 20000, 20000, 20000, 20000, 20000, 20000];
+const INTERVALS = [30000, 30000, 30000, 30000, 30000, 30000, 30000, 30000];
 
 export const useSectionManager = (
   initialDistrict = "서초구",
@@ -15,7 +15,7 @@ export const useSectionManager = (
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0, 2, 5, 6, 7]); // 미세먼지(1), 구이벤트(3), 전체이벤트(4) 주석처리
+  const [activeSections, setActiveSections] = useState([0, 2, 5, 7]); // 0: 기본화면(1), 2: 수위데이터, 5: 기본화면(2), 7: 기본화면(3)
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -239,23 +239,6 @@ export const useSectionManager = (
       >
       </div>,
       <div
-        key="top7"
-        className="section-top"
-        id="top7"
-        style={{
-          display:
-            currentSection === 6 && activeSections.includes(6)
-              ? "flex"
-              : "none",
-          height: "100%",
-          backgroundImage: "url(/images/홍보문구3.png)",
-          backgroundSize: "100% 100%",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-      </div>,
-      <div
         key="top8"
         className="section-top"
         id="top8"
@@ -358,15 +341,6 @@ export const useSectionManager = (
         }}
       ></div>,
       <div
-        key="middle7"
-        className="section-middle"
-        id="middle7"
-        style={{
-          display: "none",
-          height: 0,
-        }}
-      ></div>,
-      <div
         key="middle8"
         className="section-middle"
         id="middle8"
@@ -412,12 +386,10 @@ export const useSectionManager = (
         }}
       >
         <div className="water-level-warning">
-          <p>
-            다른 도로로
-            <br />
-            우회하세요
-          </p>
-          <img src="/images/우회 화살표.png" alt="우회 화살표" />
+          <div className="warning-text">
+            <span>진입</span>
+            <span>주의</span>
+          </div>
         </div>
       </div>,
       /* 구이벤트 페이지 주석처리
@@ -468,15 +440,6 @@ export const useSectionManager = (
         }}
       ></div>,
       <div
-        key="bottom7"
-        className="section-bottom"
-        id="bottom7"
-        style={{
-          display: "none",
-          height: 0,
-        }}
-      ></div>,
-      <div
         key="bottom8"
         className="section-bottom"
         id="bottom8"
@@ -490,6 +453,10 @@ export const useSectionManager = (
 
   const toggleSection = (index) => {
     if (index === 2 && waterLevel <= 0.25) {
+      return;
+    }
+
+    if (waterLevel > 0.25 && index !== 2) {
       return;
     }
 
