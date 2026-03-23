@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
+import { getSocketUrl } from '../../utils/socketUrl';
 import './SerialMonitor.css';
 
 const SerialMonitor = () => {
@@ -7,7 +8,7 @@ const SerialMonitor = () => {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        const socket = io('http://localhost:8000');
+        const socket = io(getSocketUrl());
 
         socket.on('connect', () => {
             setIsConnected(true);

@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import lottie from "lottie-web";
 import io from "socket.io-client";
+import { getSocketUrl } from "../../utils/socketUrl";
 import "./Stink.css";
 
-const socket = io("http://localhost:8000", {
+const socket = io(getSocketUrl(), {
   transports: ["websocket"],
 });
 

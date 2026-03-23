@@ -1,4 +1,30 @@
+const path = require('path');
+const fs = require('fs');
+// server.js 와 같은 폴더의 .env (배치가 프로젝트 루트여도 server\.env 적용)
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+/** React 빌드 폴더 (없으면 API만 동작). 우선순위: STATIC_DIR → ../build → ../client/build */
+function resolveStaticRoot() {
+    if (process.env.STATIC_DIR) {
+        const p = path.isAbsolute(process.env.STATIC_DIR)
+            ? process.env.STATIC_DIR
+            : path.join(__dirname, '..', process.env.STATIC_DIR);
+        if (fs.existsSync(path.join(p, 'index.html'))) return p;
+    }
+    const candidates = [
+        path.join(__dirname, '..', 'build'),
+        path.join(__dirname, '..', 'client', 'build'),
+    ];
+    for (const c of candidates) {
+        if (fs.existsSync(path.join(c, 'index.html'))) return c;
+    }
+    return null;
+}
+
 const express = require('express');
+const { SerialPort } = require('serialport');
+const { ReadlineParser } = require('@serialport/parser-readline');
+
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
@@ -19,70 +45,83 @@ app.use(express.json());
 // 연결된 클라이언트 관리
 let connectedClients = new Set();
 
+/** Node 직접 시리얼 사용 시 true (SERIAL_PORT 설정됨) */
+let nodeSerialActive = false;
+
+const MAX_DATA_POINTS = 1000;
+
 const DataStore = {
-    data: [], // 메인 데이터 저장소
-    lastCleanupTimestamp: null,
-    
-    // 데이터 추가 시 타임스탬프 기준으로 정렬된 상태 유지
+    data: [],
+
+    // _ts(ms)를 함께 저장해 이진탐색 시 Date 파싱 생략
     addData(newData) {
-        this.data.push(newData);
-        // 타임스탬프 기준 정렬
-        this.data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        
-        // 데이터 개수가 임계값을 넘으면 정리 수행
-        if (this.data.length > 1000) { // MAX_DATA_POINTS 값
-            this.cleanup();
-        }
+        this.data.push({ ...newData, _ts: new Date(newData.timestamp).getTime() });
+        if (this.data.length > MAX_DATA_POINTS) this.cleanup();
     },
-    
+
     cleanup() {
-        const now = Date.now();
-        const oneDayAgo = now - (24 * 60 * 60 * 1000);
-        
-        // 이진 검색으로 삭제 시작점 찾기
+        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
         const startIndex = this.binarySearchTimestamp(oneDayAgo);
-        
-        // 시작점 이전의 모든 데이터 제거
-        if (startIndex > 0) {
-            this.data = this.data.slice(startIndex);
-        }
-        
-        this.lastCleanupTimestamp = now;
+        if (startIndex > 0) this.data = this.data.slice(startIndex);
     },
-    
-    // 이진 검색으로 특정 타임스탬프의 위치 찾기
-    binarySearchTimestamp(timestamp) {
-        let left = 0;
-        let right = this.data.length - 1;
-        
+
+    binarySearchTimestamp(targetMs) {
+        let left = 0, right = this.data.length - 1;
         while (left <= right) {
-            const mid = Math.floor((left + right) / 2);
-            const midTimestamp = new Date(this.data[mid].timestamp).getTime();
-            
-            if (midTimestamp === timestamp) {
-                return mid;
-            } else if (midTimestamp < timestamp) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
+            const mid = (left + right) >> 1;
+            const t = this.data[mid]._ts;
+            if (t === targetMs) return mid;
+            if (t < targetMs) left = mid + 1;
+            else right = mid - 1;
         }
-        
         return left;
     },
-    
-    // 데이터 조회 메서드
+
     getData() {
         return this.data;
     },
-    
-    // 특정 기간의 데이터 조회
+
     getDataInRange(startTime, endTime) {
         const startIndex = this.binarySearchTimestamp(startTime);
         const endIndex = this.binarySearchTimestamp(endTime);
         return this.data.slice(startIndex, endIndex + 1);
     }
 };
+
+/**
+ * Python parse_serial_data 와 동일 규칙:
+ * - WL:0123,MS:1
+ * - 0123,1
+ */
+function parseSerialLine(raw) {
+    const s = String(raw).trim();
+    if (!s) return null;
+    try {
+        const upper = s.toUpperCase();
+        if (upper.includes('WL:') || upper.includes('MS:')) {
+            const parts = s.split(',').map((p) => p.trim());
+            const wlPart = parts.find((p) => p.toUpperCase().startsWith('WL:'));
+            const msPart = parts.find((p) => p.toUpperCase().startsWith('MS:'));
+            if (!wlPart || !msPart) throw new Error('WL/MS');
+            const water_level = parseInt(wlPart.split(/:/i)[1].trim(), 10);
+            const msVal = msPart.split(/:/i)[1].trim();
+            if (msVal !== '0' && msVal !== '1') throw new Error('MS');
+            if (Number.isNaN(water_level)) throw new Error('wl');
+            return { water_level, machine_status: msVal === '1' };
+        }
+        const parts = s.split(',');
+        if (parts.length < 2) throw new Error('comma');
+        const water_level_str = parts[0].trim();
+        if (water_level_str.length !== 4) throw new Error('len4');
+        const water_level = parseInt(water_level_str, 10);
+        const machine_status_str = parts[1].trim();
+        if (machine_status_str !== '0' && machine_status_str !== '1') throw new Error('ms');
+        if (Number.isNaN(water_level)) throw new Error('nan');
+        return { water_level, machine_status: machine_status_str === '1' };
+    } catch {
+        return null;
+    }
+}
 
 function isValidSerialData(data) {
     try {
@@ -92,7 +131,7 @@ function isValidSerialData(data) {
             return false;
         }
 
-        if (!Number.isInteger(data.water_level) || 
+        if (!Number.isInteger(data.water_level) ||
             data.water_level < 0 ||
             data.water_level > 9999) {
             return false;
@@ -109,29 +148,106 @@ function isValidSerialData(data) {
     }
 }
 
+/** 저장 + 브로드캐스트 (Socket.IO / Node 시리얼 공통) */
+function ingestSerialPayload(data) {
+    if (!isValidSerialData(data)) {
+        console.error('Invalid serial data:', data);
+        return false;
+    }
+    if (process.env.NODE_ENV === 'development') console.log('[serial] 수신:', data);
+    DataStore.addData(data);
+    io.emit('new_data', data);
+    return true;
+}
+
+const SERIAL_RETRY_MS = 5000;
+
+function startNodeSerialListener() {
+    const serialPath = process.env.SERIAL_PORT;
+    if (!serialPath || String(serialPath).trim() === '') {
+        console.log('[serial] SERIAL_PORT 미설정 — 시리얼 비활성');
+        nodeSerialActive = false;
+        return;
+    }
+
+    const baudRate = parseInt(process.env.BAUD_RATE || '9600', 10);
+
+    let port;
+    try {
+        port = new SerialPort({
+            path: String(serialPath).trim(),
+            baudRate,
+            autoOpen: true
+        });
+    } catch (err) {
+        console.error('[serial] SerialPort 생성 실패:', err.message);
+        nodeSerialActive = false;
+        scheduleSerialRetry();
+        return;
+    }
+
+    const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+
+    parser.on('data', (line) => {
+        try {
+            const text = String(line).trim();
+            const parsed = parseSerialLine(text);
+            if (!parsed) {
+                console.warn('[serial] 파싱 실패:', text);
+                return;
+            }
+            const data = {
+                timestamp: new Date().toISOString(),
+                water_level: parsed.water_level,
+                machine_status: parsed.machine_status,
+                raw_data: text
+            };
+            ingestSerialPayload(data);
+        } catch (err) {
+            console.error('[serial] 데이터 처리 오류:', err.message);
+        }
+    });
+
+    port.on('error', (err) => {
+        console.error('[serial] 포트 오류:', err.message);
+        nodeSerialActive = false;
+        scheduleSerialRetry();
+    });
+
+    port.on('open', () => {
+        nodeSerialActive = true;
+        console.log(`[serial] 연결됨: ${serialPath} @ ${baudRate}`);
+    });
+
+    port.on('close', () => {
+        if (nodeSerialActive) {
+            console.warn('[serial] 연결 끊김 — 재연결 예약');
+            nodeSerialActive = false;
+            scheduleSerialRetry();
+        }
+    });
+}
+
+function scheduleSerialRetry() {
+    if (serialRetryTimer) return;
+    console.log(`[serial] ${SERIAL_RETRY_MS / 1000}초 후 재연결 시도...`);
+    serialRetryTimer = setTimeout(() => {
+        serialRetryTimer = null;
+        startNodeSerialListener();
+    }, SERIAL_RETRY_MS);
+}
+
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
     connectedClients.add(socket.id);
 
     // 클라이언트에 현재 데이터 전송
-    socket.emit('initial_data', DataStore.getData());
-
-    // 파이썬에서 보낸 시리얼 데이터 처리
-    socket.on('serial_data', (data) => {
-        if (!isValidSerialData(data)) {
-            console.error('Invalid serial data received:', data);
-            return;
-        }
-
-        console.log('Received serial data:', data);
-        
-        // 데이터 저장
-        DataStore.addData(data);
-
-        // 연결된 모든 클라이언트에 데이터 브로드캐스트
-        io.emit('new_data', data);
-    });
+    try {
+        socket.emit('initial_data', DataStore.getData());
+    } catch (err) {
+        console.error('[socket] initial_data 전송 오류:', err.message);
+    }
 
     // 연결 해제 처리
     socket.on('disconnect', () => {
@@ -162,7 +278,7 @@ app.get('/api/current-status', (req, res) => {
         res.json(latestData);
     } catch (error) {
         console.error('Error fetching current status:', error);
-        res.status(500).json({ error: '현재 상태 조회 중 오류가 발생했습니다.' });    
+        res.status(500).json({ error: '현재 상태 조회 중 오류가 발생했습니다.' });
     }
 });
 
@@ -173,12 +289,12 @@ app.get('/api/data-history', (req, res) => {
 
         if (hours < 1) hours = 1;
         if (hours > 24) hours = 24;
-    
+
         const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
         const filteredData = DataStore.getDataInRange(cutoff.getTime(), Date.now());
 
         res.json(filteredData);
-    } catch(error) {
+    } catch (error) {
         console.error('Error fetching data history:', error);
         res.status(500).json({ error: '데이터 히스토리 조회 중 오류가 발생했습니다.' });
     }
@@ -189,13 +305,35 @@ app.get('/api/status', (req, res) => {
     try {
         res.json({
             connectedClients: Array.from(connectedClients),
-            dataPoints: DataStore.getData().length
+            dataPoints: DataStore.getData().length,
+            nodeSerial: {
+                active: nodeSerialActive,
+                path: process.env.SERIAL_PORT || null,
+                baudRate: process.env.BAUD_RATE ? parseInt(process.env.BAUD_RATE, 10) : null
+            }
         });
     } catch (error) {
         console.error('Error fetching status:', error);
         res.status(500).json({ error: '상태 조회 중 오류가 발생했습니다.' });
     }
 });
+
+const staticRoot = resolveStaticRoot();
+if (staticRoot) {
+    console.log(`[static] 웹 UI: ${staticRoot}`);
+    app.use(express.static(staticRoot));
+    // CRA SPA: 정적 파일 없으면 index.html (path-to-regexp '*' 호환 이슈로 app.use 사용)
+    app.use((req, res, next) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+        if (req.path.startsWith('/api')) return next();
+        if (req.path.startsWith('/socket.io')) return next();
+        res.sendFile(path.join(staticRoot, 'index.html'), (err) => {
+            if (err) next(err);
+        });
+    });
+} else {
+    console.warn('[static] build/index.html 없음 — client 폴더에서 npm run build 후 다시 실행');
+}
 
 app.use((err, req, res, next) => {
     console.error('Server error:', err);
@@ -206,11 +344,23 @@ app.use((err, req, res, next) => {
 });
 
 app.use((req, res) => {
-    res.status(404).json({ error: '요청하신 리소스를 찾을 수 없습니다.' });
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: '요청하신 리소스를 찾을 수 없습니다.' });
+    }
+    res.status(404).type('text').send('Not found');
+});
+
+// 전역 예외 핸들러 — 처리 안 된 예외가 프로세스를 죽이지 않도록
+process.on('uncaughtException', (err) => {
+    console.error('[fatal] uncaughtException:', err.message, err.stack);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('[fatal] unhandledRejection:', reason);
 });
 
 // 서버 시작
 const PORT = process.env.PORT || 8000;
 http.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    startNodeSerialListener();
 });

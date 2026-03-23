@@ -1,4 +1,11 @@
 {
+  "name": "seoul-led",
+  "private": true,
+  "scripts": {
+    "build:web": "npm run build:web --prefix client",
+    "build": "npm run build:web",
+    "release:win": "node scripts/package-release-win.js"
+  },
   "dependencies": {
     "open": "^10.1.0",
     "react": "^19.0.0",
