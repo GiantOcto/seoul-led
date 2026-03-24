@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import io from "socket.io-client";
+import { getSocketUrl } from "../../utils/socketUrl";
 import "./WaterLevel.css";
 
-const socket = io("http://localhost:8000", {
+const socket = io(getSocketUrl(), {
   transports: ["websocket"],
 });
 
