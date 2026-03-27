@@ -1045,12 +1045,17 @@ export const useSectionManager = (
       console.warn(`섹션 ${index}는 기본 섹션이므로 제거할 수 없습니다.`);
       return false;
     }
-    if (!activeSections.includes(index)) {
-      console.warn(`섹션 ${index}는 활성화되어 있지 않습니다.`);
+    
+    // active(ON) 상태를 지울 때만 "최소 하나" 제약을 적용
+    const isActive = activeSections.includes(index);
+    if (isActive && activeSections.length <= 1) {
+      console.warn(`최소 하나의 섹션은 활성화되어 있어야 합니다.`);
       return false;
     }
-    if (activeSections.length <= 1) {
-      console.warn(`최소 하나의 섹션은 활성화되어 있어야 합니다.`);
+    
+    // 이미 customSections에 없는 인덱스를 제거하려는 경우엔 아무것도 하지 않음
+    if (!customSections.includes(index)) {
+      console.warn(`섹션 ${index}는 커스텀 섹션이 아닙니다.`);
       return false;
     }
 
@@ -1061,7 +1066,9 @@ export const useSectionManager = (
       console.error('IndexedDB 미디어 삭제 실패:', error);
     }
 
-    setActiveSections(activeSections.filter((i) => i !== index));
+    if (isActive) {
+      setActiveSections(activeSections.filter((i) => i !== index));
+    }
     setCustomSections(customSections.filter((i) => i !== index));
     const newIntervals = { ...customIntervals };
     delete newIntervals[index];
@@ -1073,7 +1080,8 @@ export const useSectionManager = (
     delete newMedia[index];
     setCustomMedia(newMedia);
     
-    if (currentSection === index) {
+    // 현재 섹션이 삭제되는 경우 다음 활성 섹션으로 이동
+    if (currentSection === index && isActive) {
       const nextSection = activeSections.find((i) => i !== index);
       setCurrentSection(nextSection);
     }

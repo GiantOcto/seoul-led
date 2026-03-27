@@ -141,7 +141,7 @@ span {
 }
 
 .offcanvas.offcanvas-end {
-  width: 85% !important;
+  width: 55% !important;
   max-width: 1400px !important;
   border-radius: 2.5rem 0 0 2.5rem;
   border: 1px solid #3b82f6;
