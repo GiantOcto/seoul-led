@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import Event from "../components/Event/Event";
+// import Event from "../components/Event/Event";
 import { Logo1, Logo2, Logo3, Logo4 } from "../components/Logo/Logo";
-import Clock from "../components/Clock/Clock";
+// import Clock from "../components/Clock/Clock";
 import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
@@ -15,7 +15,7 @@ export const useSectionManager = (
 ) => {
   const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState([0, 1, 3]); // 2, 4 주석처리
+  const [activeSections, setActiveSections] = useState([0, 1]); // 3 이벤트 비활성
   const [weatherData, setWeatherData] = useState({
     pm10Grade: "좋음",
     pm2_5Grade: "좋음",
@@ -150,35 +150,36 @@ export const useSectionManager = (
       //   <Logo2 />
       //   <Clock />
       // </div>,
-      <div
-        key="top4"
-        className="section-top"
-        id="top4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        {showLogo3 ? (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px"}}
-          >
-            <Logo3 style={{ marginTop: "4px" }} />
-          </div>
-        ) : (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
-          >
-            <Logo4 />
-          </div>
-        )}
-        <Clock />
-        <span style={{ color: "white" }}>문화행사</span>
-      </div>,
+      // 이벤트(문화행사) — 비활성
+      // <div
+      //   key="top4"
+      //   className="section-top"
+      //   id="top4"
+      //   style={{
+      //     display:
+      //       currentSection === 3 && activeSections.includes(3)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   {showLogo3 ? (
+      //     <div
+      //       className="logo-transition"
+      //       style={{ width: "126px", height: "50px"}}
+      //     >
+      //       <Logo3 style={{ marginTop: "4px" }} />
+      //     </div>
+      //   ) : (
+      //     <div
+      //       className="logo-transition"
+      //       style={{ width: "126px", height: "50px" }}
+      //     >
+      //       <Logo4 />
+      //     </div>
+      //   )}
+      //   <Clock />
+      //   <span style={{ color: "white" }}>문화행사</span>
+      // </div>,
       // <div
       //   key="top5"
       //   className="section-top"
@@ -222,31 +223,10 @@ export const useSectionManager = (
               : "none",
         }}
       >
-        <div
-          className="promotion-text"
-          style={{
-            width: "90%",
-            position: "absolute",
-            top: "24%",
-            left: "55%",
-            transform: "translate(-50%, -50%)",
-            display: "inline-block",
-            justifyContent: "center",
-            alignItems: "center",
-            color: "#E9BC35",
-            zIndex: "1000",
-            fontFamily: "SeoulHangangEB",
-            fontSize: "14px",
-            textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
-          }}
-        >
-          <p>환경신기술 제 466호</p>
-        </div>
-
         <img
           src="/images/홍보문구.png"
           alt="middle1"
-          style={{ width: "85%", height: "100%", marginTop: "30%" }}
+          style={{ width: "100%", height: "100%", marginTop: "30%" }}
         />
       </div>,
       <div
@@ -273,23 +253,23 @@ export const useSectionManager = (
       // >
       //   <WaterLevel onWaterLevelChange={onWaterLevelChange} />
       // </div>,
-      <div
-        key="middle4"
-        className="section-middle"
-        id="middle4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="middle4-event"
-          selectedDistrict={selectedDistrict}
-          position="middle4"
-        />
-      </div>,
+      // <div
+      //   key="middle4"
+      //   className="section-middle"
+      //   id="middle4"
+      //   style={{
+      //     display:
+      //       currentSection === 3 && activeSections.includes(3)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <Event
+      //     key="middle4-event"
+      //     selectedDistrict={selectedDistrict}
+      //     position="middle4"
+      //   />
+      // </div>,
       // <div
       //   key="middle5"
       //   className="section-middle"
@@ -352,23 +332,23 @@ export const useSectionManager = (
       //     <img src="/images/우회 화살표.png" alt="우회 화살표" />
       //   </div>
       // </div>,
-      <div
-        key="bottom4"
-        className="section-bottom"
-        id="bottom4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="bottom4-event"
-          selectedDistrict={selectedDistrict}
-          position="bottom4"
-        />
-      </div>,
+      // <div
+      //   key="bottom4"
+      //   className="section-bottom"
+      //   id="bottom4"
+      //   style={{
+      //     display:
+      //       currentSection === 3 && activeSections.includes(3)
+      //         ? "flex"
+      //         : "none",
+      //   }}
+      // >
+      //   <Event
+      //     key="bottom4-event"
+      //     selectedDistrict={selectedDistrict}
+      //     position="bottom4"
+      //   />
+      // </div>,
       // <div
       //   key="bottom5"
       //   className="section-bottom"

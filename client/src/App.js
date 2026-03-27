@@ -6,8 +6,7 @@ import "./App.css";
 
 function App() {
   const [waterLevel, setWaterLevel] = useState(0);
-  const [previousSections, setPreviousSections] = useState([0, 1, 2, 3, 4, 5]);
-
+  const [previousSections, setPreviousSections] = useState([0, 1]);
   const handleWaterLevelChange = (level) => {
     setWaterLevel(level);
   };
@@ -153,9 +152,9 @@ function App() {
         {/* <button style={getWaterButtonStyle(2)} onClick={() => toggleSection(2)}>
           수위데이터
         </button> */}
-        <button style={getWaterButtonStyle(3)} onClick={() => toggleSection(3)}>
+        {/* <button style={getWaterButtonStyle(3)} onClick={() => toggleSection(3)}>
           이벤트
-        </button>
+        </button> */}
         {/* <button style={getWaterButtonStyle(4)} onClick={() => toggleSection(4)}>
           전체 이벤트
         </button> */}
