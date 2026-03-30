@@ -55,31 +55,22 @@ function StinkRunning() {
 }
 
 function Stink({ id, onStatusChange = () => {} }) {
-  const [machineStatus, setMachineStatus] = useState(0);
-  const container = useRef(null);
+  const [isReducing, setIsReducing] = useState(false);
 
   useEffect(() => {
-    socket.on("initial_data", (data) => {
-      if (data && data.length > 0) {
-        const status = data[data.length - 1].machine_status;
-        setMachineStatus(status);
-        if (onStatusChange) onStatusChange(status);
-      }
-    });
-
-    socket.on("new_data", (data) => {
-      setMachineStatus(data.machine_status);
-      if (onStatusChange) onStatusChange(data.machine_status);
+    socket.on("relay_reduction_status", (data) => {
+      const next = Boolean(data?.reducing);
+      setIsReducing(next);
+      if (onStatusChange) onStatusChange(next);
     });
 
     return () => {
-      socket.off("initial_data");
-      socket.off("new_data");
+      socket.off("relay_reduction_status");
     };
   }, [onStatusChange]);
 
   return (
-    <div id={id}>{machineStatus === true ? <StinkRunning /> : <StinkGood />}</div>
+    <div id={id}>{isReducing ? <StinkRunning /> : <StinkGood />}</div>
   );
 }
 

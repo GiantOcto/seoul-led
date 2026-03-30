@@ -2,6 +2,7 @@
     position: relative;
     width: 128px;
     margin-top: 10px; /* 로고와의 간격 조정 */
+    margin-bottom: -6px; /* 문화행사 텍스트를 위로 올리기 */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -90,7 +91,7 @@
 }
 .date {
     color: #ffffff;
-    font-family: 'SeoulNamsanB', sans-serif;
+    font-family: 'SeoulHangangL', sans-serif;
     font-weight: bold;
     font-size: 12px;
     margin-bottom: 10px;

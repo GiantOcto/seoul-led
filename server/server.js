@@ -24,6 +24,7 @@ function resolveStaticRoot() {
 const express = require('express');
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
+const dgram = require('dgram');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -47,6 +48,14 @@ let connectedClients = new Set();
 
 /** Node 직접 시리얼 사용 시 true (SERIAL_PORT 설정됨) */
 let nodeSerialActive = false;
+const RELAY_EVENT_UDP_PORT = parseInt(process.env.RELAY_EVENT_UDP_PORT || '19031', 10);
+
+const RelayState = {
+    relay1On: false,
+    relay2On: false,
+    reducing: false,
+    lastReceivedAt: null,
+};
 
 const MAX_DATA_POINTS = 1000;
 
@@ -237,6 +246,51 @@ function scheduleSerialRetry() {
     }, SERIAL_RETRY_MS);
 }
 
+function setRelayReducing(nextReducing, source) {
+    const changed = RelayState.reducing !== nextReducing;
+    RelayState.reducing = nextReducing;
+    if (!changed) return;
+    io.emit('relay_reduction_status', {
+        reducing: RelayState.reducing,
+        relay1On: RelayState.relay1On,
+        relay2On: RelayState.relay2On,
+        lastReceivedAt: RelayState.lastReceivedAt,
+        source,
+    });
+}
+
+function startRelayUdpListener() {
+    const socket = dgram.createSocket('udp4');
+
+    socket.on('message', (msg, rinfo) => {
+        try {
+            const payload = JSON.parse(msg.toString('utf8'));
+            if (!payload || payload.type !== 'relay_status_changed') return;
+
+            RelayState.relay1On = Boolean(payload.relay1On);
+            RelayState.relay2On = Boolean(payload.relay2On);
+            RelayState.lastReceivedAt = new Date().toISOString();
+
+            // relay1 ON → 저감중, relay1 OFF UDP 올 때까지 유지 (타임아웃 없음)
+            if (RelayState.relay1On) {
+                setRelayReducing(true, `udp:${rinfo.address}:${rinfo.port}`);
+            } else {
+                setRelayReducing(false, `udp:${rinfo.address}:${rinfo.port}`);
+            }
+        } catch (err) {
+            console.warn('[relay-udp] parse 실패:', err.message);
+        }
+    });
+
+    socket.on('error', (err) => {
+        console.error('[relay-udp] 소켓 오류:', err.message);
+    });
+
+    socket.bind(RELAY_EVENT_UDP_PORT, '127.0.0.1', () => {
+        console.log(`[relay-udp] listening 127.0.0.1:${RELAY_EVENT_UDP_PORT}`);
+    });
+}
+
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
@@ -245,6 +299,13 @@ io.on('connection', (socket) => {
     // 클라이언트에 현재 데이터 전송
     try {
         socket.emit('initial_data', DataStore.getData());
+        socket.emit('relay_reduction_status', {
+            reducing: RelayState.reducing,
+            relay1On: RelayState.relay1On,
+            relay2On: RelayState.relay2On,
+            lastReceivedAt: RelayState.lastReceivedAt,
+            source: 'initial',
+        });
     } catch (err) {
         console.error('[socket] initial_data 전송 오류:', err.message);
     }
@@ -310,6 +371,13 @@ app.get('/api/status', (req, res) => {
                 active: nodeSerialActive,
                 path: process.env.SERIAL_PORT || null,
                 baudRate: process.env.BAUD_RATE ? parseInt(process.env.BAUD_RATE, 10) : null
+            },
+            relayReduction: {
+                reducing: RelayState.reducing,
+                relay1On: RelayState.relay1On,
+                relay2On: RelayState.relay2On,
+                lastReceivedAt: RelayState.lastReceivedAt,
+                udpPort: RELAY_EVENT_UDP_PORT,
             }
         });
     } catch (error) {
@@ -363,4 +431,5 @@ const PORT = process.env.PORT || 8000;
 http.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     startNodeSerialListener();
+    startRelayUdpListener();
 });
