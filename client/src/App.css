@@ -96,9 +96,10 @@ span {
 
 .banner-mid {
   display: flex;
-  justify-content: end;
+  justify-content: center;
   align-items: center;
-  width: 70%;
+  flex: 1;
+  transform: translateX(-160px);
 }
 
 .banner-mid button {
@@ -140,25 +141,29 @@ span {
   z-index: 1055 !important;
 }
 
-.offcanvas.offcanvas-end {
+.offcanvas.offcanvas-end.settings-offcanvas-top {
   width: 55% !important;
   max-width: 1400px !important;
-  border-radius: 2.5rem 0 0 2.5rem;
+  height: 93vh !important;
+  left: calc(50% - 200px) !important;
+  right: auto !important;
+  top: 1vh !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  border-radius: 2.5rem !important;
   border: 1px solid #3b82f6;
-  border-right: none;
+  transform: translate3d(-50%, -120%, 0) !important;
   z-index: 1055 !important;
 }
 
-.offcanvas.offcanvas-end.show {
-  height: 93vh !important;
-  top: 1vh !important;
-  right: 0 !important;
-  left: auto !important;
+.offcanvas.offcanvas-end.settings-offcanvas-top.show,
+.offcanvas.offcanvas-end.settings-offcanvas-top.showing {
+  transform: translate3d(-50%, 0, 0) !important;
+  visibility: visible !important;
 }
 
-.offcanvas.show:not(.hiding) {
-  visibility: visible !important;
-  transform: translateX(0) !important;
+.offcanvas.offcanvas-end.settings-offcanvas-top.hiding {
+  transform: translate3d(-50%, -120%, 0) !important;
 }
 
 .offcanvas-backdrop {

@@ -686,7 +686,7 @@ function App() {
           <div className="divider"></div>
         </div>
 
-        <div className="banner-right">
+        <div className="banner-mid">
           <button
             type="button"
             data-bs-toggle="offcanvas"
@@ -718,7 +718,7 @@ function App() {
         </div>
 
         <div
-          className="offcanvas offcanvas-end"
+          className="offcanvas offcanvas-end settings-offcanvas-top"
           data-bs-scroll="true"
           data-bs-backdrop="false"
           tabIndex="-1"
