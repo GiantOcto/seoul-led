@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './DigitalClock.css';
 
 // 7세그먼트 디스플레이 숫자 컴포넌트
@@ -32,33 +32,52 @@ const SevenSegmentDigit = ({ digit }) => {
 };
 
 function DigitalClock() {
-  const [time, setTime] = useState(new Date());
-  const [date, setDate] = useState('');
-  const [dayOfWeek, setDayOfWeek] = useState('');
+  const [time, setTime] = useState(() => new Date());
+
+  const { date, dayOfWeek } = useMemo(() => {
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const year = time.getFullYear();
+    const month = String(time.getMonth() + 1).padStart(2, '0');
+    const day = String(time.getDate()).padStart(2, '0');
+    return {
+      date: `${year}-${month}-${day}`,
+      dayOfWeek: days[time.getDay()],
+    };
+  }, [time]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setTime(now);
-      
-      const days = ['일', '월', '화', '수', '목', '금', '토'];
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
-      const formattedDay = days[now.getDay()];
-      
-      setDate(formattedDate);
-      setDayOfWeek(formattedDay);
-    }, 1000);
+    let intervalId = null;
 
-    return () => clearInterval(interval);
+    const tick = () => setTime(new Date());
+
+    const start = () => {
+      tick();
+      intervalId = setInterval(tick, 1000);
+    };
+
+    const stop = () => {
+      if (intervalId != null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) stop();
+      else start();
+    };
+
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
-  
   const hours = String(time.getHours()).padStart(2, '0');
   const minutes = String(time.getMinutes()).padStart(2, '0');
-  const seconds = String(time.getSeconds()).padStart(2, '0');
 
   const firstDigit = parseInt(hours[0]);
   const firstMinuteDigit = parseInt(minutes[0]);

@@ -8,6 +8,7 @@ function Event({ selectedDistrict, position }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentEvent, setCurrentEvent] = useState(null);
   const [allEventsData, setAllEventsData] = useState(null);
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
 
   // 캐시 관리 설정
   const CACHE_DURATION = 90 * 24 * 60 * 60 * 1000; // ⭐ 90일 (3개월)
@@ -349,15 +350,14 @@ function Event({ selectedDistrict, position }) {
       filteredEvents = nonGuroEvents.filter((_, index) => index % 2 === 1);
     }
 
-    // ⭐ 3단계: 프리로드된 이미지만 있는 이벤트로 제한
-    const preloadedEvents = filteredEvents?.filter(event => 
-      PRELOADED_URLS.current.has(event.MAIN_IMG)
-    ) || [];
-    
+    // 프리로드 URL 집합은 데일리 배치용으로만 쓰고, 표시 목록은 필터 결과 전부 사용.
+    // (이전: PRELOADED_URLS에 없으면 행사 자체를 숨김 → 9시 전·프리로드 8건 밖 행사가 통째로 누락됨)
+
     if (filteredEvents && filteredEvents.length > 0) {
-      setEvents(preloadedEvents);
-      setCurrentEvent(preloadedEvents[0]);
+      setEvents(filteredEvents);
+      setCurrentEvent(filteredEvents[0]);
       setCurrentIndex(0);
+      setImageLoadFailed(false);
     } else {
       setEvents([]);
       setCurrentEvent(null);
@@ -372,6 +372,7 @@ function Event({ selectedDistrict, position }) {
       setCurrentIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % events.length;
         setCurrentEvent(events[nextIndex]);
+        setImageLoadFailed(false);
         return nextIndex;
       });
     }, 5000);
@@ -394,9 +395,8 @@ function Event({ selectedDistrict, position }) {
     );
   };
 
-  // 이미지 로딩 실패시 조용히 처리
-  const handleImageError = (e) => {
-    e.target.style.display = 'none';  // 이미지만 숨기고 조용히 처리
+  const handleImageError = () => {
+    setImageLoadFailed(true);
   };
 
   // 로딩 상태 표시
@@ -419,16 +419,22 @@ function Event({ selectedDistrict, position }) {
   return (
     <div className="event-container">
       <div className="event-image">
-        <img 
-          src={currentEvent.MAIN_IMG}
-          alt={currentEvent.TITLE}
-          onError={handleImageError}
-          style={{
-            maxWidth: '100%',
-            maxHeight: '200px',
-            objectFit: 'cover'
-          }}
-        />
+        {currentEvent.MAIN_IMG && !imageLoadFailed ? (
+          <img
+            src={currentEvent.MAIN_IMG}
+            alt={currentEvent.TITLE}
+            onError={handleImageError}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '200px',
+              objectFit: 'cover',
+            }}
+          />
+        ) : (
+          <div className="event-image-fallback" role="img" aria-label="포스터 없음">
+            포스터를 불러올 수 없습니다
+          </div>
+        )}
       </div>
       <div className="event-desc">
         <div className="event-title">

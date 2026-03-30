@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSectionManager } from "./hooks/useSectionManager";
+import { Logo34PairProvider } from "./components/Logo/Logo34PairContext";
 import "./App.css";
 
 // 시계 썸네일 컴포넌트
@@ -362,8 +363,7 @@ function App() {
       }
       setActiveSections(orderedNewActiveSections);
       if (currentSection === index) {
-        // 현재 섹션이 비활성화되면 다른 섹션으로 전환
-        setCurrentSection(orderedNewActiveSections[0]);
+        setCurrentSection(Math.min(...orderedNewActiveSections));
       }
     } else {
       // 활성화 (페이지 이동하지 않음)
@@ -1334,15 +1334,17 @@ function App() {
         </div>
       </div>
 
-      <div className="main-page">
-        <div className="container">
-          {sections.top}
+      <Logo34PairProvider>
+        <div className="main-page">
+          <div className="container">
+            {sections.top}
 
-          {sections.middle}
+            {sections.middle}
 
-          {sections.bottom}
+            {sections.bottom}
+          </div>
         </div>
-      </div>
+      </Logo34PairProvider>
 
       <div 
         className="section-controls"
