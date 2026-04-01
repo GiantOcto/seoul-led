@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSectionManager } from "./hooks/useSectionManager";
+import { Logo34PairProvider } from "./components/Logo/Logo34PairContext";
 import "./App.css";
 
 // 시계 썸네일 컴포넌트
@@ -35,14 +36,7 @@ function App() {
     try {
       const saved = localStorage.getItem('sectionOrder');
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter((s) => s !== 4);
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem('sectionOrder', JSON.stringify(cleaned));
-          }
-          return cleaned.length > 0 ? cleaned : null;
-        }
+        return JSON.parse(saved);
       }
     } catch (error) {
       console.error('sectionOrder 로드 실패:', error);
@@ -369,8 +363,7 @@ function App() {
       }
       setActiveSections(orderedNewActiveSections);
       if (currentSection === index) {
-        // 현재 섹션이 비활성화되면 다른 섹션으로 전환
-        setCurrentSection(orderedNewActiveSections[0]);
+        setCurrentSection(Math.min(...orderedNewActiveSections));
       }
     } else {
       // 활성화 (페이지 이동하지 않음)
@@ -1340,15 +1333,17 @@ function App() {
         </div>
       </div>
 
-      <div className="main-page">
-        <div className="container">
-          {sections.top}
+      <Logo34PairProvider>
+        <div className="main-page">
+          <div className="container">
+            {sections.top}
 
-          {sections.middle}
+            {sections.middle}
 
-          {sections.bottom}
+            {sections.bottom}
+          </div>
         </div>
-      </div>
+      </Logo34PairProvider>
 
       <div 
         className="section-controls"

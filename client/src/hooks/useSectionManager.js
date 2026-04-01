@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Event from "../components/Event/Event";
-import { Logo1, Logo2, Logo3, Logo4 } from "../components/Logo/Logo";
+import RotatingLogo34 from "../components/Logo/RotatingLogo34";
 import Clock from "../components/Clock/Clock";
 import Clock2 from "../components/Clock/Clock2";
 import DigitalClock from "../components/Clock/DigitalClock";
@@ -50,20 +50,24 @@ export const useSectionManager = (
   };
 
   const savedData = loadFromStorage();
-  
-  const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
-  const [currentSection, setCurrentSection] = useState(0);
-  const [activeSections, setActiveSections] = useState(() => {
-    // 저장된 활성 섹션이 있으면 사용 (전체 이벤트 4 제거)
-    if (savedData.activeSections && Array.isArray(savedData.activeSections)) {
-      const cleaned = savedData.activeSections.filter((i) => i !== 4);
-      return cleaned.length > 0 ? cleaned : [0, 1, 3];
+
+  const computeInitialActiveSections = (data) => {
+    if (data.activeSections && Array.isArray(data.activeSections)) {
+      return data.activeSections;
     }
     const baseSections = [0, 1, 3];
-    return savedData.sections.length > 0
-      ? [...baseSections, ...savedData.sections].sort()
+    return data.sections.length > 0
+      ? [...baseSections, ...data.sections].sort()
       : baseSections;
-  });
+  };
+
+  const initialActiveSections = computeInitialActiveSections(savedData);
+
+  const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
+  const [activeSections, setActiveSections] = useState(() => initialActiveSections);
+  const [currentSection, setCurrentSection] = useState(() =>
+    initialActiveSections.length > 0 ? Math.min(...initialActiveSections) : 0
+  );
   const [customSections, setCustomSections] = useState(savedData.sections); // 동적으로 추가된 섹션들
   
   // 기본 섹션의 기본값과 저장된 값 병합
@@ -92,7 +96,15 @@ export const useSectionManager = (
   const [customMedia, setCustomMedia] = useState({}); // 커스텀 섹션의 미디어 정보 저장 { sectionIndex: { type: 'image'|'video', url: string } }
   const [clockType, setClockType] = useState(savedData.clockType); // 시계 타입: 'analog' 또는 'digital'
   const [customSectionLayouts, setCustomSectionLayouts] = useState(savedData.layouts); // 커스텀 섹션의 레이아웃 저장 { sectionIndex: 'top-middle-bottom' | 'top-middle' | 'middle' }
-  
+
+  // 현재 섹션이 비활성이면, 켜진 섹션 중 가장 작은 인덱스로 (재시작 시 0만 켜져 있지 않을 때 빈 화면 방지)
+  useEffect(() => {
+    if (activeSections.length === 0) return;
+    if (!activeSections.includes(currentSection)) {
+      setCurrentSection(Math.min(...activeSections));
+    }
+  }, [activeSections, currentSection]);
+
   // IndexedDB에서 미디어 불러오기
   useEffect(() => {
     const loadMedia = async () => {
@@ -110,8 +122,6 @@ export const useSectionManager = (
     pm2_5Grade: "좋음",
   });
   const [machineStatus, setMachineStatus] = useState(false);
-  const [showLogo1, setShowLogo1] = useState(true);
-  const [showLogo3, setShowLogo3] = useState(true);
 
   // 섹션의 인터벌을 가져오는 함수
   const getSectionInterval = (sectionIndex) => {
@@ -159,14 +169,6 @@ export const useSectionManager = (
     saveMedia();
   }, [customMedia, customSections]);
 
-  // 비활성/제거된 섹션(예: 전체 이벤트 4)을 가리키면 첫 활성 섹션으로 보정
-  useEffect(() => {
-    if (activeSections.length === 0) return;
-    if (!activeSections.includes(currentSection)) {
-      setCurrentSection(activeSections[0]);
-    }
-  }, [activeSections, currentSection]);
-
   // 자동 전환 타이머 추적
   const autoTransitionTimerRef = useRef(null);
 
@@ -199,21 +201,6 @@ export const useSectionManager = (
     };
   }, [currentSection, activeSections, customIntervals, sectionOrder]);
 
-  useEffect(() => {
-    const interval1 = setInterval(() => {
-      setShowLogo1((prev) => !prev);
-    }, 15000);
-
-    const interval2 = setInterval(() => {
-      setShowLogo3((prev) => !prev);
-    }, 15000);
-
-    return () => {
-      clearInterval(interval1);
-      clearInterval(interval2);
-    };
-  }, []);
-
   const sections = useMemo(() => {
     const baseSections = {
       top: [
@@ -228,21 +215,7 @@ export const useSectionManager = (
               : "none",
         }}
       >
-       {showLogo3 ? (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
-          >
-            <Logo3 />
-          </div>
-        ) : (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "50px" }}
-          >
-            <Logo4 />
-          </div>
-        )}
+       <RotatingLogo34 style={{ width: "126px", height: "50px" }} />
       </div>,
 
       <div
@@ -276,15 +249,7 @@ export const useSectionManager = (
         }}
       >
         <div className="background3"></div>
-        {showLogo3 ? (
-          <div className="logo-transition" style={{ width: "126px" }}>
-            <Logo3 />
-          </div>
-        ) : (
-          <div className="logo-transition" style={{ width: "126px" }}>
-            <Logo4 />
-          </div>
-        )}
+        <RotatingLogo34 style={{ width: "126px" }} />
         <div className="air-quality">
           <div className="air-quality-text">
             <h1>{selectedDistrict}</h1>
@@ -324,22 +289,23 @@ export const useSectionManager = (
               : "none",
         }}
       >
-        {showLogo3 ? (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "70px"}}
-          >
-            <Logo3/>
-          </div>
-        ) : (
-          <div
-            className="logo-transition"
-            style={{ width: "126px", height: "70px" }}
-          >
-            <Logo4 />
-          </div>
-        )}
+        <RotatingLogo34 style={{ width: "126px", height: "70px" }} />
         {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
+        <span style={{ color: "white" }}>문화행사</span>
+      </div>,
+      <div
+        key="top5"
+        className="section-top"
+        id="top5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <RotatingLogo34 style={{ width: "126px", height: "70px" }} />
+          {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
         <span style={{ color: "white" }}>문화행사</span>
       </div>,
     ],
@@ -566,21 +532,9 @@ export const useSectionManager = (
                 paddingBottom: "1rem",
               }}
             >
-              {showLogo1 ? (
-                <div
-                  className="logo-transition"
-                  style={{ width: "126px", height: "70px", marginTop: "8px" }}
-                >
-                  <Logo3 />
-                </div>
-              ) : (
-                <div
-                  className="logo-transition"
-                  style={{ width: "126px", height: "70px", marginTop: "8px" }}
-                >
-                  <Logo4 />
-                </div>
-              )}
+              <RotatingLogo34
+                style={{ width: "126px", height: "70px", marginTop: "8px" }}
+              />
               <div style={{ marginTop: "-1.5rem" }}>
                 {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
               </div>
@@ -689,21 +643,9 @@ export const useSectionManager = (
                 justifyContent: "center",
               }}
             >
-              {showLogo3 ? (
-                <div
-                  className="logo-transition"
-                  style={{ width: "126px", height: "70px", marginTop: "8px" }}
-                >
-                  <Logo3 />
-                </div>
-              ) : (
-                <div
-                  className="logo-transition"
-                  style={{ width: "126px", height: "70px", marginTop: "8px" }}
-                >
-                  <Logo4 />
-                </div>
-              )}
+              <RotatingLogo34
+                style={{ width: "126px", height: "70px", marginTop: "8px" }}
+              />
             </div>
           );
           
@@ -899,8 +841,6 @@ export const useSectionManager = (
     customMedia, 
     activeSections, 
     currentSection, 
-    showLogo1,
-    showLogo3, 
     selectedDistrict, 
     weatherData, 
     machineStatus,
