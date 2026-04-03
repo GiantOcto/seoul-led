@@ -136,63 +136,41 @@ function Event({ selectedDistrict, position }) {
           }
         }
 
-        // 캐시 없거나 3개월 지났을 때만 API 호출
+        // 캐시 없거나 만료됐을 때만 API 호출
         console.log("문화행사 API 호출 중... (캐시 만료)");
-        
-        // 이번 달 전체 데이터 요청
-        const today = new Date();
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const formattedDate = startOfMonth.toLocaleDateString('en-CA');
-        
-        const response = await fetch(
-          `https://openapi.gg.go.kr/GGCULTUREVENTSTUS?KEY=6b0a9955cc084709b11feb3ba41b8988&pIndex=1&pSize=100`
-        );
-        
-        const xmlText = await response.text();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-        
-        // 모든 row 요소 가져오기
-        const rows = xmlDoc.querySelectorAll('row');
-        const allEvents = Array.from(rows).map(row => {
-          const getText = (tagName) => {
-            const element = row.querySelector(tagName);
-            return element ? element.textContent : '';
-          };
-          
-          return {
-            TITLE: getText('TITLE'),
-            HOST_INST_NM: getText('HOST_INST_NM'),
-            CATEGORY_NM: getText('CATEGORY_NM'),
-            URL: getText('URL'),
-            EVENT_TM_INFO: getText('EVENT_TM_INFO'),
-            PARTCPT_EXPN_INFO: getText('PARTCPT_EXPN_INFO'),
-            TELNO_INFO: getText('TELNO_INFO'),
-            HMPG_URL: getText('HMPG_URL'),
-            IMAGE_URL: getText('IMAGE_URL'),
-            BEGIN_DE: getText('BEGIN_DE'),
-            END_DE: getText('END_DE'),
-            WRITNG_DE: getText('WRITNG_DE'),
-            // 기존 필드명 호환성 유지
-            MAIN_IMG: getText('IMAGE_URL'),
-            DATE: `${getText('BEGIN_DE')}~${getText('END_DE')}`,
-            STRTDATE: getText('BEGIN_DE'),
-            ENDDATE: getText('END_DE'),
-            GUNAME: getText('HOST_INST_NM').includes('성남') ? '성남시' : ''
-          };
-        });
-        
-        // ⭐ "성남"이 포함된 데이터만 필터링 (TITLE 또는 HOST_INST_NM에 포함)
-        const seongnamEvents = allEvents.filter(event => 
-          event.TITLE.includes('성남') || event.HOST_INST_NM.includes('성남')
-        );
-        
-        console.log(`✅ 전체 ${allEvents.length}개 중 성남 관련 ${seongnamEvents.length}개 필터링됨`);
-        
-        if (seongnamEvents.length === 0) {
-          console.warn("성남 관련 이벤트가 없습니다.");
+
+        // 성남시 공공기관 행사정보 API (data.go.kr)
+        const SEONGNAM_API_KEY = "hdY4oBjOnFqA%2BJyW%2Bkzoyx0iCeR8iu5iz4L2gHBvK3C%2FzN8ATC5DxGOPBBimYveDh1LXwswQxuLEGQvxeNe1eg%3D%3D";
+        const seongnamUrl = `https://api.odcloud.kr/api/15032523/v1/uddi:010f6c96-2188-4373-82b6-a6646ca7d5bd?page=1&perPage=200&serviceKey=${SEONGNAM_API_KEY}`;
+        const seongnamRes = await fetch(seongnamUrl);
+        const seongnamJson = await seongnamRes.json();
+
+        if (!seongnamJson?.data || seongnamJson.data.length === 0) {
+          console.warn("성남시 행사 데이터가 없습니다.");
+          const cachedData = localStorage.getItem(CACHE_KEY);
+          if (cachedData) {
+            try {
+              const parsedCache = JSON.parse(cachedData);
+              if (Array.isArray(parsedCache) && parsedCache.length > 0) {
+                console.log("📦 API 데이터 없어서 기존 캐시 유지");
+                setAllEventsData(parsedCache);
+              }
+            } catch (e) { /* ignore */ }
+          }
           return;
         }
+
+        console.log(`✅ 성남시 API 성공: ${seongnamJson.data.length}건`);
+        const seongnamEvents = seongnamJson.data.map((item) => ({
+          TITLE: item['행사명'] || '',
+          HOST_INST_NM: '성남시',
+          CATEGORY_NM: item['분류'] || '',
+          DATE: item['행사기간'] || '',
+          STRTDATE: (item['행사기간'] || '').split('~')[0]?.trim() || '',
+          ENDDATE: (item['행사기간'] || '').split('~')[1]?.trim() || '',
+          MAIN_IMG: '',
+          GUNAME: '성남시',
+        }));
 
         // localStorage 용량 체크 후 저장
         try {

@@ -16,7 +16,7 @@ import {
 
 const INTERVALS = [30000, 20000, 20000, 20000, 20000];
 const DEFAULT_CUSTOM_INTERVAL = 20000; // 새로운 섹션의 기본 인터벌 (20초)
-const PROTECTED_SECTIONS = [0, 1, 3]; // 제거 불가능한 기본 섹션들 (전체 이벤트 4번 제외)
+const PROTECTED_SECTIONS = [0, 1]; // 제거 불가능한 기본 섹션들 (행사 섹션 비활성화)
 const MAX_SECTIONS = 16; // 최대 섹션 개수
 
 export const useSectionManager = (
@@ -51,14 +51,20 @@ export const useSectionManager = (
 
   const savedData = loadFromStorage();
 
+  const DISABLED_SECTIONS = [3]; // 비활성화된 섹션 (행사)
+
   const computeInitialActiveSections = (data) => {
+    let sections;
     if (data.activeSections && Array.isArray(data.activeSections)) {
-      return data.activeSections;
+      sections = data.activeSections;
+    } else {
+      const baseSections = [0, 1];
+      sections = data.sections.length > 0
+        ? [...baseSections, ...data.sections].sort()
+        : baseSections;
     }
-    const baseSections = [0, 1, 3];
-    return data.sections.length > 0
-      ? [...baseSections, ...data.sections].sort()
-      : baseSections;
+    // 비활성화된 섹션 강제 제거
+    return sections.filter(s => !DISABLED_SECTIONS.includes(s));
   };
 
   const initialActiveSections = computeInitialActiveSections(savedData);
@@ -118,8 +124,8 @@ export const useSectionManager = (
     loadMedia();
   }, []); 
   const [weatherData, setWeatherData] = useState({
-    pm10Grade: "좋음",
-    pm2_5Grade: "좋음",
+    pm10Grade: "점검중",
+    pm2_5Grade: "점검중",
   });
   const [machineStatus, setMachineStatus] = useState(false);
 
