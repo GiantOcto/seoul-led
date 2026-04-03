@@ -3,15 +3,15 @@ import "./Weather.css";
 
 const AIR_KOREA_KEY = "hdY4oBjOnFqA%2BJyW%2Bkzoyx0iCeR8iu5iz4L2gHBvK3C%2FzN8ATC5DxGOPBBimYveDh1LXwswQxuLEGQvxeNe1eg%3D%3D";
 
-// 성남시 측정소 (복정동 기본, 안 뜨면 정자동 폴백)
-const PRIMARY_STATION = "복정동";
-const FALLBACK_STATION = "정자동";
+// 성남시 측정소 (상대원동 기본, 안 뜨면 단대동 폴백)
+const PRIMARY_STATION = "상대원동";
+const FALLBACK_STATION = "단대동";
 
 function Weather({ onWeatherUpdate }) {
   const [pollutionData, setPollutionData] = useState(null);
 
   // 캐시 관리 설정
-  const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3시간
+  const CACHE_DURATION = 1 * 60 * 60 * 1000; // 1시간 (매 정시 갱신)
   const CACHE_KEY = 'seongnamAirQuality_cache';
   const CACHE_TIME_KEY = 'seongnamAirQuality_time';
 
@@ -34,23 +34,24 @@ function Weather({ onWeatherUpdate }) {
         const cachedData = localStorage.getItem(CACHE_KEY);
         const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
 
-        // 캐시가 있고 3시간 이내면 API 호출 안함
+        // 캐시가 있고 1시간 이내면 API 호출 안함
         if (cachedData && cachedTime &&
-            (Date.now() - parseInt(cachedTime) < CACHE_DURATION)) {
+            (Date.now() - parseInt(cachedTime, 10) < CACHE_DURATION)) {
           const parsedData = JSON.parse(cachedData);
           setPollutionData(parsedData);
           return;
         }
 
-        // 1단계: 복정동 API 시도
-        console.log("1단계: 에어코리아 복정동 시도...");
+        // 1단계: 상대원동 API 시도
+        console.log("1단계: 에어코리아 상대원동 시도...");
+
         let data = await fetchStation(PRIMARY_STATION);
 
         if (data) {
           let needFallback = false;
 
           if (!isValidValue(data.pm25Value) || !isValidValue(data.pm10Value)) {
-            console.log("⚠️ 복정동 데이터 불완전, 정자동 폴백...");
+            console.log("⚠️ 상대원동 데이터 불완전, 단대동 폴백...");
             needFallback = true;
           }
 
@@ -59,11 +60,11 @@ function Weather({ onWeatherUpdate }) {
             if (fallbackData) {
               if (!isValidValue(data.pm25Value) && isValidValue(fallbackData.pm25Value)) {
                 data.pm25Value = fallbackData.pm25Value;
-                console.log(`✅ 정자동 PM2.5: ${fallbackData.pm25Value}`);
+                console.log(`✅ 단대동 PM2.5: ${fallbackData.pm25Value}`);
               }
               if (!isValidValue(data.pm10Value) && isValidValue(fallbackData.pm10Value)) {
                 data.pm10Value = fallbackData.pm10Value;
-                console.log(`✅ 정자동 PM10: ${fallbackData.pm10Value}`);
+                console.log(`✅ 단대동 PM10: ${fallbackData.pm10Value}`);
               }
             }
           }
@@ -95,6 +96,21 @@ function Weather({ onWeatherUpdate }) {
     };
 
     fetchAirData();
+
+    // 매 정시에 갱신 (다음 정시까지 대기 후 1시간 간격)
+    let hourlyInterval = null;
+    const now = new Date();
+    const msUntilNextHour = (60 - now.getMinutes()) * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
+
+    const firstTimer = setTimeout(() => {
+      fetchAirData();
+      hourlyInterval = setInterval(fetchAirData, 60 * 60 * 1000);
+    }, msUntilNextHour);
+
+    return () => {
+      clearTimeout(firstTimer);
+      if (hourlyInterval) clearInterval(hourlyInterval);
+    };
   }, []);
 
   // 데이터 변경 시 처리
@@ -152,11 +168,15 @@ function Weather({ onWeatherUpdate }) {
           <span style={{ color: pm10Grade.color }}>미세먼지</span>
 
           <div className="emoji">
-            <img
-              src={`/images/${pm10Grade.text}.svg`}
-              alt={pm10Grade.text}
-              style={{ color: pm10Grade.color }}
-            />
+            {pm10Grade.text !== "점검중" ? (
+              <img
+                src={`/images/${pm10Grade.text}.svg`}
+                alt={pm10Grade.text}
+                style={{ color: pm10Grade.color }}
+              />
+            ) : (
+              <span style={{ fontSize: "2em", color: pm10Grade.color }}>-</span>
+            )}
           </div>
 
           <div className="grade">
@@ -177,7 +197,11 @@ function Weather({ onWeatherUpdate }) {
           </span>
 
           <div className="emoji">
-            <img src={`/images/${pm2_5Grade.text}.svg`} alt={pm2_5Grade.text} />
+            {pm2_5Grade.text !== "점검중" ? (
+              <img src={`/images/${pm2_5Grade.text}.svg`} alt={pm2_5Grade.text} />
+            ) : (
+              <span style={{ fontSize: "2em", color: pm2_5Grade.color }}>-</span>
+            )}
           </div>
 
           <div className="grade">
