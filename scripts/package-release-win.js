@@ -154,7 +154,7 @@ function runRest() {
             'echo.',
             'echo 웹+API: %GARAM_URL%  (server\\.env 의 PORT)',
             'echo [1/2] Node 서버 시작...',
-            'start /b "GaramLED-Server" cmd /c "cd /d %~dp0server && node server.js"',
+            'start "" /min cmd /c "cd /d %~dp0server && node server.js"',
             'timeout /t 6 /nobreak > nul',
             'echo [2/2] Chrome 키오스크 시작...',
             'for /f "tokens=1-4 delims=," %%a in (\'powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $screens=[System.Windows.Forms.Screen]::AllScreens; $target=$screens | Sort-Object { $_.Bounds.Width * $_.Bounds.Height } -Descending | Select-Object -First 1; if(-not $target){$target=$screens[0]}; $b=$target.Bounds; Write-Output ($b.X.ToString()+\',\'+$b.Y.ToString()+\',\'+$b.Width.ToString()+\',\'+$b.Height.ToString())"\') do (',
@@ -184,7 +184,8 @@ function runRest() {
             '    --force-dark-mode ^',
             '    --enable-features=WebUIDarkMode ^',
             '    "%GARAM_URL%"',
-            'pause',
+            'timeout /t 1 /nobreak > nul',
+            'exit /b 0',
             '',
         ].join('\r\n'),
         'utf8'
