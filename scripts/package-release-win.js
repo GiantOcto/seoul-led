@@ -154,7 +154,7 @@ function runRest() {
             'echo.',
             'echo 웹+API: %GARAM_URL%  (server\\.env 의 PORT)',
             'echo [1/2] Node 서버 시작...',
-            'start /b "GaramLED-Server" cmd /c "cd /d %~dp0server && node server.js"',
+            'start "" /min cmd /c "cd /d %~dp0server && node server.js"',
             'timeout /t 6 /nobreak > nul',
             'echo [2/2] Chrome 키오스크 시작...',
             'start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" ^',
@@ -174,7 +174,8 @@ function runRest() {
             '    --force-dark-mode ^',
             '    --enable-features=WebUIDarkMode ^',
             '    "%GARAM_URL%"',
-            'pause',
+            'timeout /t 1 /nobreak > nul',
+            'exit /b 0',
             '',
         ].join('\r\n'),
         'utf8'
