@@ -45,8 +45,8 @@ function StinkRunning() {
           position: "relative",
           bottom: "5px",
           left: "5px",
-          width: "100px",
-          height: "100px",
+          width: "110px",
+          height: "110px",
         }}
       />
       <h2>저감중</h2>

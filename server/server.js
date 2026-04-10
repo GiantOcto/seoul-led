@@ -243,51 +243,54 @@ function scheduleSerialRetry() {
     serialRetryTimer = setTimeout(() => {
         serialRetryTimer = null;
         startNodeSerialListener();
-        function setRelayReducing(nextReducing, source) {
-            const changed = RelayState.reducing !== nextReducing;
-            RelayState.reducing = nextReducing;
-            if (!changed) return;
-            io.emit('relay_reduction_status', {
-                reducing: RelayState.reducing,
-                relay1On: RelayState.relay1On,
-                relay2On: RelayState.relay2On,
-                lastReceivedAt: RelayState.lastReceivedAt,
-                source,
-            });
+    }, SERIAL_RETRY_MS);
+}
+
+function setRelayReducing(nextReducing, source) {
+    const changed = RelayState.reducing !== nextReducing;
+    RelayState.reducing = nextReducing;
+    if (!changed) return;
+    io.emit('relay_reduction_status', {
+        reducing: RelayState.reducing,
+        relay1On: RelayState.relay1On,
+        relay2On: RelayState.relay2On,
+        lastReceivedAt: RelayState.lastReceivedAt,
+        source,
+    });
+}
+
+function startRelayUdpListener() {
+    const socket = dgram.createSocket('udp4');
+
+    socket.on('message', (msg, rinfo) => {
+        try {
+            const payload = JSON.parse(msg.toString('utf8'));
+            if (!payload || payload.type !== 'relay_status_changed') return;
+
+            RelayState.relay1On = Boolean(payload.relay1On);
+            RelayState.relay2On = Boolean(payload.relay2On);
+            RelayState.lastReceivedAt = new Date().toISOString();
+
+            // relay1 ON → 저감중, relay1 OFF UDP 올 때까지 유지 (타임아웃 없음)
+            if (RelayState.relay1On) {
+                setRelayReducing(true, `udp:${rinfo.address}:${rinfo.port}`);
+            } else {
+                setRelayReducing(false, `udp:${rinfo.address}:${rinfo.port}`);
+            }
+        } catch (err) {
+            console.warn('[relay-udp] parse 실패:', err.message);
         }
-        
-        function startRelayUdpListener() {
-            const socket = dgram.createSocket('udp4');
-        
-            socket.on('message', (msg, rinfo) => {
-                try {
-                    const payload = JSON.parse(msg.toString('utf8'));
-                    if (!payload || payload.type !== 'relay_status_changed') return;
-        
-                    RelayState.relay1On = Boolean(payload.relay1On);
-                    RelayState.relay2On = Boolean(payload.relay2On);
-                    RelayState.lastReceivedAt = new Date().toISOString();
-        
-                    // relay1 ON → 저감중, relay1 OFF UDP 올 때까지 유지 (타임아웃 없음)
-                    if (RelayState.relay1On) {
-                        setRelayReducing(true, `udp:${rinfo.address}:${rinfo.port}`);
-                    } else {
-                        setRelayReducing(false, `udp:${rinfo.address}:${rinfo.port}`);
-                    }
-                } catch (err) {
-                    console.warn('[relay-udp] parse 실패:', err.message);
-                }
-            });
-        
-            socket.on('error', (err) => {
-                console.error('[relay-udp] 소켓 오류:', err.message);
-            });
-        
-            socket.bind(RELAY_EVENT_UDP_PORT, '127.0.0.1', () => {
-                console.log(`[relay-udp] listening 127.0.0.1:${RELAY_EVENT_UDP_PORT}`);
-            });
-        }
-        
+    });
+
+    socket.on('error', (err) => {
+        console.error('[relay-udp] 소켓 오류:', err.message);
+    });
+
+    socket.bind(RELAY_EVENT_UDP_PORT, '127.0.0.1', () => {
+        console.log(`[relay-udp] listening 127.0.0.1:${RELAY_EVENT_UDP_PORT}`);
+    });
+}
+
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
