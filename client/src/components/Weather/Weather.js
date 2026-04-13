@@ -9,7 +9,7 @@ function Weather({ onWeatherUpdate }) {
   const [pollutionData, setPollutionData] = useState(null);
 
   // 캐시 관리 설정
-  const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3시간
+  const CACHE_DURATION = 60 * 60 * 1000; // 30분
   const CACHE_KEY = 'songpaAirQuality_cache';
   const CACHE_TIME_KEY = 'songpaAirQuality_time';
 
@@ -21,7 +21,7 @@ function Weather({ onWeatherUpdate }) {
         const cachedData = localStorage.getItem(CACHE_KEY);
         const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
         
-        // 캐시가 있고 3시간 이내면 API 호출 안함
+        // 캐시가 있고 1시간 이내면 API 호출 안함
         if (cachedData && cachedTime && 
             (Date.now() - parseInt(cachedTime) < CACHE_DURATION)) {
           const parsedData = JSON.parse(cachedData);
