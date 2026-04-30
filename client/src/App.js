@@ -73,7 +73,7 @@ function App() {
     setCustomSectionLayout,
     getCustomSectionLayout,
     customSectionLayouts,
-  } = useSectionManager("서초구", handleWaterLevelChange, waterLevel, sectionOrder);
+  } = useSectionManager("강남구", handleWaterLevelChange, waterLevel, sectionOrder);
 
   const [newSectionName, setNewSectionName] = useState("");
   const [newSectionInterval, setNewSectionInterval] = useState(defaultCustomInterval / 1000); // 초 단위로 표시
@@ -93,8 +93,34 @@ function App() {
     document.documentElement.setAttribute('data-bs-theme', 'dark');
   }, []);
 
+  // 수위 250mm 초과 시 수위데이터(4)만 강제 진입/잠금, 해제 시 원복
+  useEffect(() => {
+    const isWaterAlert = waterLevel > 0.25;
+    const isWaterOnlyMode = activeSections.length === 1 && activeSections[0] === 4;
+
+    if (isWaterAlert) {
+      if (!isWaterOnlyMode || currentSection !== 4) {
+        const restoreCandidate = activeSections.filter((section) => section !== 4);
+        if (restoreCandidate.length > 0) {
+          setPreviousSections(restoreCandidate);
+        }
+        setActiveSections([4]);
+        localStorage.setItem("activeSections", JSON.stringify([4]));
+        setCurrentSection(4);
+      }
+      return;
+    }
+
+    if (isWaterOnlyMode) {
+      const restoredSections = previousSections.length > 0 ? previousSections : [0, 1, 2, 3];
+      setActiveSections(restoredSections);
+      localStorage.setItem("activeSections", JSON.stringify(restoredSections));
+      setCurrentSection(restoredSections[0] ?? 0);
+    }
+  }, [waterLevel, activeSections, currentSection, previousSections, setActiveSections, setCurrentSection]);
+
   // 섹션 개수 확인 (버튼 비활성화용)
-  const PROTECTED_SECTIONS_COUNT = [0, 1, 2, 3];
+  const PROTECTED_SECTIONS_COUNT = [0, 1, 3, 4];
   const allSectionsCount = [...PROTECTED_SECTIONS_COUNT, ...customSections].length;
   const isMaxSectionsReached = allSectionsCount >= 16;
 
@@ -105,7 +131,7 @@ function App() {
     }
     
     // 사용 가능한 다음 섹션 번호 찾기
-    const PROTECTED_SECTIONS = [0, 1, 2, 3];
+    const PROTECTED_SECTIONS = [0, 1, 3, 4];
     const allUsedSections = [...PROTECTED_SECTIONS, ...customSections].sort();
     
     // 최대 섹션 개수 확인 (16개)
@@ -114,7 +140,7 @@ function App() {
       return;
     }
     
-    let nextIndex = 4;
+    let nextIndex = 5;
     while (allUsedSections.includes(nextIndex)) {
       nextIndex++;
     }
@@ -389,10 +415,11 @@ function App() {
     
     // 기본 섹션의 기본 이름
     const names = {
-      0: "문구(1)",
-      1: "문구(2)",
-      2: "문구(3)",
-      3: "수위데이터",
+      0: "문구",
+      1: "미세먼지및 오존",
+      2: "이벤트",
+      3: "전체이벤트",
+      4: "수위데이터",
     };
     if (names[index] !== undefined) {
       return names[index];
@@ -408,13 +435,17 @@ function App() {
   // sectionOrder 초기화 (한 번만 실행)
   useEffect(() => {
     if (sectionOrder === null && allSections.length > 0) {
-      // 기본 순서는 인덱스 순서(0,1,2,3,...)를 사용
-      const initialOrder = [...allSections];
+      // 저장된 순서가 없으면 activeSections 순서를 우선하고 나머지는 뒤에 추가
+      const activeOrdered = activeSections.filter(section => 
+        protectedSections.includes(section) || customSections.includes(section)
+      );
+      const inactiveSections = allSections.filter(section => !activeSections.includes(section));
+      const initialOrder = [...activeOrdered, ...inactiveSections];
       setSectionOrder(initialOrder);
       localStorage.setItem('sectionOrder', JSON.stringify(initialOrder));
     }
   }, [sectionOrder, allSections, activeSections, protectedSections, customSections]);
-  
+
   // 새로운 섹션이 추가되면 sectionOrder에 추가
   useEffect(() => {
     if (sectionOrder && customSections.length > 0) {
@@ -430,17 +461,16 @@ function App() {
   // 모든 섹션을 저장된 순서대로 표시
   const orderedActiveSections = useMemo(() => {
     if (!sectionOrder || sectionOrder.length === 0) {
-      return [...allSections];
+      // sectionOrder가 아직 초기화되지 않았으면 기본 순서 사용
+      const activeOrdered = activeSections.filter(section => 
+        protectedSections.includes(section) || customSections.includes(section)
+      );
+      const inactiveSections = allSections.filter(section => !activeSections.includes(section));
+      return [...activeOrdered, ...inactiveSections];
     }
-
-    const validOrdered = sectionOrder.filter((section) =>
-      allSections.includes(section)
-    );
-    const missingSections = allSections.filter(
-      (section) => !validOrdered.includes(section)
-    );
-    return [...validOrdered, ...missingSections];
-  }, [sectionOrder, allSections]);
+    // sectionOrder에 있는 섹션만 필터링하고 순서 유지
+    return sectionOrder.filter(section => allSections.includes(section));
+  }, [sectionOrder, allSections, activeSections, protectedSections, customSections]);
   
   // 드래그 앤 드롭 핸들러
   const handleDragStart = (e, index) => {
@@ -635,29 +665,15 @@ function App() {
     if (isDragging) {
       return;
     }
+    if (waterLevel > 0.25 && index !== 4) {
+      return;
+    }
     toggleSection(index);
   };
 
-  useEffect(() => {
-    if (waterLevel > 0.25) {
-      if (!activeSections.includes(3)) {
-        setPreviousSections([...activeSections]);
-        setActiveSections([3]);
-        setCurrentSection(3);
-      }
-    } else if (waterLevel <= 0.25 && activeSections.includes(3)) {
-      if (activeSections.length === 1) {
-        setActiveSections([...previousSections]);
-        setCurrentSection(previousSections[0]);
-      } else {
-        setActiveSections(activeSections.filter(section => section !== 3));
-      }
-    }
-  }, [waterLevel, activeSections]);
-
   const getWaterButtonStyle = (index) => {
     const baseStyle = getButtonStyle(index);
-    if (index === 3) {
+    if (index === 4) {
       if (waterLevel > 0.25) {
         return {
           ...baseStyle,
@@ -855,7 +871,7 @@ function App() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
                   {orderedActiveSections.map((index) => {
-                    const isWaterDataSection = index === 3;
+                    const isWaterDataSection = index === 4;
                     const isEditingName = !isWaterDataSection && (editingStates[index]?.name || false);
                     const isEditingInterval = editingStates[index]?.interval || false;
                     const editName = editValues[index]?.name ?? getSectionName(index);  
@@ -946,51 +962,50 @@ function App() {
                                   {getSectionName(index)}
                                 </h4>
                               )}
-                              {!isWaterDataSection &&
-                                (isEditingInterval ? (
-                                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.25rem" }}>
-                                    <input
-                                      type="number"
-                                      value={editInterval}
-                                      onChange={(e) => setEditValues({ ...editValues, [index]: { ...editValues[index], interval: Number(e.target.value) } })}
-                                      onBlur={handleIntervalSave}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleIntervalSave();
-                                        if (e.key === 'Escape') handleIntervalCancel();
-                                      }}
-                                      min="1"
-                                      style={{
-                                        width: "50px",
-                                        padding: "0.25rem 0.5rem",
-                                        fontSize: "12px",
-                                        backgroundColor: "rgba(0, 0, 0, 0.3)",
-                                        border: "1px solid rgba(59, 130, 246, 0.2)",
-                                        borderRadius: "0.5rem",
-                                        color: "#cbd5e1",
-                                        outline: "none",
-                                      }}
-                                      autoFocus
-                                    />
-                                    <span style={{ fontSize: "12px", color: "#94a3b8" }}>초</span>
-                                  </div>
-                                ) : (
-                                  <span 
-                                    style={{ 
-                                      fontSize: "15px", 
-                                      color: "#cbd5e1",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "0.5rem",
-                                      marginTop: "0.25rem",
-                                      cursor: "pointer",
-                                      fontWeight: 500,
+                              {!isWaterDataSection && (isEditingInterval ? (
+                                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.25rem" }}>
+                                  <input
+                                    type="number"
+                                    value={editInterval}
+                                    onChange={(e) => setEditValues({ ...editValues, [index]: { ...editValues[index], interval: Number(e.target.value) } })}
+                                    onBlur={handleIntervalSave}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleIntervalSave();
+                                      if (e.key === 'Escape') handleIntervalCancel();
                                     }}
-                                    onClick={handleIntervalEdit}
-                                    title="클릭하여 인터벌 변경"
-                                  >
-                                    {getSectionInterval(index) / 1000}초 간격
-                                  </span>
-                                ))}
+                                    min="1"
+                                    style={{
+                                      width: "50px",
+                                      padding: "0.25rem 0.5rem",
+                                      fontSize: "12px",
+                                      backgroundColor: "rgba(0, 0, 0, 0.3)",
+                                      border: "1px solid rgba(59, 130, 246, 0.2)",
+                                      borderRadius: "0.5rem",
+                                      color: "#cbd5e1",
+                                      outline: "none",
+                                    }}
+                                    autoFocus
+                                  />
+                                  <span style={{ fontSize: "12px", color: "#94a3b8" }}>초</span>
+                                </div>
+                              ) : (
+                                <span 
+                                  style={{ 
+                                    fontSize: "15px", 
+                                    color: "#cbd5e1",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    marginTop: "0.25rem",
+                                    cursor: "pointer",
+                                    fontWeight: 500,
+                                  }}
+                                  onClick={handleIntervalEdit}
+                                  title="클릭하여 인터벌 변경"
+                                >
+                                  {getSectionInterval(index) / 1000}초 간격
+                                </span>
+                              ))}
                             </div>
                           </div>
                           {!isWaterDataSection && (
@@ -1405,7 +1420,7 @@ function App() {
               onDragEnd={handleDragEnd}
               onDrop={(e) => handleDrop(e, buttonIndex)}
               style={{
-                ...(index === 0 || index === 1 || index === 2 || index === 3 
+                ...(index === 0 || index === 1 || index === 2 || index === 3 || index === 4
                   ? getWaterButtonStyle(index) 
                   : getButtonStyle(index)),
                 cursor: "grab",

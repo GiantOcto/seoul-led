@@ -8,9 +8,10 @@
   left: calc(20%);
   top: calc((100% - 681px) / 2);
   width: 300px;
-  min-height: 440px;
-  max-height: 768px;
-  padding: 18px 14px 20px;
+  min-height: 300px;
+  height: auto;
+  max-height: none;
+  padding: 16px 14px 18px;
   box-sizing: border-box;
   background: rgba(15, 23, 42, 0.92);
   border: 2px solid rgba(59, 130, 246, 0.45);
@@ -37,8 +38,8 @@
   align-items: baseline;
   justify-content: center;
   gap: 6px;
-  margin-bottom: 16px;
-  padding-bottom: 14px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.25);
 }
 
@@ -60,9 +61,9 @@
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 12px 8px;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
+  max-height: 112px;
+  overflow: hidden;
+  flex: 0 0 auto;
 }
 
 .wl-sensor-cell {
@@ -103,9 +104,9 @@
   .wl-sensors-panel {
     width: 260px;
     top: calc((100% - 681px) / 2);
-    min-height: 400px;
-    max-height: calc(100vh - 200px);
-    padding: 14px 12px 16px;
+    min-height: 280px;
+    max-height: none;
+    padding: 14px 12px 18px;
   }
 
   .wl-sensors-panel__mm-value {
@@ -127,5 +128,6 @@
 
   .wl-sensors-panel__grid {
     gap: 10px 6px;
+    max-height: 102px;
   }
 }

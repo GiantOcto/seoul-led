@@ -1,43 +1,27 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import Event from "../components/Event/Event";
 import RotatingLogo34 from "../components/Logo/RotatingLogo34";
-import { Logo1 } from "../components/Logo/Logo";
+import { Logo4 } from "../components/Logo/Logo";
 import Clock from "../components/Clock/Clock";
 import Clock2 from "../components/Clock/Clock2";
 import DigitalClock from "../components/Clock/DigitalClock";
+import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
 import {
   saveMediaToIndexedDB,
+  loadMediaFromIndexedDB,
   loadAllMediaFromIndexedDB,
   deleteMediaFromIndexedDB,
 } from "../utils/indexedDB";
 
-const INTERVALS = [30000, 30000, 30000, 30000, 30000, 30000, 30000, 30000];
+const INTERVALS = [30000, 20000, 20000, 20000, 20000];
 const DEFAULT_CUSTOM_INTERVAL = 20000; // 새로운 섹션의 기본 인터벌 (20초)
-const REMOVED_SECTIONS = [];
-const PROTECTED_SECTIONS = [0, 1, 2, 3];
-const BASE_SECTIONS = [0, 1, 2, 3];
+const PROTECTED_SECTIONS = [0, 1, 2, 3, 4]; // 제거 불가능한 기본 섹션들
 const MAX_SECTIONS = 16; // 최대 섹션 개수
 
-const normalizeIndexes = (value) => {
-  if (!Array.isArray(value)) return [];
-  return [...new Set(value.filter((index) => Number.isInteger(index)))].sort((a, b) => a - b);
-};
-
-const sanitizeCustomSections = (sections) =>
-  normalizeIndexes(sections).filter(
-    (index) => !PROTECTED_SECTIONS.includes(index) && !REMOVED_SECTIONS.includes(index)
-  );
-
-const sanitizeActiveSections = (activeSections, customSections) => {
-  const allowedCustom = new Set(sanitizeCustomSections(customSections));
-  return normalizeIndexes(activeSections).filter(
-    (index) => BASE_SECTIONS.includes(index) || allowedCustom.has(index)
-  );
-};
-
 export const useSectionManager = (
-  initialDistrict = "서초구",
+  initialDistrict = "강남구",
   onWaterLevelChange,
   waterLevel,
   sectionOrder = null
@@ -52,20 +36,13 @@ export const useSectionManager = (
       const savedLayouts = localStorage.getItem('customSectionLayouts');
       const savedActiveSections = localStorage.getItem('activeSections');
       
-      const parsedSections = savedSections ? JSON.parse(savedSections) : [];
-      const sections = sanitizeCustomSections(parsedSections);
-      const parsedActiveSections = savedActiveSections ? JSON.parse(savedActiveSections) : null;
-      const activeSections = Array.isArray(parsedActiveSections)
-        ? sanitizeActiveSections(parsedActiveSections, sections)
-        : null;
-
       return {
-        sections,
+        sections: savedSections ? JSON.parse(savedSections) : [],
         intervals: savedIntervals ? JSON.parse(savedIntervals) : {},
         names: savedNames ? JSON.parse(savedNames) : {},
         clockType: savedClockType || 'analog', // 기본값: 아날로그
         layouts: savedLayouts ? JSON.parse(savedLayouts) : {}, // 기본값: 빈 객체 (MIDDLE only)
-        activeSections, // null이면 기본값 사용
+        activeSections: savedActiveSections ? JSON.parse(savedActiveSections) : null, // null이면 기본값 사용
       };
     } catch (error) {
       console.error('localStorage 로드 실패:', error);
@@ -76,13 +53,13 @@ export const useSectionManager = (
   const savedData = loadFromStorage();
 
   const computeInitialActiveSections = (data) => {
-    if (data.activeSections && Array.isArray(data.activeSections) && data.activeSections.length > 0) {
-      const sanitized = sanitizeActiveSections(data.activeSections, data.sections);
-      if (sanitized.length > 0) return sanitized;
+    if (data.activeSections && Array.isArray(data.activeSections)) {
+      return data.activeSections.filter((section) => section !== 4);
     }
-
-    const merged = [...BASE_SECTIONS, ...sanitizeCustomSections(data.sections)];
-    return normalizeIndexes(merged);
+    const baseSections = [0, 1, 2, 3];
+    return data.sections.length > 0
+      ? [...baseSections, ...data.sections].sort()
+      : baseSections;
   };
 
   const initialActiveSections = computeInitialActiveSections(savedData);
@@ -105,10 +82,11 @@ export const useSectionManager = (
   
   // 기본 섹션의 기본 이름과 저장된 이름 병합
   const defaultNames = {
-    0: "문구(1)",
-    1: "문구(2)",
-    2: "문구(3)",
-    3: "수위데이터",
+    0: "문구",
+    1: "미세먼지및 오존",
+    2: "이벤트",
+    3: "전체이벤트",
+    4: "수위데이터",
   };
   const initialNames = { ...savedData.names };
   PROTECTED_SECTIONS.forEach(index => {
@@ -141,6 +119,10 @@ export const useSectionManager = (
     };
     loadMedia();
   }, []); 
+  const [weatherData, setWeatherData] = useState({
+    pm10Grade: "좋음",
+    pm2_5Grade: "좋음",
+  });
   const [machineStatus, setMachineStatus] = useState(false);
 
   // 섹션의 인터벌을 가져오는 함수
@@ -192,25 +174,6 @@ export const useSectionManager = (
   // 자동 전환 타이머 추적
   const autoTransitionTimerRef = useRef(null);
 
-  const getOrderedActiveSections = useCallback(
-    (sections) => {
-      const uniqueSections = normalizeIndexes(sections);
-
-      if (sectionOrder && sectionOrder.length > 0) {
-        const validOrdered = sectionOrder.filter((section) =>
-          uniqueSections.includes(section)
-        );
-        const missingSections = uniqueSections.filter(
-          (section) => !validOrdered.includes(section)
-        );
-        return [...validOrdered, ...missingSections];
-      }
-
-      return uniqueSections;
-    },
-    [sectionOrder]
-  );
-
   useEffect(() => {
     if (activeSections.length === 0) return;
 
@@ -220,12 +183,15 @@ export const useSectionManager = (
     }
 
     const showNextContainer = () => {
-      const orderedActiveSections = getOrderedActiveSections(activeSections);
-      if (orderedActiveSections.length === 0) return;
-
+      // sectionOrder가 있으면 그 순서를 따르고, 없으면 activeSections 순서 사용
+      let orderedActiveSections = activeSections;
+      if (sectionOrder && sectionOrder.length > 0) {
+        // sectionOrder에서 활성화된 섹션만 필터링하고 순서 유지
+        orderedActiveSections = sectionOrder.filter(section => activeSections.includes(section));
+      }
+      
       const currentIdx = orderedActiveSections.indexOf(currentSection);
-      const safeCurrentIdx = currentIdx === -1 ? 0 : currentIdx;
-      const nextIdx = (safeCurrentIdx + 1) % orderedActiveSections.length;
+      const nextIdx = (currentIdx + 1) % orderedActiveSections.length;
       setCurrentSection(orderedActiveSections[nextIdx]);
     };
 
@@ -235,186 +201,270 @@ export const useSectionManager = (
         clearTimeout(autoTransitionTimerRef.current);
       }
     };
-  }, [currentSection, activeSections, customIntervals, getOrderedActiveSections]);
+  }, [currentSection, activeSections, customIntervals, sectionOrder]);
 
   const sections = useMemo(() => {
     const baseSections = {
       top: [
-        <div
-          key="top1"
-          className="section-top"
-          id="top1"
-          style={{
-            display:
-              currentSection === 0 && activeSections.includes(0)
-                ? "flex"
-                : "none",
-            height: "100%",
-            position: "relative",
-            backgroundImage: "url(/images/홍보문구.png)",
-            backgroundSize: "100% 100%",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: "70%",
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 10,
-            }}
-          >
-            <Stink id="stink-data-page1" onStatusChange={setMachineStatus} />
+      <div
+        key="top1"
+        className="section-top"
+        id="top1"
+        style={{
+          display:
+            currentSection === 0 && activeSections.includes(0)
+              ? "flex"
+              : "none",
+        }}
+      >
+       <RotatingLogo34 style={{ width: "126px", height: "50px" }} />
+      </div>,
+
+      <div
+        key="top2"
+        className="section-top"
+        id="top2"
+        style={{
+          display:
+            currentSection === 1 && activeSections.includes(1)
+              ? "flex"
+              : "none",
+          "--filter-value1":
+            weatherData.pm10Grade === "좋음"
+              ? "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)"
+              : weatherData.pm10Grade === "보통"
+              ? "invert(60%) sepia(84%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
+              : weatherData.pm10Grade === "나쁨"
+              ? "invert(10%) sepia(95%) saturate(2574%) hue-rotate(3deg) brightness(153%) contrast(95%)"
+              : "invert(57%) sepia(44%) saturate(539%) hue-rotate(314deg) brightness(100%) contrast(89%)",
+          "--filter-value2":
+            weatherData.pm2_5Grade === "좋음"
+              ? "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)"
+              : weatherData.pm2_5Grade === "보통"
+              ? "invert(35%) sepia(94%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
+              : weatherData.pm2_5Grade === "나쁨"
+              ? "invert(76%) sepia(98%) saturate(784%) hue-rotate(17deg) brightness(123%) contrast(104%)"
+              : "invert(62%) sepia(50%) saturate(420%) hue-rotate(20deg) brightness(122%) contrast(130%)",
+          "--filter-value3": machineStatus
+            ? "invert(8%) sepia(90%) saturate(345%) hue-rotate(341deg) brightness(101%) contrast(102%)"
+            : "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)",
+        }}
+      >
+        <div className="background3"></div>
+        <RotatingLogo34 style={{ width: "126px" }} />
+        <div className="air-quality">
+          <div className="air-quality-text">
+            <h1>{selectedDistrict}</h1>
+            <p>오늘의 대기질</p>
           </div>
-        </div>,
 
-        <div
-          key="top2"
-          className="section-top"
-          id="top2"
-          style={{
-            display:
-              currentSection === 1 && activeSections.includes(1)
-                ? "flex"
-                : "none",
-            height: "100%",
-            backgroundImage: "url(/images/홍보문구2.png)",
-            backgroundSize: "100% 100%",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        ></div>,
+          <Weather
+            selectedDistrict={selectedDistrict}
+            onWeatherUpdate={setWeatherData}
+          />
+          <Stink id="stink-data-page2" onStatusChange={setMachineStatus} />
+        </div>
+      </div>,
 
-        <div
-          key="top3"
-          className="section-top"
-          id="top3"
-          style={{
-            display:
-              currentSection === 2 && activeSections.includes(2)
-                ? "flex"
-                : "none",
-            height: "100%",
-            backgroundImage: "url(/images/홍보문구4.png)",
-            backgroundSize: "100% 100%",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        ></div>,
+      <div
+        key="top3"
+        className="section-top"
+        id="top3"
+        style={{
+          display:
+            currentSection === 2 && activeSections.includes(2)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <RotatingLogo34 style={{ width: "126px", height: "70px" }} />
+        {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
+        <span style={{ color: "white" }}>문화행사</span>
+      </div>,
+      <div
+        key="top4"
+        className="section-top"
+        id="top4"
+        style={{
+          display:
+            currentSection === 3 && activeSections.includes(3)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <RotatingLogo34 style={{ width: "126px", height: "70px" }} />
+        {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
+        <span style={{ color: "white" }}>문화행사</span>
+      </div>,
+      <div
+        key="top5"
+        className="section-top"
+        id="top5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <Logo4 id="logo-section-water" />
+      </div>,
+    ],
 
-        <div
-          key="top4"
-          className="section-top"
-          id="top4"
-          style={{
-            display:
-              currentSection === 3 && activeSections.includes(3)
-                ? "flex"
-                : "none",
-          }}
-        >
-          <Logo1 id="logo-section-water" />
-        </div>,
-      ],
+    middle: [
+      <div
+        key="middle1"
+        className="section-middle"
+        id="middle1"
+        style={{
+          display:
+            currentSection === 0 && activeSections.includes(0)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <img
+          src="/images/홍보문구.png"
+          alt="middle1"
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        />
+      </div>,
+      <div
+        key="middle2"
+        className="section-middle"
+        id="middle2"
+        style={{
+          display:
+            currentSection === 1 && activeSections.includes(1)
+              ? "flex"
+              : "none",
+        }}
+      ></div>,
+      <div
+        key="middle3"
+        className="section-middle"
+        id="middle3"
+        style={{
+          display:
+            currentSection === 2 && activeSections.includes(2)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <Event
+          key="middle3-event"
+          selectedDistrict={selectedDistrict}
+          position="middle4"
+        />
+      </div>,
+      <div
+        key="middle4"
+        className="section-middle"
+        id="middle4"
+        style={{
+          display:
+            currentSection === 3 && activeSections.includes(3)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <Event
+          key="middle4-event"
+          selectedDistrict={selectedDistrict}
+          position="middle5"
+        />
+      </div>,
+      <div
+        key="middle5"
+        className="section-middle"
+        id="middle5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <WaterLevel onWaterLevelChange={onWaterLevelChange} />
+      </div>,
+    ],
 
-      middle: [
-        <div
-          key="middle1"
-          className="section-middle"
-          id="middle1"
-          style={{
-            display: "none",
-            height: 0,
-          }}
-        ></div>,
-
-        <div
-          key="middle2"
-          className="section-middle"
-          id="middle2"
-          style={{
-            display: "none",
-            height: 0,
-          }}
-        ></div>,
-
-        <div
-          key="middle3"
-          className="section-middle"
-          id="middle3"
-          style={{
-            display: "none",
-            height: 0,
-          }}
-        ></div>,
-
-        <div
-          key="middle4"
-          className="section-middle"
-          id="middle4"
-          style={{
-            display:
-              currentSection === 3 && activeSections.includes(3)
-                ? "flex"
-                : "none",
-          }}
-        >
-          <WaterLevel onWaterLevelChange={onWaterLevelChange} />
-        </div>,
-      ],
-
-      bottom: [
-        <div
-          key="bottom1"
-          className="section-bottom"
-          id="bottom1"
-          style={{
-            display: "none",
-            height: 0,
-          }}
-        ></div>,
-
-        <div
-          key="bottom2"
-          className="section-bottom"
-          id="bottom2"
-          style={{
-            display: "none",
-            height: 0,
-          }}
-        ></div>,
-
-        <div
-          key="bottom3"
-          className="section-bottom"
-          id="bottom3"
-          style={{
-            display: "none",
-            height: 0,
-          }}
-        ></div>,
-
-        <div
-          key="bottom4"
-          className="section-bottom"
-          id="bottom4"
-          style={{
-            display:
-              currentSection === 3 && activeSections.includes(3)
-                ? "flex"
-                : "none",
-          }}
-        >
-          <div className="water-level-warning">
-            <div className="warning-text">
-              <span>진입</span>
-              <span>주의</span>
-            </div>
+    bottom: [
+      <div
+        key="bottom1"
+        className="section-bottom"
+        id="bottom1"
+        style={{
+          display:
+            currentSection === 0 && activeSections.includes(0)
+              ? "flex"
+              : "none",
+        }}
+      ></div>,
+      <div
+        key="bottom2"
+        className="section-bottom"
+        id="bottom2"
+        style={{
+          display:
+            currentSection === 1 && activeSections.includes(1)
+              ? "flex"
+              : "none",
+        }}
+      ></div>,
+      <div
+        key="bottom3"
+        className="section-bottom"
+        id="bottom3"
+        style={{
+          display:
+            currentSection === 2 && activeSections.includes(2)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <Event
+          key="bottom3-event"
+          selectedDistrict={selectedDistrict}
+          position="bottom4"
+        />
+      </div>,
+      <div
+        key="bottom4"
+        className="section-bottom"
+        id="bottom4"
+        style={{
+          display:
+            currentSection === 3 && activeSections.includes(3)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <Event
+          key="bottom4-event"
+          selectedDistrict={selectedDistrict}
+          position="bottom5"
+        />
+      </div>,
+      <div
+        key="bottom5"
+        className="section-bottom"
+        id="bottom5"
+        style={{
+          display:
+            currentSection === 4 && activeSections.includes(4)
+              ? "flex"
+              : "none",
+        }}
+      >
+        <div className="water-level-warning">
+          <div className="warning-text">
+            <span>진입</span>
+            <span>주의</span>
           </div>
-        </div>,
-      ],
+        </div>
+      </div>,
+    ],
     };
 
     // 커스텀 섹션을 동적으로 추가 (레이아웃에 따라)
@@ -516,7 +566,6 @@ export const useSectionManager = (
               }}
             >
               <RotatingLogo34
-                fixed
                 style={{ width: "126px", height: "70px", marginTop: "8px" }}
               />
               <div style={{ marginTop: "-1.5rem" }}>
@@ -628,7 +677,6 @@ export const useSectionManager = (
               }}
             >
               <RotatingLogo34
-                fixed
                 style={{ width: "126px", height: "70px", marginTop: "8px" }}
               />
             </div>
@@ -826,21 +874,19 @@ export const useSectionManager = (
     customMedia, 
     activeSections, 
     currentSection, 
+    selectedDistrict, 
+    weatherData, 
     machineStatus,
     clockType,
     customSectionLayouts
   ]);
 
   const toggleSection = useCallback((index) => {
-    if (REMOVED_SECTIONS.includes(index)) {
+    if (index === 4 && waterLevel <= 0.25) {
       return;
     }
 
-    if (index === 3 && waterLevel <= 0.25) {
-      return;
-    }
-
-    if (waterLevel > 0.25 && index !== 3) {
+    if (waterLevel > 0.25 && index !== 4) {
       return;
     }
 
@@ -861,10 +907,6 @@ export const useSectionManager = (
 
   // 커스텀 섹션 추가 (보호된 섹션 제외)
   const addCustomSection = (index, interval = DEFAULT_CUSTOM_INTERVAL, media = null) => {
-    if (REMOVED_SECTIONS.includes(index)) {
-      console.warn(`섹션 ${index}은(는) 이 브랜치에서 비활성화되었습니다.`);
-      return false;
-    }
     if (PROTECTED_SECTIONS.includes(index)) {
       console.warn(`섹션 ${index}는 기본 섹션이므로 추가할 수 없습니다.`);
       return false;
@@ -878,8 +920,14 @@ export const useSectionManager = (
       return false;
     }
     
+    // sectionOrder가 있으면 그 순서를 따르고, 없으면 sort() 사용
     let newActiveSections = [...activeSections, index];
-    newActiveSections = getOrderedActiveSections(newActiveSections);
+    if (sectionOrder && sectionOrder.length > 0) {
+      // sectionOrder에서 활성화된 섹션만 필터링하고 순서 유지
+      newActiveSections = sectionOrder.filter(section => newActiveSections.includes(section));
+    } else {
+      newActiveSections.sort();
+    }
     setActiveSections(newActiveSections);
     
     setCustomSections([...customSections, index].sort());
@@ -957,6 +1005,10 @@ export const useSectionManager = (
 
   // 섹션의 인터벌 변경 (기본 섹션 포함)
   const setCustomSectionInterval = (index, interval) => {
+    if (index === 4) {
+      console.warn(`수위데이터 섹션 인터벌은 변경할 수 없습니다.`);
+      return false;
+    }
     if (!activeSections.includes(index)) {
       console.warn(`섹션 ${index}는 활성화되어 있지 않습니다.`);
       return false;
@@ -972,7 +1024,7 @@ export const useSectionManager = (
 
   // 섹션의 이름 변경 (기본 섹션 포함)
   const setCustomSectionName = (index, name) => {
-    if (index === 3) {
+    if (index === 4) {
       console.warn(`수위데이터 섹션 이름은 변경할 수 없습니다.`);
       return false;
     }
@@ -987,9 +1039,6 @@ export const useSectionManager = (
 
   // 섹션 이름 가져오기 (커스텀 이름이 있으면 사용, 없으면 기본값)
   const getSectionName = (index) => {
-    if (index === 3) {
-      return "수위데이터";
-    }
     if (customSectionNames[index]) {
       return customSectionNames[index];
     }

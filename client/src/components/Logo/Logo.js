@@ -29,8 +29,8 @@ export function Logo3({ id }) {
     <div className="logo-3" id={id}>
       <img
         id="logo-gangnam"
-        src="/images/slogans/서초구.png"
-        alt="서초구 slogan"
+        src="/images/slogans/강남구.png"
+        alt="강남구 slogan"
       />
     </div>
   );
@@ -41,8 +41,8 @@ export function Logo4({ id }) {
     <div className="logo-4" id={id}>
       <img
         id="logo-gangnamCI"
-        src="/images/slogans/서초구_세로형.png"
-        alt="서초구 CI"
+        src="/images/강남구CI.png"
+        alt="강남구 CI"
       />
     </div>
   );
