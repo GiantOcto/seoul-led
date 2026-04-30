@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import RotatingLogo34 from "../components/Logo/RotatingLogo34";
+import { Logo1 } from "../components/Logo/Logo";
 import Clock from "../components/Clock/Clock";
 import Clock2 from "../components/Clock/Clock2";
 import DigitalClock from "../components/Clock/DigitalClock";
@@ -314,7 +315,7 @@ export const useSectionManager = (
                 : "none",
           }}
         >
-          <RotatingLogo34 style={{ width: "126px", height: "70px" }} />
+          <Logo1 id="logo-section-water" />
         </div>,
       ],
 
@@ -408,8 +409,8 @@ export const useSectionManager = (
         >
           <div className="water-level-warning">
             <div className="warning-text">
-              <span>다른 도로로</span>
-              <span>우회하세요</span>
+              <span>진입</span>
+              <span>주의</span>
             </div>
           </div>
         </div>,

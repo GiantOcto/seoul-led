@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSectionManager } from "./hooks/useSectionManager";
 import { Logo34PairProvider } from "./components/Logo/Logo34PairContext";
+import WaterLevelSensorsPanel from "./components/WaterLevelSensorsPanel/WaterLevelSensorsPanel";
 import "./App.css";
 
 // 시계 썸네일 컴포넌트
@@ -1344,6 +1345,7 @@ function App() {
 
             {sections.bottom}
           </div>
+          <WaterLevelSensorsPanel onWaterLevelChange={handleWaterLevelChange} />
         </div>
       </Logo34PairProvider>
 

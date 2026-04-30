@@ -1,0 +1,131 @@
+/*
+ * LED(.container)는 main-page flex에만 참여 → 예전과 동일한 가운데 정렬.
+ * 패널은 flex 밖(absolute). 가로: LED 오른쪽 끝 + gap(아래 4px, 더 붙이려면 줄이기).
+ * 세로: 높이 768 + margin-top 87 기준으로 LED 상단과 맞춤.
+ */
+.wl-sensors-panel {
+  position: absolute;
+  left: calc(20%);
+  top: calc((100% - 681px) / 2);
+  width: 300px;
+  min-height: 440px;
+  max-height: 768px;
+  padding: 18px 14px 20px;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.92);
+  border: 2px solid rgba(59, 130, 246, 0.45);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.wl-sensors-panel__head {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #60a5fa;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.wl-sensors-panel__mm {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.wl-sensors-panel__mm-value {
+  font-family: "SeoulHangangEB", ui-sans-serif, system-ui, sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: #4ade80;
+  line-height: 1;
+}
+
+.wl-sensors-panel__mm-unit {
+  font-size: 18px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.wl-sensors-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px 8px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.wl-sensor-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.wl-sensor-cell__dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #334155;
+  border: 2px solid #475569;
+  box-sizing: border-box;
+}
+
+.wl-sensor-cell--on .wl-sensor-cell__dot {
+  background: #22c55e;
+  border-color: #4ade80;
+  box-shadow: 0 0 14px rgba(74, 222, 128, 0.55);
+}
+
+.wl-sensor-cell__num {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wl-sensor-cell--on .wl-sensor-cell__num {
+  color: #e2e8f0;
+}
+
+@media screen and (max-width: 1440px) {
+  .wl-sensors-panel {
+    width: 260px;
+    top: calc((100% - 681px) / 2);
+    min-height: 400px;
+    max-height: calc(100vh - 200px);
+    padding: 14px 12px 16px;
+  }
+
+  .wl-sensors-panel__mm-value {
+    font-size: 38px;
+  }
+
+  .wl-sensors-panel__head {
+    font-size: 13px;
+  }
+
+  .wl-sensor-cell__dot {
+    width: 20px;
+    height: 20px;
+  }
+
+  .wl-sensor-cell__num {
+    font-size: 11px;
+  }
+
+  .wl-sensors-panel__grid {
+    gap: 10px 6px;
+  }
+}
