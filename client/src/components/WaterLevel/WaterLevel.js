@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
-import io from "socket.io-client";
-import { getSocketUrl } from "../../utils/socketUrl";
+import { waterLevelSocket as socket } from "../../utils/waterLevelSocket";
 import "./WaterLevel.css";
-
-const socket = io(getSocketUrl(), {
-  transports: ["websocket"],
-});
 
 function WaterLevel({ onWaterLevelChange }) {
   const [waterLevel, setWaterLevel] = useState(0);
