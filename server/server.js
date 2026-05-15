@@ -62,7 +62,11 @@ const RelayState = {
     lastReceivedAt: null,
 };
 
-const MAX_DATA_POINTS = 1000;
+/** 최근 1분치 데이터만 메모리 보관 (폴링 주기 기준 동적 계산). 그래프 미사용, 클라는 마지막 1건만 사용 */
+const MAX_DATA_POINTS = Math.max(
+    1,
+    Math.floor(60_000 / Math.max(100, WATER_LEVEL_POLL_MS))
+);
 
 const DataStore = {
     data: [],
@@ -70,13 +74,9 @@ const DataStore = {
     // _ts(ms)를 함께 저장해 이진탐색 시 Date 파싱 생략
     addData(newData) {
         this.data.push({ ...newData, _ts: new Date(newData.timestamp).getTime() });
-        if (this.data.length > MAX_DATA_POINTS) this.cleanup();
-    },
-
-    cleanup() {
-        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-        const startIndex = this.binarySearchTimestamp(oneDayAgo);
-        if (startIndex > 0) this.data = this.data.slice(startIndex);
+        if (this.data.length > MAX_DATA_POINTS) {
+            this.data = this.data.slice(-MAX_DATA_POINTS);
+        }
     },
 
     binarySearchTimestamp(targetMs) {
@@ -456,19 +456,6 @@ if (staticRoot) {
 } else {
     console.warn('[static] build/index.html 없음 — client 폴더에서 npm run build 후 다시 실행');
 }
-
-// 개발 테스트용 데이터 주입 — 실서비스 전 제거
-app.post('/api/test/inject', (req, res) => {
-    const { water_level, machine_status } = req.body;
-    const data = {
-        timestamp: new Date().toISOString(),
-        water_level: parseInt(water_level),
-        machine_status: Boolean(machine_status),
-        raw_data: 'test'
-    };
-    const ok = ingestSerialPayload(data);
-    res.json({ ok, data });
-});
 
 app.use((err, req, res, next) => {
     console.error('Server error:', err);
