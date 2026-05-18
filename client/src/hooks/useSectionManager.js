@@ -95,6 +95,14 @@ export const useSectionManager = (
   });
   const [customSectionNames, setCustomSectionNames] = useState(initialNames); // 모든 섹션의 이름 저장
   const [customMedia, setCustomMedia] = useState({}); // 커스텀 섹션의 미디어 정보 저장 { sectionIndex: { type: 'image'|'video', url: string } }
+
+  // blob: 형태 ObjectURL만 안전하게 해제 (data:/http(s):/IndexedDB 로드 URL은 무시)
+  const revokeBlobUrl = (url) => {
+    if (typeof url === 'string' && url.startsWith('blob:')) {
+      try { URL.revokeObjectURL(url); } catch { /* noop */ }
+    }
+  };
+
   const [clockType, setClockType] = useState(savedData.clockType); // 시계 타입: 'analog' 또는 'digital'
   const [customSectionLayouts, setCustomSectionLayouts] = useState(savedData.layouts); // 커스텀 섹션의 레이아웃 저장 { sectionIndex: 'top-middle-bottom' | 'top-middle' | 'middle' }
 
@@ -952,6 +960,10 @@ export const useSectionManager = (
     setCustomSections([...customSections, index].sort());
     setCustomIntervals({ ...customIntervals, [index]: interval });
     if (media) {
+      // 같은 index 에 이전 blob URL 이 남아있으면 메모리 누수 방지 차원에서 해제
+      if (customMedia[index]?.url && customMedia[index].url !== media.url) {
+        revokeBlobUrl(customMedia[index].url);
+      }
       setCustomMedia({ ...customMedia, [index]: media });
     }
     setCurrentSection(index);
@@ -996,6 +1008,8 @@ export const useSectionManager = (
     delete newNames[index];
     setCustomSectionNames(newNames);
     const newMedia = { ...customMedia };
+    // 섹션 삭제 시 ObjectURL 해제 (탭 메모리 누수 방지)
+    revokeBlobUrl(newMedia[index]?.url);
     delete newMedia[index];
     setCustomMedia(newMedia);
     
@@ -1017,7 +1031,11 @@ export const useSectionManager = (
       console.warn(`섹션 ${index}는 커스텀 섹션이 아닙니다.`);
       return false;
     }
-    
+    // 미디어 교체 시 이전 ObjectURL 해제 (LED 키오스크 24/7 운영 → 누적 누수 방지)
+    const prevUrl = customMedia[index]?.url;
+    if (prevUrl && prevUrl !== media?.url) {
+      revokeBlobUrl(prevUrl);
+    }
     setCustomMedia({ ...customMedia, [index]: media });
     return true;
   };
