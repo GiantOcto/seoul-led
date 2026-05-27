@@ -310,7 +310,7 @@ function Event({ selectedDistrict, position }) {
     }
   }, [selectedDistrict, position, allEventsData]);
 
-  // 이벤트 순환 (5초마다)
+  // 이벤트 순환 (15초마다)
   useEffect(() => {
     if (!events || events.length === 0) return;
 
@@ -321,7 +321,7 @@ function Event({ selectedDistrict, position }) {
         setImageLoadFailed(false);
         return nextIndex;
       });
-    }, 5000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [events]);

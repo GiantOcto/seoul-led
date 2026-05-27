@@ -49,6 +49,8 @@ let connectedClients = new Set();
 /** Node 직접 시리얼 사용 시 true (SERIAL_PORT 설정됨) */
 let nodeSerialActive = false;
 const RELAY_EVENT_UDP_PORT = parseInt(process.env.RELAY_EVENT_UDP_PORT || '19031', 10);
+/** 수위 시리얼 폴링 주기(ms). 기본 1초, .env 로 조정 가능 */
+const WATER_LEVEL_POLL_MS = parseInt(process.env.WATER_LEVEL_POLL_MS || '1000', 10);
 
 const RelayState = {
     relay1On: false,
@@ -57,7 +59,11 @@ const RelayState = {
     lastReceivedAt: null,
 };
 
-const MAX_DATA_POINTS = 1000;
+/** 최근 1분치 데이터만 메모리 보관 (폴링 주기 기준 동적 계산). 그래프 미사용, 클라는 마지막 1건만 사용 */
+const MAX_DATA_POINTS = Math.max(
+    1,
+    Math.floor(60_000 / Math.max(100, WATER_LEVEL_POLL_MS))
+);
 
 const DataStore = {
     data: [],
@@ -65,13 +71,9 @@ const DataStore = {
     // _ts(ms)를 함께 저장해 이진탐색 시 Date 파싱 생략
     addData(newData) {
         this.data.push({ ...newData, _ts: new Date(newData.timestamp).getTime() });
-        if (this.data.length > MAX_DATA_POINTS) this.cleanup();
-    },
-
-    cleanup() {
-        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-        const startIndex = this.binarySearchTimestamp(oneDayAgo);
-        if (startIndex > 0) this.data = this.data.slice(startIndex);
+        if (this.data.length > MAX_DATA_POINTS) {
+            this.data = this.data.slice(-MAX_DATA_POINTS);
+        }
     },
 
     binarySearchTimestamp(targetMs) {
