@@ -1,72 +1,44 @@
 @echo off
 chcp 65001 >nul
 title 가람LED 프로그램
+cd /d "%~dp0"
 
 echo ================================================
 echo                가람LED 프로그램
 echo ================================================
 echo.
 
-echo 필요한 패키지를 확인합니다...
-echo.
+set "GARAM_PORT=8000"
+if exist "%~dp0server\.env" (
+  for /f "usebackq eol=# tokens=1,* delims==" %%a in ("%~dp0server\.env") do (
+    if /i "%%a"=="PORT" set "GARAM_PORT=%%b"
+  )
+)
+set "GARAM_URL=http://localhost:%GARAM_PORT%"
 
-:: serve 패키지 확인 및 설치
-where serve >nul 2>&1
+echo [1/3] Node 서버 시작...
+where node >nul 2>&1
 if %errorlevel% neq 0 (
-    echo serve 패키지를 설치합니다...
-    call npm install -g serve
-    if errorlevel 1 (
-        echo serve 패키지 설치 중 오류가 발생했습니다.
-        pause
-        exit /b
-    )
-    echo serve 패키지가 설치되었습니다.
+  echo Node.js 가 설치되어 있지 않습니다.
+  pause
+  exit /b 1
+)
+start /min cmd /c "cd /d %~dp0server && node server.js"
+echo Node 서버 준비 대기...
+powershell -NoProfile -Command "$p=%GARAM_PORT%; $deadline=(Get-Date).AddSeconds(30); while((Get-Date) -lt $deadline){ try { $r=Invoke-WebRequest -Uri ('http://localhost:'+$p+'/api/status') -UseBasicParsing -TimeoutSec 2; if($r.StatusCode -eq 200){ exit 0 } } catch {} Start-Sleep -Seconds 1 }; exit 0"
+
+echo [2/3] app.exe (Python 시리얼, 트레이) 시작...
+if exist "%~dp0app.exe" (
+  start "" "%~dp0app.exe"
+  timeout /t 2 /nobreak > nul
 ) else (
-    echo serve 패키지가 이미 설치되어 있습니다.
+  echo [경고] app.exe 없음 — 수위 센서 미동작
 )
+
+echo [3/3] Chrome 키오스크 (%GARAM_URL%)...
+start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --new-window --start-fullscreen --kiosk "%GARAM_URL%"
+
 echo.
-
-:: socket.io-client 확인 및 설치
-call npm list socket.io-client --depth=0 >nul 2>&1
-if %errorlevel% neq 0 (
-    echo socket.io-client 패키지를 설치합니다...
-    call npm install socket.io-client
-    if errorlevel 1 (
-        echo socket.io-client 패키지 설치 중 오류가 발생했습니다.
-        pause
-        exit /b
-    )
-    echo socket.io-client 패키지가 설치되었습니다.
-) else (
-    echo socket.io-client 패키지가 이미 설치되어 있습니다.
-)
-echo.
-
-echo 프로그램을 시작합니다...
-echo.
-
-:: Python 앱 실행
-start /min "" "app.exe"
-if errorlevel 1 (
-    echo app.exe 실행 중 오류가 발생했습니다.
-    pause
-    exit /b
-)
-timeout /t 3 /nobreak > nul
-
-:: Node.js 서버 실행
-start /min "" "server.exe"
-if errorlevel 1 (
-    echo server.exe 실행 중 오류가 발생했습니다.
-    pause
-    exit /b
-)
-timeout /t 3 /nobreak > nul
-
-:: React 앱을 위한 웹 서버 실행
-start http://localhost:3000
-cd build && start /min "" serve -s .
-
 echo 프로그램이 실행되었습니다.
 echo 종료하려면 아무 키나 누르세요...
 pause > nul

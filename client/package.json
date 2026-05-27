@@ -20,7 +20,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build:web": "react-scripts build",
+    "build": "npm run build:web && node scripts/run-release-if-win.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

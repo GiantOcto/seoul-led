@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import lottie from "lottie-web";
 import io from "socket.io-client";
+import { getSocketUrl } from "../../utils/socketUrl";
 import "./Stink.css";
 
-const socket = io("http://localhost:8000", {
+const socket = io(getSocketUrl(), {
   transports: ["websocket"],
 });
 
@@ -44,8 +45,8 @@ function StinkRunning() {
           position: "relative",
           bottom: "5px",
           left: "5px",
-          width: "100px",
-          height: "100px",
+          width: "110px",
+          height: "110px",
         }}
       />
       <h2>저감중</h2>
@@ -54,31 +55,36 @@ function StinkRunning() {
 }
 
 function Stink({ id, onStatusChange = () => {} }) {
-  const [machineStatus, setMachineStatus] = useState(0);
-  const container = useRef(null);
+  const [isReducing, setIsReducing] = useState(false);
+  const onStatusChangeRef = useRef(onStatusChange);
+  onStatusChangeRef.current = onStatusChange;
 
   useEffect(() => {
+    onStatusChangeRef.current(isReducing);
+  }, [isReducing]);
+
+  useEffect(() => {
+    const applyMachineStatus = (running) => {
+      setIsReducing(Boolean(running));
+    };
+
+    socket.on("new_data", (data) => {
+      applyMachineStatus(data?.machine_status);
+    });
     socket.on("initial_data", (data) => {
-      if (data && data.length > 0) {
-        const status = data[data.length - 1].machine_status;
-        setMachineStatus(status);
-        if (onStatusChange) onStatusChange(status);
+      if (data?.length) {
+        applyMachineStatus(data[data.length - 1].machine_status);
       }
     });
 
-    socket.on("new_data", (data) => {
-      setMachineStatus(data.machine_status);
-      if (onStatusChange) onStatusChange(data.machine_status);
-    });
-
     return () => {
-      socket.off("initial_data");
       socket.off("new_data");
+      socket.off("initial_data");
     };
-  }, [onStatusChange]);
+  }, []);
 
   return (
-    <div id={id}>{machineStatus === true ? <StinkRunning /> : <StinkGood />}</div>
+    <div id={id}>{isReducing ? <StinkRunning /> : <StinkGood />}</div>
   );
 }
 

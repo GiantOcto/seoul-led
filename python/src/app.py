@@ -1,8 +1,10 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                            QLabel, QComboBox, QPushButton, QCheckBox, QTextEdit, QStatusBar,
-                           QGroupBox, QGridLayout, QMessageBox, QLineEdit)
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
+                           QGroupBox, QGridLayout, QMessageBox, QLineEdit, QSystemTrayIcon,
+                           QMenu, QAction)
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QEvent
+from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor
 from datetime import datetime, timedelta
 import serial
 import serial.tools.list_ports
@@ -15,6 +17,13 @@ import logging
 from logging.handlers import RotatingFileHandler
 import gc
 from log_manager import LogManager
+
+CONFIG_FILENAME = 'serial_monitor_config.json'
+
+def get_app_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 class ServerThread(QThread):
     """웹소켓 서버 연결을 관리하는 스레드
@@ -54,14 +63,15 @@ class ServerThread(QThread):
         while self.running:
             try:
                 if not self.sio.connected:
-                    # 연결 옵션 추가
-                    self.sio.connect(self.url, 
+                    self.sio.connect(
+                        self.url,
                         transports=['websocket'],
-                        wait_timeout=10)
+                        wait_timeout=15,
+                    )
                     break
             except Exception as e:
                 self.connection_error.emit(f'서버 연결 실패: {str(e)}')
-                time.sleep(5)  # 재시도 전 대기
+                time.sleep(5)
 
     def stop(self):
         self.running = False
@@ -181,6 +191,7 @@ class SerialGUI(QMainWindow):
         super().__init__()
         self.setWindowTitle('시리얼 통신 모니터')
         self.setGeometry(100, 100, 1000, 600)
+        self._force_quit = False
         
         self.setup_logging() #로깅 설정
 
@@ -194,6 +205,7 @@ class SerialGUI(QMainWindow):
         self.serial_thread = None
         self.server_thread = None
         self.filename = None
+        self.serial_config = {}
         self.threads = [] # 스레드 관리를 위한 리스트 추가
         
         # 서버 연결 초기화
@@ -204,8 +216,135 @@ class SerialGUI(QMainWindow):
         
         self.init_ui()
         self.update_ports()
+        QTimer.singleShot(0, self.start_minimized)
+        QTimer.singleShot(2500, self.auto_connect_serial)
     
-        
+    def get_config_path(self):
+        return os.path.join(get_app_dir(), CONFIG_FILENAME)
+
+    def load_serial_config(self):
+        self.serial_config = {}
+        config_path = self.get_config_path()
+        if not os.path.exists(config_path):
+            return
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                self.serial_config = json.load(f)
+        except Exception as e:
+            self.logger.warning(f'설정 로드 실패: {e}')
+
+    def save_serial_config(self):
+        config = {
+            'port': self.port_cb.currentText().split(' ')[0],
+            'baudrate': self.baud_cb.currentText(),
+            'data_bits': self.data_bits_cb.currentText(),
+            'stop_bits': self.stop_bits_cb.currentText(),
+            'parity': self.parity_cb.currentText(),
+        }
+        try:
+            with open(self.get_config_path(), 'w', encoding='utf-8') as f:
+                json.dump(config, f, ensure_ascii=False, indent=2)
+            self.serial_config = config
+        except Exception as e:
+            self.logger.warning(f'설정 저장 실패: {e}')
+
+    def apply_serial_config(self):
+        cfg = getattr(self, 'serial_config', {})
+        for key, widget in (
+            ('baudrate', self.baud_cb),
+            ('data_bits', self.data_bits_cb),
+            ('stop_bits', self.stop_bits_cb),
+            ('parity', self.parity_cb),
+        ):
+            value = cfg.get(key)
+            if value and widget.findText(value) >= 0:
+                widget.setCurrentText(value)
+
+    def select_preferred_port(self):
+        preferred = getattr(self, 'serial_config', {}).get('port')
+        if preferred:
+            for i in range(self.port_cb.count()):
+                if self.port_cb.itemText(i).startswith(preferred + ' '):
+                    self.port_cb.setCurrentIndex(i)
+                    return
+
+        for i in range(self.port_cb.count()):
+            if '연결 안됨' not in self.port_cb.itemText(i):
+                self.port_cb.setCurrentIndex(i)
+                return
+
+    def auto_connect_serial(self):
+        if self.serial and self.serial.is_open:
+            return
+
+        self.update_ports()
+        self.load_serial_config()
+        self.apply_serial_config()
+        self.select_preferred_port()
+        self.connect()
+    
+    def _create_tray_icon(self):
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'serial_monitor.ico')
+        if os.path.exists(icon_path):
+            return QIcon(icon_path)
+
+        pixmap = QPixmap(32, 32)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(QColor('#2196F3'))
+        painter.setPen(Qt.NoPen)
+        painter.drawEllipse(2, 2, 28, 28)
+        painter.setBrush(QColor('#FFFFFF'))
+        painter.drawRect(8, 12, 16, 8)
+        painter.end()
+        return QIcon(pixmap)
+
+    def setup_tray(self):
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(self._create_tray_icon())
+        self.tray_icon.setToolTip('시리얼 통신 모니터')
+
+        tray_menu = QMenu()
+        show_action = QAction('설정 창 열기', self)
+        show_action.triggered.connect(self.show_window)
+        tray_menu.addAction(show_action)
+
+        self.tray_toggle_action = QAction('COM 연결', self)
+        self.tray_toggle_action.triggered.connect(self.toggle_connection)
+        tray_menu.addAction(self.tray_toggle_action)
+
+        tray_menu.addSeparator()
+
+        quit_action = QAction('종료', self)
+        quit_action.triggered.connect(self.quit_app)
+        tray_menu.addAction(quit_action)
+
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.activated.connect(self.on_tray_activated)
+
+    def start_minimized(self):
+        self.showMinimized()
+
+    def show_window(self):
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def update_tray_tooltip(self):
+        if not hasattr(self, 'tray_icon'):
+            return
+        serial_status = 'COM 연결됨' if self.serial and self.serial.is_open else 'COM 미연결'
+        server_status = self.server_status_label.text().replace('서버: ', '')
+        self.tray_icon.setToolTip(f'시리얼 통신 모니터\n{serial_status}\n{server_status}')
+
+    def quit_app(self):
+        self._force_quit = True
+        self.cleanup_and_exit()
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -444,16 +583,32 @@ class SerialGUI(QMainWindow):
         if thread in self.threads:
             self.threads.remove(thread)
     
-    def closeEvent(self, event):
-        # 모든 스레드 정리
+    def cleanup_and_exit(self):
+        self.disconnect()
+        if self.server_thread:
+            self.server_thread.stop()
+            self.server_thread.wait()
+
         for thread in self.threads:
             if hasattr(thread, 'stop'):
                 thread.stop()
-            thread.wait(1000)  # 1초 대기
+            thread.wait(1000)
             if thread.isRunning():
-                thread.terminate()  # 강제 종료
-        event.accept()
+                thread.terminate()
 
+        if hasattr(self, 'tray_icon'):
+            self.tray_icon.hide()
+
+        QApplication.quit()
+
+    def closeEvent(self, event):
+        if self._force_quit:
+            event.accept()
+            return
+
+        event.ignore()
+        self.showMinimized()
+    
     def toggle_connection(self):
         if self.serial is None or not self.serial.is_open:
             self.connect()
@@ -507,8 +662,11 @@ class SerialGUI(QMainWindow):
             )
             
             self.connect_btn.setText('해제')
+            if hasattr(self, 'tray_toggle_action'):
+                self.tray_toggle_action.setText('COM 해제')
             status = f"연결됨: {port} @ {baudrate} baud"
             self.statusBar().showMessage(status)
+            self.update_tray_tooltip()
             
             if self.save_cb.isChecked():
                 self.filename = f"serial_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
@@ -520,6 +678,7 @@ class SerialGUI(QMainWindow):
             self.serial_thread.data_received.connect(self.update_log)
             self.serial_thread.error_occurred.connect(self.show_error)
             self.serial_thread.start()
+            self.save_serial_config()
             
         except serial.SerialException as e:
             self.show_error(str(e))
@@ -535,7 +694,10 @@ class SerialGUI(QMainWindow):
             self.serial = None
             
         self.connect_btn.setText('연결')
+        if hasattr(self, 'tray_toggle_action'):
+            self.tray_toggle_action.setText('COM 연결')
         self.statusBar().showMessage('연결 해제됨')
+        self.update_tray_tooltip()
         
     def update_log(self, output):
         """로그 데이터를 업데이트하고 필요한 처리를 수행
@@ -643,8 +805,19 @@ class SerialGUI(QMainWindow):
 
 
     def show_error(self, error_msg):
-        QMessageBox.critical(self, '오류', error_msg)
-        self.log_error(error_msg)  # 에러 로그에도 기록
+        if error_msg.startswith('서버 연결') or '서버 연결 끊김' in error_msg:
+            self.server_status_label.setStyleSheet("color: red")
+            short = error_msg.replace('서버 연결 실패: ', '').replace('서버 연결 끊김', '연결 끊김')
+            self.server_status_label.setText(f'서버: {short}')
+            self.update_tray_tooltip()
+            self.log_error(error_msg)
+            return
+
+        if self.isVisible():
+            QMessageBox.critical(self, '오류', error_msg)
+        elif hasattr(self, 'tray_icon'):
+            self.tray_icon.showMessage('오류', error_msg, QSystemTrayIcon.Critical, 5000)
+        self.log_error(error_msg)
         
     def show_status(self, status_msg):
         if "성공" in status_msg:
@@ -654,18 +827,12 @@ class SerialGUI(QMainWindow):
         else:
             self.server_status_label.setStyleSheet("")
         self.server_status_label.setText(f'서버: {status_msg}')
-        
-    def closeEvent(self, event):
-        self.disconnect()
-        if self.server_thread:
-            self.server_thread.stop()
-            self.server_thread.wait()
-        event.accept()
+        self.update_tray_tooltip()
 
 def main():
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     window = SerialGUI()
-    window.show()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':

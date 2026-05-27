@@ -1,12 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_all
 
+datas = []
+binaries = []
+hiddenimports = ['PyQt5', 'serial', 'log_manager']
+
+for pkg in ('socketio', 'engineio', 'requests', 'urllib3', 'certifi', 'charset_normalizer', 'idna', 'websocket'):
+    pkg_datas, pkg_binaries, pkg_hidden = collect_all(pkg)
+    datas += pkg_datas
+    binaries += pkg_binaries
+    hiddenimports += pkg_hidden
 
 a = Analysis(
-    ['app.py'],
-    pathex=[],
-    binaries=[],
-    datas=[],
-    hiddenimports=['PyQt5', 'pyserial'],
+    ['src/app.py'],
+    pathex=['src'],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

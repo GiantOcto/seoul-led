@@ -1,1 +1,8 @@
 node_modules
+
+# 서버 로컬 설정 (COM 포트 등)
+server/.env
+
+# 릴리즈 산출물 · Node zip 캐시
+dist/
+.release-cache/

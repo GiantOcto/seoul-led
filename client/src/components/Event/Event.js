@@ -8,6 +8,7 @@ function Event({ selectedDistrict, position }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentEvent, setCurrentEvent] = useState(null);
   const [allEventsData, setAllEventsData] = useState(null);
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
 
   // 캐시 관리 설정
   const CACHE_DURATION = 90 * 24 * 60 * 60 * 1000; // ⭐ 90일 (3개월)
@@ -50,7 +51,7 @@ function Event({ selectedDistrict, position }) {
         return event.GUNAME === '서초구' && endDate >= today;
       })
       .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE))
-      .slice(0, 2);
+      .slice(0, 4);
     
     console.log(`📈 확장 후: 서초구 이벤트 ${seochoEvents.length}개`);
   }
@@ -58,7 +59,7 @@ function Event({ selectedDistrict, position }) {
   // ⭐ 서초구 제외한 다른 구들
   const others = upcomingEvents
     .filter(e => e.GUNAME !== '서초구')
-    .slice(0, 2);
+    .slice(0, 4);
   
   const todayPreload = [...seochoEvents, ...others];
     
@@ -135,11 +136,11 @@ function Event({ selectedDistrict, position }) {
     return allEvents
       .filter(event => {
         const startDate = new Date(event.STRTDATE);
-        const endDate = new Date(event.ENDDATE);
+        const endDate = new Date(event.END_DATE);
         
-        // 진행 중이거나 2주 내 시작하는 행사  // ⭐ 주석도 수정
+        // 진행 중이거나 60일 내 시작하는 행사
         return (today >= startDate && today <= endDate) || 
-              (startDate >= today && startDate <= twoWeeksLater);  // ⭐ oneWeekLater → twoWeeksLater
+              (startDate >= today && startDate <= twoWeeksLater);
       })
       .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE));
   };
@@ -312,39 +313,51 @@ function Event({ selectedDistrict, position }) {
     
     districtEvents = allEventsData
       .filter(event => {
-        const endDate = new Date(event.ENDDATE);
+        const endDate = new Date(event.END_DATE);
         return event.GUNAME === '서초구' && endDate >= today;
       })
-      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE));
+      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE))
+      .slice(0, 4);  // 최대 4개만
     
     console.log(`📈 확장 완료: ${districtEvents.length}개 찾음`);
+  } else {
+    // 정확히 4개만 가져오기
+    districtEvents = districtEvents.slice(0, 4);
   }
+    
     // 2단계: position별 필터링
     let filteredEvents;
     
     if (position === 'middle4') {
+      // 구 이벤트 4개 중 홀수 인덱스 (1,3) → 2개
       filteredEvents = districtEvents.filter((_, index) => index % 2 === 1);
     } else if (position === 'bottom4') {
+      // 구 이벤트 4개 중 짝수 인덱스 (0,2) → 2개
       filteredEvents = districtEvents.filter((_, index) => index % 2 === 0);
     } else if (position === 'middle5') {
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 1
-      );
+      // 전체 이벤트: 서초구 제외한 이벤트 4개 먼저 필터링
+      const nonSeochoEvents = upcomingEvents
+        .filter(event => event.GUNAME !== selectedDistrict)
+        .slice(0, 4);
+      // 그 중 짝수 인덱스 (0,2) → 2개
+      filteredEvents = nonSeochoEvents.filter((_, index) => index % 2 === 0);
     } else if (position === 'bottom5') {
-      filteredEvents = upcomingEvents.filter(
-        (event, index) => event.GUNAME !== selectedDistrict && index % 2 === 0
-      );
+      // 전체 이벤트: 서초구 제외한 이벤트 4개 먼저 필터링
+      const nonSeochoEvents = upcomingEvents
+        .filter(event => event.GUNAME !== selectedDistrict)
+        .slice(0, 4);
+      // 그 중 홀수 인덱스 (1,3) → 2개
+      filteredEvents = nonSeochoEvents.filter((_, index) => index % 2 === 1);
     }
 
-    // ⭐ 3단계: 프리로드된 이미지만 있는 이벤트로 제한
-    const preloadedEvents = filteredEvents?.filter(event => 
-      PRELOADED_URLS.current.has(event.MAIN_IMG)
-    ) || [];
-    
+    // 프리로드 URL 집합은 데일리 배치용으로만 쓰고, 표시 목록은 필터 결과 전부 사용.
+    // (이전: PRELOADED_URLS에 없으면 행사 자체를 숨김 → 9시 전·프리로드 8건 밖 행사가 통째로 누락됨)
+
     if (filteredEvents && filteredEvents.length > 0) {
-      setEvents(preloadedEvents);
-      setCurrentEvent(preloadedEvents[0]);
+      setEvents(filteredEvents);
+      setCurrentEvent(filteredEvents[0]);
       setCurrentIndex(0);
+      setImageLoadFailed(false);
     } else {
       setEvents([]);
       setCurrentEvent(null);
@@ -359,6 +372,7 @@ function Event({ selectedDistrict, position }) {
       setCurrentIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % events.length;
         setCurrentEvent(events[nextIndex]);
+        setImageLoadFailed(false);
         return nextIndex;
       });
     }, 5000);
@@ -381,9 +395,8 @@ function Event({ selectedDistrict, position }) {
     );
   };
 
-  // 이미지 로딩 실패시 조용히 처리
-  const handleImageError = (e) => {
-    e.target.style.display = 'none';  // 이미지만 숨기고 조용히 처리
+  const handleImageError = () => {
+    setImageLoadFailed(true);
   };
 
   // 로딩 상태 표시
@@ -406,16 +419,22 @@ function Event({ selectedDistrict, position }) {
   return (
     <div className="event-container">
       <div className="event-image">
-        <img 
-          src={currentEvent.MAIN_IMG}
-          alt={currentEvent.TITLE}
-          onError={handleImageError}
-          style={{
-            maxWidth: '100%',
-            maxHeight: '200px',
-            objectFit: 'cover'
-          }}
-        />
+        {currentEvent.MAIN_IMG && !imageLoadFailed ? (
+          <img
+            src={currentEvent.MAIN_IMG}
+            alt={currentEvent.TITLE}
+            onError={handleImageError}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '200px',
+              objectFit: 'cover',
+            }}
+          />
+        ) : (
+          <div className="event-image-fallback" role="img" aria-label="포스터 없음">
+            포스터를 불러올 수 없습니다
+          </div>
+        )}
       </div>
       <div className="event-desc">
         <div className="event-title">
