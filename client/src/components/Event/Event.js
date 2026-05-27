@@ -1,5 +1,148 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Event.css';
+
+const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; // 30일마다 API 재호출
+const CACHE_KEY = 'culturalEvents_cache';
+const CACHE_TIME_KEY = 'culturalEvents_time';
+const MAX_CACHE_AGE = 60 * 24 * 60 * 60 * 1000; // 캐시 최대 보관 60일
+
+let fetchInFlight = null;
+let lastDaily9AMDate = null;
+let daily9AMSchedulerStarted = false;
+const dataListeners = new Set();
+
+function isCacheExpired() {
+  const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+  if (!cachedTime) return true;
+  return Date.now() - parseInt(cachedTime, 10) >= CACHE_DURATION;
+}
+
+function cleanOldCache() {
+  try {
+    const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+    if (cachedTime && Date.now() - parseInt(cachedTime, 10) > MAX_CACHE_AGE) {
+      localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem(CACHE_TIME_KEY);
+      console.log('60일 지난 캐시 삭제됨');
+    }
+  } catch (error) {
+    console.error('캐시 정리 오류:', error);
+  }
+}
+
+function getUpcomingEvents(allEvents) {
+  if (!allEvents) return [];
+
+  const today = new Date();
+  const within30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  return allEvents
+    .filter((event) => {
+      const startDate = new Date(event.STRTDATE);
+      const endDate = new Date(event.END_DATE);
+
+      return (
+        (today >= startDate && today <= endDate) ||
+        (startDate >= today && startDate <= within30Days)
+      );
+    })
+    .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE));
+}
+
+function saveEventsToCache(rows) {
+  const dataToStore = JSON.stringify(rows);
+  const sizeInMB = dataToStore.length / (1024 * 1024);
+
+  if (sizeInMB > 4) {
+    console.warn('⚠️ 데이터 너무 큼, 500개만 저장');
+    const reduced = rows.slice(0, 500);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(reduced));
+    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+    return reduced;
+  }
+
+  localStorage.setItem(CACHE_KEY, dataToStore);
+  localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+  return rows;
+}
+
+function notifyDataListeners(data) {
+  dataListeners.forEach((listener) => listener(data));
+}
+
+async function fetchCulturalEvents({ forceRefresh = false } = {}) {
+  cleanOldCache();
+
+  if (!forceRefresh && !isCacheExpired()) {
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    if (cachedData) {
+      try {
+        const parsedData = JSON.parse(cachedData);
+        if (Array.isArray(parsedData) && parsedData.length > 0) {
+          console.log('localStorage 캐시 사용 중... (API 호출 없음)');
+          return parsedData;
+        }
+      } catch (e) {
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(CACHE_TIME_KEY);
+      }
+    }
+  }
+
+  if (fetchInFlight) return fetchInFlight;
+
+  fetchInFlight = (async () => {
+    console.log('문화행사 API 호출 중... (캐시 만료 또는 강제 갱신)');
+
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const formattedDate = startOfMonth.toLocaleDateString('en-CA');
+
+    const response = await fetch(
+      `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/1000///${formattedDate}`
+    );
+    const data = await response.json();
+
+    if (!data?.culturalEventInfo?.row) {
+      throw new Error('API 응답 데이터 형식이 올바르지 않습니다.');
+    }
+
+    try {
+      return saveEventsToCache(data.culturalEventInfo.row);
+    } catch (e) {
+      if (e.name === 'QuotaExceededError') {
+        localStorage.removeItem('seoulAirQuality_cache');
+        localStorage.removeItem('seoulAirQuality_time');
+        return saveEventsToCache(data.culturalEventInfo.row);
+      }
+      throw e;
+    }
+  })()
+    .catch((error) => {
+      console.error('문화행사 API 호출 실패:', error);
+      const cachedData = localStorage.getItem(CACHE_KEY);
+      if (cachedData) {
+        console.log('API 실패, 기존 캐시 사용');
+        return JSON.parse(cachedData);
+      }
+      return null;
+    })
+    .finally(() => {
+      fetchInFlight = null;
+    });
+
+  return fetchInFlight;
+}
+
+function msUntilNext9AM() {
+  const now = new Date();
+  const next9AM = new Date();
+  next9AM.setHours(9, 0, 0, 0);
+  if (now >= next9AM) {
+    next9AM.setDate(next9AM.getDate() + 1);
+  }
+  return next9AM - now;
+}
 
 function Event({ selectedDistrict, position }) {
   const [events, setEvents] = useState([]);
@@ -10,15 +153,9 @@ function Event({ selectedDistrict, position }) {
   const [allEventsData, setAllEventsData] = useState(null);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
 
-  // 캐시 관리 설정
-  const CACHE_DURATION = 90 * 24 * 60 * 60 * 1000; // ⭐ 90일 (3개월)
-  const CACHE_KEY = 'culturalEvents_cache';
-  const CACHE_TIME_KEY = 'culturalEvents_time';
-  const MAX_CACHE_AGE = 180 * 24 * 60 * 60 * 1000; // ⭐ 6달 (캐시 최대 보관)
-
-  // 매일 09:00에 4개 이미지만 프리로드
+  // 매일 09:00 — 캐시 30일 만료 시 API 갱신 + 이미지 프리로드 (middle4에서만 스케줄)
   const dailyPreloadCheck = (eventData) => {
-  if (!eventData || eventData.length === 0) return;
+    if (!eventData || eventData.length === 0) return;
   
   const now = new Date();
   const today = now.toISOString().split('T')[0];
@@ -83,216 +220,64 @@ function Event({ selectedDistrict, position }) {
     console.log(`✅ 데일리 프리로드 완료: ${todayPreload.length}개`);
   };
 
-
-  // 이미지 프리로딩 함수 (백그라운드에서 조용히 실행)
-  /* const preloadImages = async (eventData) => {
-    if (!eventData || eventData.length === 0) return;
-
-    // 중복 제거하고 유효한 이미지 URL만 추출
-    const imageUrls = [...new Set(
-      eventData
-        .map(event => event.MAIN_IMG)
-        .filter(url => url && url.startsWith('http'))
-    )];
-
-    console.log(`${imageUrls.length}개 이미지 백그라운드 프리로딩 시작...`);
-
-    // 백그라운드에서 조용히 이미지 로드
-    imageUrls.forEach(url => {
-      const img = new Image();
-      img.onload = () => {
-        // 성공시 아무것도 안함 (조용히 캐시됨)
-      };
-      img.onerror = () => {
-        // 실패시 아무것도 안함 (조용히 무시)
-      };
-      img.src = url;
-    });
-
-    console.log(`✅ 이미지 프리로딩 백그라운드 시작 완료`);
-  }; */
-
-  // 3달 지난 캐시 자동 삭제
-  const cleanOldCache = () => {
-    try {
-      const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
-      if (cachedTime && (Date.now() - parseInt(cachedTime) > MAX_CACHE_AGE)) {
-        localStorage.removeItem(CACHE_KEY);
-        localStorage.removeItem(CACHE_TIME_KEY);
-        console.log("3달 지난 캐시 삭제됨");
-      }
-    } catch (error) {
-      console.error("캐시 정리 오류:", error);
+  const refreshEventsData = useCallback(async (forceRefresh = false) => {
+    const data = await fetchCulturalEvents({ forceRefresh });
+    if (data) {
+      setAllEventsData(data);
+      notifyDataListeners(data);
     }
-  };
+    return data;
+  }, []);
 
-  // 오늘부터 가장 가까운 행사들 필터링
-  const getUpcomingEvents = (allEvents) => {
-    if (!allEvents) return [];
-    
-    const today = new Date();
-    const twoWeeksLater = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);  // ⭐ 7 → 14
-    
-    return allEvents
-      .filter(event => {
-        const startDate = new Date(event.STRTDATE);
-        const endDate = new Date(event.END_DATE);
-        
-        // 진행 중이거나 60일 내 시작하는 행사
-        return (today >= startDate && today <= endDate) || 
-              (startDate >= today && startDate <= twoWeeksLater);
-      })
-      .sort((a, b) => new Date(a.STRTDATE) - new Date(b.STRTDATE));
-  };
-
-  // 앱 시작시 한 번만 전체 데이터 호출 (매달 1일에만 API 호출)
+  // 앱 시작 시 데이터 로드 + 다른 Event 슬롯에 갱신 알림
   useEffect(() => {
-    const fetchAllEvents = async () => {
-      // 3달 지난 캐시 정리
-      cleanOldCache();
+    refreshEventsData(false);
 
-      try {
-        // localStorage에서 캐시 확인
-        const cachedData = localStorage.getItem(CACHE_KEY);
-        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
-        
-        // 캐시가 있고 90일 이내면 API 호출 안함
-        if (cachedData && cachedTime && 
-            (Date.now() - parseInt(cachedTime) < CACHE_DURATION)) {
-          console.log("localStorage 캐시 사용 중... (API 호출 없음)");
-          
-          try {
-            const parsedData = JSON.parse(cachedData);
-            
-            // 데이터 유효성 체크
-            if (Array.isArray(parsedData) && parsedData.length > 0) {
-              setAllEventsData(parsedData);
-              return;
-            } else {
-              console.warn('캐시 데이터 형식 이상함');
-              throw new Error('Invalid cache format');
-            }
-            
-          } catch (e) {
-            console.error('캐시 사용 실패, 새로 받아옴:', e);
-            localStorage.removeItem(CACHE_KEY);
-            localStorage.removeItem(CACHE_TIME_KEY);
-            // return 안하고 아래 API 호출 코드로 진행
-          }
-        }
+    const onDataUpdate = (data) => setAllEventsData(data);
+    dataListeners.add(onDataUpdate);
+    return () => dataListeners.delete(onDataUpdate);
+  }, [refreshEventsData]);
 
-        // 캐시 없거나 3개월 지났을 때만 API 호출
-        console.log("문화행사 API 호출 중... (캐시 만료)");
-        
-        // 이번 달 전체 데이터 요청
-        const today = new Date();
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const formattedDate = startOfMonth.toLocaleDateString('en-CA');
-        
-        const response = await fetch(
-          `http://openapi.seoul.go.kr:8088/626f624975776c7336385252626b78/json/culturalEventInfo/1/1000///${formattedDate}`
-        );
-        
-        const data = await response.json();
-        
-        if (!data?.culturalEventInfo?.row) {
-          console.error("API 응답 데이터 형식이 올바르지 않습니다:", data);
-          return;
-        }
-
-        // localStorage 용량 체크 후 저장
-        try {
-          const dataToStore = JSON.stringify(data.culturalEventInfo.row);
-          const sizeInMB = dataToStore.length / (1024 * 1024);
-          
-          console.log(`📦 저장할 데이터 크기: ${sizeInMB.toFixed(2)}MB`);
-          
-          if (sizeInMB > 4) { // 4MB 넘으면 위험
-            console.warn("⚠️ 데이터 너무 큼, 500개만 저장");
-            const reduced = data.culturalEventInfo.row.slice(0, 500);
-            localStorage.setItem(CACHE_KEY, JSON.stringify(reduced));
-            setAllEventsData(reduced);
-          } else {
-            localStorage.setItem(CACHE_KEY, dataToStore);
-            setAllEventsData(data.culturalEventInfo.row);
-          }
-          
-          localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-          
-        } catch (e) {
-          if (e.name === 'QuotaExceededError') {
-            console.error('💥 localStorage 꽉참! 오래된 데이터 삭제중...');
-            // 오래된 캐시들 삭제
-            localStorage.removeItem('seoulAirQuality_cache'); // 날씨 캐시
-            localStorage.removeItem('seoulAirQuality_time');
-            // 재시도
-            try {
-              localStorage.setItem(CACHE_KEY, JSON.stringify(data.culturalEventInfo.row));
-              setAllEventsData(data.culturalEventInfo.row);
-            } catch (e2) {
-              console.error('그래도 안됨, 포기');
-              setAllEventsData(data.culturalEventInfo.row);
-            }
-          }
-        }
-
-        // 이미지 프리로딩 (백그라운드에서 조용히 실행)
-        // preloadImages(data.culturalEventInfo.row);
-        
-      } catch (error) {
-        console.error("문화행사 API 호출 실패:", error);
-        
-        // API 실패시 기존 캐시라도 사용
-        const cachedData = localStorage.getItem(CACHE_KEY);
-        if (cachedData) {
-          console.log("API 실패, 기존 캐시 사용");
-          try {
-            const parsedCache = JSON.parse(cachedData);
-            setAllEventsData(parsedCache);
-          } catch (e) {
-            console.error('캐시 파싱 실패:', e);
-            localStorage.removeItem(CACHE_KEY);
-          }
-        }
-      }
-    };
-
-    fetchAllEvents();
-  }, []); // 빈 의존성 배열 = 앱 시작시 1회만
-
-    // 매일 09:00 체크 (정확한 시간에 한번만)
+  // 매일 09:00 — 캐시 30일 지났으면 API 갱신 후 프리로드 (스케줄러 1개만)
   useEffect(() => {
-    if (!allEventsData) return;
-    
-    const scheduleNext9AM = () => {
+    if (position !== 'middle4' || daily9AMSchedulerStarted) return undefined;
+    daily9AMSchedulerStarted = true;
+
+    const runDaily9AM = async () => {
       const now = new Date();
-      const next9AM = new Date();
-      next9AM.setHours(9, 0, 0, 0);
-      
-      // 이미 9시 지났으면 내일 9시로
-      if (now.getHours() >= 9) {
-        next9AM.setDate(next9AM.getDate() + 1);
+      if (now.getHours() < 9) return;
+
+      const today = now.toISOString().split('T')[0];
+      if (lastDaily9AMDate === today) return;
+      lastDaily9AMDate = today;
+
+      const expired = isCacheExpired();
+      if (expired) {
+        console.log(`⏰ ${today} 09:00 — 캐시 30일 만료, API 갱신`);
+      } else {
+        console.log(`⏰ ${today} 09:00 — 캐시 유효, 이미지 프리로드만`);
       }
-      
-      const msUntilNext9AM = next9AM - now;
-      console.log(`⏰ 다음 프리로드까지 ${Math.floor(msUntilNext9AM / 1000 / 60)}분`);
-      
-      return setTimeout(() => {
-        dailyPreloadCheck(allEventsData);
-        scheduleNext9AM(); // 재귀로 다음 9시 예약
-      }, msUntilNext9AM);
+
+      const data = await refreshEventsData(expired);
+      if (data) {
+        dailyPreloadCheck(data);
+      }
     };
-    
-    // 처음 한번 체크
-    dailyPreloadCheck(allEventsData);
-    
-    // 다음 9시 예약
-    const timer = scheduleNext9AM();
-    
-    return () => clearTimeout(timer);
-  }, [allEventsData]);
 
+    const scheduleNext9AM = () => {
+      const ms = msUntilNext9AM();
+      console.log(`⏰ 다음 09:00 체크까지 ${Math.floor(ms / 1000 / 60)}분`);
+      setTimeout(async () => {
+        await runDaily9AM();
+        scheduleNext9AM();
+      }, ms);
+    };
 
+    runDaily9AM();
+    scheduleNext9AM();
+
+    return undefined;
+  }, [position, refreshEventsData]);
   // selectedDistrict나 position 변경시 필터링만 수행 (API 호출 없음)
   useEffect(() => {
     if (!allEventsData || !selectedDistrict) {
