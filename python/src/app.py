@@ -606,8 +606,9 @@ class SerialGUI(QMainWindow):
             event.accept()
             return
 
-        event.ignore()
-        self.showMinimized()
+        self._force_quit = True
+        event.accept()
+        self.cleanup_and_exit()
     
     def toggle_connection(self):
         if self.serial is None or not self.serial.is_open:
@@ -831,7 +832,7 @@ class SerialGUI(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
+    app.setQuitOnLastWindowClosed(True)
     window = SerialGUI()
     sys.exit(app.exec_())
 
