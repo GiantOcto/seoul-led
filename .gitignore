@@ -6,3 +6,6 @@ server/.env
 # 릴리즈 산출물 · Node zip 캐시
 dist/
 .release-cache/
+
+# 런타임 로그 (수위 CSV, dev 로그)
+logs/

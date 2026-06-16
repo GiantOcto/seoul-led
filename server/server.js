@@ -24,6 +24,7 @@ function resolveStaticRoot() {
 const express = require('express');
 const dgram = require('dgram');
 const { startPlcModbusPoller, getModbusStatus } = require('./plc-modbus-poller');
+const { logWaterLevel } = require('./water-level-logger');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -136,6 +137,7 @@ function ingestSerialPayload(data) {
     }
     if (process.env.NODE_ENV === 'development') console.log('[modbus] 수신:', data);
     DataStore.addData(data);
+    logWaterLevel(data); // CSV 기록 (내부에서 1분 스로틀)
     io.emit('new_data', data);
     return true;
 }
