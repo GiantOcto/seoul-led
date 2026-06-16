@@ -4,6 +4,8 @@ const dgram = require('dgram');
 
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+const { logWaterLevel } = require('./water-level-logger');
+
 /** React 빌드 폴더 (없으면 API만 동작). 우선순위: STATIC_DIR → ../build → ../client/build */
 function resolveStaticRoot() {
     if (process.env.STATIC_DIR) {
@@ -200,6 +202,7 @@ io.on('connection', (socket) => {
 
         console.log('Received serial data:', data);
         DataStore.addData(data);
+        logWaterLevel(data); // CSV 기록 (내부에서 1분 스로틀)
         io.emit('new_data', data);
     });
 
