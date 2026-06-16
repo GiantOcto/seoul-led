@@ -3,6 +3,8 @@ const fs = require('fs');
 // server.js 와 같은 폴더의 .env (배치가 프로젝트 루트여도 server\.env 적용)
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+const { logWaterLevel } = require('./water-level-logger');
+
 /** React 빌드 폴더 (없으면 API만 동작). 우선순위: STATIC_DIR → ../build → ../client/build */
 function resolveStaticRoot() {
     if (process.env.STATIC_DIR) {
@@ -206,6 +208,7 @@ function ingestSerialPayload(data) {
     }
     if (process.env.NODE_ENV === 'development') console.log('[serial] 수신:', data);
     DataStore.addData(data);
+    logWaterLevel(data); // CSV 기록 (내부에서 1분 스로틀)
     io.emit('new_data', data);
     return true;
 }
