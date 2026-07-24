@@ -1345,7 +1345,7 @@ function App() {
 
             {sections.bottom}
           </div>
-          <WaterLevelSensorsPanel onWaterLevelChange={handleWaterLevelChange} />
+          <WaterLevelSensorsPanel />
         </div>
       </Logo34PairProvider>
 

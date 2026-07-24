@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// 기록 주기 — 1분에 한 번만 CSV에 기록 (소켓 전송은 그대로 실시간)
+// 기록 주기 — 1분에 한 번만 CSV에 기록 (폴링/소켓 전송은 그대로 실시간)
 const LOG_INTERVAL_MS = 60 * 1000;
 
 // 저장 위치: 기본 <프로젝트 루트>/logs/water-level, 필요 시 env로 변경
@@ -9,8 +9,8 @@ const LOG_DIR = process.env.WATER_LEVEL_LOG_DIR
     ? path.resolve(process.env.WATER_LEVEL_LOG_DIR)
     : path.join(__dirname, '..', 'logs', 'water-level');
 
-// 화면 표시와 동일한 설치 기준 오프셋(mm)을 더해 기록
-// (client/src/components/WaterLevel/WaterLevel.js 의 roundedLevel + 250 과 일치)
+// LED 수위 화면과 동일한 설치 기준 오프셋(mm)을 더해 기록
+// (client/src/utils/waterLevelDisplay.js 의 WATER_LEVEL_OFFSET_MM=250 과 일치)
 const OFFSET_MM = parseInt(process.env.WATER_LEVEL_OFFSET_MM ?? '250', 10);
 
 const CSV_HEADER = '날짜,시간,수위(mm)\n';
@@ -32,7 +32,7 @@ function timeStr(d) {
 
 /**
  * 수위 데이터를 1분에 한 번만 CSV에 기록.
- * serial_data 수신마다 호출해도 내부에서 스로틀링.
+ * 폴러가 매 폴링(기본 500ms)마다 호출해도 내부에서 스로틀링.
  */
 function logWaterLevel(data) {
     if (!data || typeof data.water_level !== 'number') return;
@@ -47,7 +47,7 @@ function logWaterLevel(data) {
         }
         const file = path.join(LOG_DIR, `water_level_${dateStr(now)}.csv`);
         const isNewFile = !fs.existsSync(file);
-        const displayMm = data.water_level + OFFSET_MM; // 화면 표시값과 동일
+        const displayMm = data.water_level + OFFSET_MM; // LED 표시값과 동일
         const row = `${dateStr(now)},${timeStr(now)},${displayMm}\n`;
         fs.appendFileSync(file, (isNewFile ? CSV_HEADER : '') + row, 'utf8');
     } catch (err) {
