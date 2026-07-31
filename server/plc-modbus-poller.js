@@ -27,6 +27,8 @@ function mapModbusRegisters(registers) {
     const levelMm = registers[0];
     const errorCode = registers[1];
     const sensorErrorWord = registers.length >= 3 ? registers[2] : 0;
+    // D1004: 1=ON, 0=OFF (4워드째 — regCount 3으로 줄이면 undefined)
+    const d1004 = registers.length >= 4 ? registers[3] : undefined;
     const sensorCount = getSensorCount();
     const sensor_error_bits = parseSensorErrorBits(sensorErrorWord, sensorCount);
     return {
@@ -37,10 +39,12 @@ function mapModbusRegisters(registers) {
         machine_status: errorCode === 1,
         plc_off: errorCode === 0,
         sensor_error_bits,
+        d1004_state: d1004,
         modbus: {
             d_water: parseInt(process.env.PLC_D_WATER || '1001', 10),
             d_error: parseInt(process.env.PLC_D_ERROR || '1002', 10),
             d_sensor_error: parseInt(process.env.PLC_D_SENSOR_ERROR || '1003', 10),
+            d_onoff: parseInt(process.env.PLC_D_ONOFF || '1004', 10),
             sensor_error_word: sensorErrorWord,
             raw_words: registers,
         },
@@ -53,7 +57,7 @@ function getConfig() {
         baudRate: parseInt(process.env.BAUD_RATE || '115200', 10),
         slaveId: parseInt(process.env.MODBUS_SLAVE_ID ?? '0', 10),
         regStart: parseInt(process.env.MODBUS_REG_START || '0', 10),
-        regCount: parseInt(process.env.MODBUS_REG_COUNT || '3', 10),
+        regCount: parseInt(process.env.MODBUS_REG_COUNT || '4', 10), // D1001~D1004 (D1004 미사용 PLC면 3으로)
         pollMs: Math.max(100, parseInt(process.env.WATER_LEVEL_POLL_MS || '500', 10)),
         timeoutMs: parseInt(process.env.MODBUS_TIMEOUT_MS || '800', 10),
     };
