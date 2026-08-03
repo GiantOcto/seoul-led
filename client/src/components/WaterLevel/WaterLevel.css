@@ -34,7 +34,7 @@
   font-size: 26px;
   margin: 0;
   color: aliceblue;
-  top: -20px;
+  top: -36px;
 }
 
 .water-level span {
@@ -44,7 +44,7 @@
   font-size: 30px;
   color: rgb(225, 4, 20);
   margin: 0 5px 0;
-  top: -20px;
+  top: -36px;
 }
 
 .warning-icon {

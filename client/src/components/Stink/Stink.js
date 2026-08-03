@@ -56,32 +56,18 @@ function StinkRunning() {
 
 function Stink({ id, onStatusChange = () => {} }) {
   const [isReducing, setIsReducing] = useState(false);
-  const onStatusChangeRef = useRef(onStatusChange);
-  onStatusChangeRef.current = onStatusChange;
 
   useEffect(() => {
-    onStatusChangeRef.current(isReducing);
-  }, [isReducing]);
-
-  useEffect(() => {
-    const applyMachineStatus = (running) => {
-      setIsReducing(Boolean(running));
-    };
-
-    socket.on("new_data", (data) => {
-      applyMachineStatus(data?.machine_status);
-    });
-    socket.on("initial_data", (data) => {
-      if (data?.length) {
-        applyMachineStatus(data[data.length - 1].machine_status);
-      }
+    socket.on("relay_reduction_status", (data) => {
+      const next = Boolean(data?.reducing);
+      setIsReducing(next);
+      if (onStatusChange) onStatusChange(next);
     });
 
     return () => {
-      socket.off("new_data");
-      socket.off("initial_data");
+      socket.off("relay_reduction_status");
     };
-  }, []);
+  }, [onStatusChange]);
 
   return (
     <div id={id}>{isReducing ? <StinkRunning /> : <StinkGood />}</div>

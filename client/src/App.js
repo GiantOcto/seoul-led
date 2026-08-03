@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSectionManager } from "./hooks/useSectionManager";
 import { Logo34PairProvider } from "./components/Logo/Logo34PairContext";
+import WaterLevelSensorsPanel from "./components/WaterLevelSensorsPanel/WaterLevelSensorsPanel";
 import "./App.css";
 
 // 시계 썸네일 컴포넌트
@@ -390,8 +391,8 @@ function App() {
     const names = {
       0: "문구(1)",
       1: "문구(2)",
-      2: "수위데이터",
-      3: "문구(3)",
+      2: "문구(3)",
+      3: "수위데이터",
     };
     if (names[index] !== undefined) {
       return names[index];
@@ -639,24 +640,24 @@ function App() {
 
   useEffect(() => {
     if (waterLevel > 0.25) {
-      if (!activeSections.includes(2)) {
+      if (!activeSections.includes(3)) {
         setPreviousSections([...activeSections]);
-        setActiveSections([2]);
-        setCurrentSection(2);
+        setActiveSections([3]);
+        setCurrentSection(3);
       }
-    } else if (waterLevel <= 0.25 && activeSections.includes(2)) {
+    } else if (waterLevel <= 0.25 && activeSections.includes(3)) {
       if (activeSections.length === 1) {
         setActiveSections([...previousSections]);
         setCurrentSection(previousSections[0]);
       } else {
-        setActiveSections(activeSections.filter(section => section !== 2));
+        setActiveSections(activeSections.filter(section => section !== 3));
       }
     }
   }, [waterLevel, activeSections]);
 
   const getWaterButtonStyle = (index) => {
     const baseStyle = getButtonStyle(index);
-    if (index === 2) {
+    if (index === 3) {
       if (waterLevel > 0.25) {
         return {
           ...baseStyle,
@@ -854,7 +855,7 @@ function App() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
                   {orderedActiveSections.map((index) => {
-                    const isWaterDataSection = index === 2;
+                    const isWaterDataSection = index === 3;
                     const isEditingName = !isWaterDataSection && (editingStates[index]?.name || false);
                     const isEditingInterval = editingStates[index]?.interval || false;
                     const editName = editValues[index]?.name ?? getSectionName(index);  
@@ -1344,6 +1345,7 @@ function App() {
 
             {sections.bottom}
           </div>
+          <WaterLevelSensorsPanel />
         </div>
       </Logo34PairProvider>
 

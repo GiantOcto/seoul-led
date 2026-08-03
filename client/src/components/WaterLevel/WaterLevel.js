@@ -1,36 +1,30 @@
 import { useEffect, useState } from "react";
-import io from "socket.io-client";
+import { getLedDisplayMm } from "../../utils/waterLevelDisplay";
+import { waterLevelSocket as socket } from "../../utils/waterLevelSocket";
 import "./WaterLevel.css";
-
-const socket = io("http://localhost:8000", {
-  transports: ["websocket"],
-});
 
 function WaterLevel({ onWaterLevelChange }) {
   const [waterLevel, setWaterLevel] = useState(0);
 
   useEffect(() => {
-    // 초기 데이터 수신
-    socket.on("initial_data", (data) => {
-      if (data && data.length > 0) {
-        const level = data[data.length - 1].water_level;
-        const roundedLevel = parseFloat(level.toFixed(0));
-        setWaterLevel(roundedLevel + 250);
-        onWaterLevelChange((roundedLevel + 250)/1000);
-      }
-    });
+    const apply = (data) => {
+      if (!data || typeof data.water_level !== "number") return;
+      const displayMm = getLedDisplayMm(data);
+      if (displayMm === null) return;
+      setWaterLevel(displayMm);
+      onWaterLevelChange(displayMm / 1000);
+    };
 
-    // 실시간 데이터 수신
-    socket.on("new_data", (data) => {
-      const level = data.water_level;
-      const roundedLevel = parseFloat(level.toFixed(0));
-      setWaterLevel(roundedLevel + 250);
-      onWaterLevelChange((roundedLevel + 250)/1000);
-    });
+    const onInitial = (rows) => {
+      if (rows && rows.length > 0) apply(rows[rows.length - 1]);
+    };
+
+    socket.on("initial_data", onInitial);
+    socket.on("new_data", apply);
 
     return () => {
-      socket.off("initial_data");
-      socket.off("new_data");
+      socket.off("initial_data", onInitial);
+      socket.off("new_data", apply);
     };
   }, [onWaterLevelChange]);
 

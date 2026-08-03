@@ -107,8 +107,8 @@ export const useSectionManager = (
   const defaultNames = {
     0: "문구(1)",
     1: "문구(2)",
-    2: "수위데이터",
-    3: "문구(3)",
+    2: "문구(3)",
+    3: "수위데이터",
   };
   const initialNames = { ...savedData.names };
   PROTECTED_SECTIONS.forEach(index => {
@@ -303,10 +303,13 @@ export const useSectionManager = (
               currentSection === 2 && activeSections.includes(2)
                 ? "flex"
                 : "none",
+            height: "100%",
+            backgroundImage: "url(/images/홍보문구4.png)",
+            backgroundSize: "100% 100%",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
           }}
-        >
-          <Logo1 id="logo-section-water" />
-        </div>,
+        ></div>,
 
         <div
           key="top4"
@@ -317,13 +320,10 @@ export const useSectionManager = (
               currentSection === 3 && activeSections.includes(3)
                 ? "flex"
                 : "none",
-            height: "100%",
-            backgroundImage: "url(/images/홍보문구4.png)",
-            backgroundSize: "100% 100%",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
           }}
-        ></div>,
+        >
+          <Logo1 id="logo-section-water" />
+        </div>,
       ],
 
       middle: [
@@ -352,24 +352,24 @@ export const useSectionManager = (
           className="section-middle"
           id="middle3"
           style={{
-            display:
-              currentSection === 2 && activeSections.includes(2)
-                ? "flex"
-                : "none",
+            display: "none",
+            height: 0,
           }}
-        >
-          <WaterLevel onWaterLevelChange={onWaterLevelChange} />
-        </div>,
+        ></div>,
 
         <div
           key="middle4"
           className="section-middle"
           id="middle4"
           style={{
-            display: "none",
-            height: 0,
+            display:
+              currentSection === 3 && activeSections.includes(3)
+                ? "flex"
+                : "none",
           }}
-        ></div>,
+        >
+          <WaterLevel onWaterLevelChange={onWaterLevelChange} />
+        </div>,
       ],
 
       bottom: [
@@ -398,8 +398,18 @@ export const useSectionManager = (
           className="section-bottom"
           id="bottom3"
           style={{
+            display: "none",
+            height: 0,
+          }}
+        ></div>,
+
+        <div
+          key="bottom4"
+          className="section-bottom"
+          id="bottom4"
+          style={{
             display:
-              currentSection === 2 && activeSections.includes(2)
+              currentSection === 3 && activeSections.includes(3)
                 ? "flex"
                 : "none",
           }}
@@ -411,16 +421,6 @@ export const useSectionManager = (
             </div>
           </div>
         </div>,
-
-        <div
-          key="bottom4"
-          className="section-bottom"
-          id="bottom4"
-          style={{
-            display: "none",
-            height: 0,
-          }}
-        ></div>,
       ],
     };
 
@@ -843,11 +843,11 @@ export const useSectionManager = (
       return;
     }
 
-    if (index === 2 && waterLevel <= 0.25) {
+    if (index === 3 && waterLevel <= 0.25) {
       return;
     }
 
-    if (waterLevel > 0.25 && index !== 2) {
+    if (waterLevel > 0.25 && index !== 3) {
       return;
     }
 
@@ -990,7 +990,7 @@ export const useSectionManager = (
 
   // 섹션의 이름 변경 (기본 섹션 포함)
   const setCustomSectionName = (index, name) => {
-    if (index === 2) {
+    if (index === 3) {
       console.warn(`수위데이터 섹션 이름은 변경할 수 없습니다.`);
       return false;
     }
@@ -1005,7 +1005,7 @@ export const useSectionManager = (
 
   // 섹션 이름 가져오기 (커스텀 이름이 있으면 사용, 없으면 기본값)
   const getSectionName = (index) => {
-    if (index === 2) {
+    if (index === 3) {
       return "수위데이터";
     }
     if (customSectionNames[index]) {

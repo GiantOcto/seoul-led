@@ -126,26 +126,13 @@ function runRest() {
         PATH: `${nodeDir}${pathSep}${process.env.PATH || ''}`,
     };
 
-    log('5/5 server 의존성 설치 (npm ci --omit=dev)');
+    log('5/5 server 의존성 설치 (npm ci --omit=dev) — serialport 네이티브 빌드 포함');
     execSync('npm ci --omit=dev', {
         cwd: path.join(OUT, 'server'),
         env,
         stdio: 'inherit',
         shell: true,
     });
-
-    const appExeCandidates = [
-        path.join(ROOT, 'app.exe'),
-        path.join(ROOT, 'python', 'dist', 'app.exe'),
-        path.join(ROOT, 'python', 'build', 'app', 'app.exe'),
-    ];
-    const appExeSrc = appExeCandidates.find((p) => fs.existsSync(p));
-    if (appExeSrc) {
-        fs.cpSync(appExeSrc, path.join(OUT, 'app.exe'));
-        log(`app.exe 포함: ${appExeSrc}`);
-    } else {
-        log('app.exe 없음 — python 빌드 후 수동 복사 또는 루트에 app.exe 배치');
-    }
 
     const startBat = path.join(OUT, 'Start-GaramLED.bat');
     fs.writeFileSync(
@@ -165,19 +152,11 @@ function runRest() {
             'echo Node:',
             'node -v',
             'echo.',
-            'echo URL: %GARAM_URL%  (PORT in server\\.env)',
-            'echo [1/3] Starting Node server...',
-            "powershell -NoProfile -Command \"Start-Process -FilePath '%~dp0node\\node.exe' -ArgumentList 'server.js' -WorkingDirectory '%~dp0server' -WindowStyle Minimized\"",
-            'echo Waiting for Node server...',
-            "powershell -NoProfile -Command \"$p=%GARAM_PORT%; $deadline=(Get-Date).AddSeconds(30); while((Get-Date) -lt $deadline){ try { $r=Invoke-WebRequest -Uri ('http://localhost:'+$p+'/api/status') -UseBasicParsing -TimeoutSec 2; if($r.StatusCode -eq 200){ exit 0 } } catch {} Start-Sleep -Seconds 1 }; exit 0\"",
-            'echo [2/3] Starting app.exe (serial, minimized)...',
-            'if exist "%~dp0app.exe" (',
-            '  start /min "" "%~dp0app.exe"',
-            '  timeout /t 2 /nobreak > nul',
-            ') else (',
-            '  echo [WARN] app.exe not found',
-            ')',
-            'echo [3/3] Starting Chrome kiosk...',
+            'echo 웹+API: %GARAM_URL%  (server\\.env 의 PORT)',
+            'echo [1/2] Node 서버 시작...',
+            'start "" /min cmd /c "cd /d %~dp0server && node server.js"',
+            'timeout /t 6 /nobreak > nul',
+            'echo [2/2] Chrome 키오스크 시작...',
             'for /f "tokens=1-4 delims=," %%a in (\'powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $screens=[System.Windows.Forms.Screen]::AllScreens; $target=$screens | Sort-Object { $_.Bounds.Width * $_.Bounds.Height } -Descending | Select-Object -First 1; if(-not $target){$target=$screens[0]}; $b=$target.Bounds; Write-Output ($b.X.ToString()+\',\'+$b.Y.ToString()+\',\'+$b.Width.ToString()+\',\'+$b.Height.ToString())"\') do (',
             '  set "MON_X=%%a"',
             '  set "MON_Y=%%b"',
@@ -186,7 +165,7 @@ function runRest() {
             ')',
             'set "MON_W=1920"',
             'set "MON_H=1080"',
-            'echo Monitor: %MON_X%,%MON_Y% / %MON_W%x%MON_H%',
+            'echo 모니터 위치: %MON_X%,%MON_Y% / 크기: %MON_W%x%MON_H%',
             'start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" ^',
             '    --new-window ^',
             '    --start-fullscreen ^',
@@ -218,15 +197,11 @@ function runRest() {
         [
             'Garam LED — Windows 릴리즈 (포터블 Node 포함)',
             '',
-            '수위: app.exe(Python)가 COM 포트 읽기 → Node server.js 로 serial_data 전송',
-            'Node는 시리얼(COM) 직접 사용하지 않음.',
+            '1. server 폴더: .env.example 을 .env 로 복사 후 COM 포트·PORT 수정',
+            '2. Start-GaramLED.bat 실행',
+            '3. 브라우저: server/.env 의 PORT (기본 8000) — Start-GaramLED.bat 이 자동 반영',
             '',
-            '1. server 폴더: .env.example 을 .env 로 복사 후 PORT 수정',
-            '2. app.exe 가 없으면 python 빌드 후 이 폴더에 복사',
-            '3. Start-GaramLED.bat 실행 (app.exe → Node → Chrome 순)',
-            '4. 브라우저: server/.env 의 PORT (기본 8000)',
-            '',
-            'COM 포트 설정: app.exe GUI에서 선택',
+            '키오스크: Chrome이 위 PORT의 http://localhost:PORT 로 열림',
             '',
         ].join('\r\n'),
         'utf8'

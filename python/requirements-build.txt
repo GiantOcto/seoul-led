@@ -1,6 +1,0 @@
-pyinstaller
-PyQt5
-pyserial
-python-socketio
-requests
-websocket-client
