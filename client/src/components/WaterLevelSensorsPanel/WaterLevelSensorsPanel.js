@@ -60,7 +60,7 @@ function getSensorTitle(plcStatus, isError, mm, index) {
   return `센서 ${n}: 미도달`;
 }
 
-function applyPayload(data, setMm, setBits, setPlcStatus) {
+function applyPayload(data, setMm, setBits, setPlcStatus, setD1004) {
   if (!data || data.source !== "modbus" || typeof data.water_level !== "number") return;
 
   const rawMm = getRawMm(data);
@@ -85,7 +85,8 @@ function applyPayload(data, setMm, setBits, setPlcStatus) {
 
   }
 
-
+  // D1004 가동 신호 (1=ON, 0=OFF, 그 외=미수신)
+  setD1004(data.d1004_state === 0 || data.d1004_state === 1 ? data.d1004_state : null);
 
 }
 
@@ -99,6 +100,8 @@ function WaterLevelSensorsPanel() {
 
   const [plcStatus, setPlcStatus] = useState(null);
 
+  const [d1004, setD1004] = useState(null);
+
 
 
   const handleInitial = useCallback(
@@ -107,7 +110,7 @@ function WaterLevelSensorsPanel() {
 
       if (!rows || !rows.length) return;
 
-      applyPayload(rows[rows.length - 1], setMm, setBits, setPlcStatus);
+      applyPayload(rows[rows.length - 1], setMm, setBits, setPlcStatus, setD1004);
 
     },
 
@@ -121,7 +124,7 @@ function WaterLevelSensorsPanel() {
 
     (row) => {
 
-      applyPayload(row, setMm, setBits, setPlcStatus);
+      applyPayload(row, setMm, setBits, setPlcStatus, setD1004);
 
     },
 
@@ -200,6 +203,24 @@ function WaterLevelSensorsPanel() {
           </div>
 
         ))}
+
+      </div>
+
+      <div className="wl-sensors-panel__divider" aria-hidden />
+
+      <div className="wl-sensors-panel__d1004-title">압출공기 배출장치 동작유무</div>
+
+      <div
+
+        className={`wl-sensors-panel__d1004 ${d1004 === 1 ? "wl-sensors-panel__d1004--on" : ""} ${d1004 === null ? "wl-sensors-panel__d1004--none" : ""}`}
+
+        role="status"
+
+        title={`D1004 동작 신호: ${d1004 === null ? "미수신" : d1004 === 1 ? "ON" : "OFF"}`}
+
+      >
+
+        <span>{d1004 === null ? "신호 없음" : d1004 === 1 ? "동작 감지" : "배출완료"}</span>
 
       </div>
 
