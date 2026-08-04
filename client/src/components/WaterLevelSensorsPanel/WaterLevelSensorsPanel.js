@@ -212,7 +212,7 @@ function WaterLevelSensorsPanel() {
 
       <div
 
-        className={`wl-sensors-panel__d1004 ${d1004 === 1 ? "wl-sensors-panel__d1004--on" : ""} ${d1004 === null ? "wl-sensors-panel__d1004--none" : ""}`}
+        className={`wl-sensors-panel__d1004 ${d1004 === 1 ? "wl-sensors-panel__d1004--on" : ""} ${d1004 === 0 ? "wl-sensors-panel__d1004--ok" : ""} ${d1004 === null ? "wl-sensors-panel__d1004--none" : ""}`}
 
         role="status"
 
@@ -220,7 +220,7 @@ function WaterLevelSensorsPanel() {
 
       >
 
-        <span>{d1004 === null ? "신호 없음" : "동작 감지"}</span>
+        <span>{d1004 === null ? "신호 없음" : d1004 === 1 ? "동작 감지" : "정상"}</span>
 
       </div>
 
