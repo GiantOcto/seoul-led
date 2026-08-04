@@ -101,7 +101,7 @@
   letter-spacing: 0.02em;
 }
 
-/* D1004 압출공기 배출장치 동작 표시등 — 1이면 초록 점등 */
+/* D1004 압축공기 배출장치 동작 표시등 — 1이면 초록 점등 */
 .wl-sensors-panel__d1004 {
   display: flex;
   align-items: center;
