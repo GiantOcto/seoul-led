@@ -208,7 +208,7 @@ function WaterLevelSensorsPanel() {
 
       <div className="wl-sensors-panel__divider" aria-hidden />
 
-      <div className="wl-sensors-panel__d1004-title">압출공기 배출장치 동작유무</div>
+      <div className="wl-sensors-panel__d1004-title">압축공기 배출장치 동작유무</div>
 
       <div
 
@@ -220,7 +220,7 @@ function WaterLevelSensorsPanel() {
 
       >
 
-        <span>{d1004 === null ? "신호 없음" : d1004 === 1 ? "동작 감지" : "배출완료"}</span>
+        <span>{d1004 === null ? "신호 없음" : "동작 감지"}</span>
 
       </div>
 
