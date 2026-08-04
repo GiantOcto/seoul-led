@@ -124,6 +124,12 @@
   box-shadow: 0 0 18px rgba(74, 222, 128, 0.6);
 }
 
+/* 0 = 정지 상태 — 수위 상태 배지의 "정상"과 같은 톤 (연초록 배경 + 초록 글자) */
+.wl-sensors-panel__d1004--ok {
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.12);
+}
+
 /* 미수신(신호 없음): 더 어둡게 */
 .wl-sensors-panel__d1004--none {
   color: #64748b;
