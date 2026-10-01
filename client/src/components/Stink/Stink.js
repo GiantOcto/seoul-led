@@ -1,76 +1,54 @@
-import React, { useEffect, useRef, useState } from "react";
-import lottie from "lottie-web";
-import io from "socket.io-client";
-import { getSocketUrl } from "../../utils/socketUrl";
+import React, { useEffect, useState } from "react";
+import { socket } from "../../utils/socket";
 import "./Stink.css";
 
-const socket = io(getSocketUrl(), {
-  transports: ["websocket"],
-});
+const FAN_BLADE = "M3 -7 C 2 -30 22 -46 38 -36 C 46 -30 34 -10 3 -7 Z";
 
-function StinkGood() {
+function SmileIcon() {
   return (
-    <div className="stink-data-good">
-      <h1>악&nbsp;&nbsp;&nbsp;&nbsp;취</h1>
-      <div className="stink-images">
-        <img src="/images/좋음 - 눈.svg" alt="쾌적" className="stink-image-back" />
-        <img src="/images/좋음 - 얼굴.svg" alt="쾌적" className="stink-image-front" />
-      </div>
-      <h2>저감완료</h2>
-    </div>
+    <svg className="stink-icon" width="68" height="68" viewBox="-50 -50 100 100" aria-hidden="true">
+      <circle r="42" fill="#fff" />
+      <circle cx="-15" cy="-10" r="7" fill="#1d4ed8" />
+      <circle cx="15" cy="-10" r="7" fill="#1d4ed8" />
+      <path d="M-22 10 Q0 34 22 10" fill="none" stroke="#1d4ed8" strokeWidth="8" strokeLinecap="round" />
+    </svg>
   );
 }
 
-function StinkRunning() {
-  const container = useRef(null);
-
-  useEffect(() => {
-    const anim = lottie.loadAnimation({
-      container: container.current,
-      renderer: "svg",
-      loop: true,
-      autoplay: true,
-      path: "/images/fan.json",
-    });
-
-    return () => anim.destroy();
-  }, []);
-
+function FanIcon() {
   return (
-    <div className="stink-data-running">
-      <h1>악&nbsp;&nbsp;&nbsp;&nbsp;취</h1>
-      <div
-        ref={container}
-        style={{
-          position: "relative",
-          bottom: "5px",
-          left: "5px",
-          width: "110px",
-          height: "110px",
-        }}
-      />
-      <h2>저감중</h2>
-    </div>
+    <svg className="stink-icon" width="72" height="72" viewBox="-50 -50 100 100" fill="#fff" aria-hidden="true">
+      <circle r="9" />
+      {[0, 90, 180, 270].map((deg) => (
+        <path key={deg} d={FAN_BLADE} transform={`rotate(${deg})`} />
+      ))}
+    </svg>
   );
 }
 
-function Stink({ id, onStatusChange = () => {} }) {
+function Stink({ id }) {
   const [isReducing, setIsReducing] = useState(false);
 
   useEffect(() => {
     socket.on("relay_reduction_status", (data) => {
-      const next = Boolean(data?.reducing);
-      setIsReducing(next);
-      if (onStatusChange) onStatusChange(next);
+      setIsReducing(Boolean(data?.reducing));
     });
 
     return () => {
       socket.off("relay_reduction_status");
     };
-  }, [onStatusChange]);
+  }, []);
 
   return (
-    <div id={id}>{isReducing ? <StinkRunning /> : <StinkGood />}</div>
+    <div id={id} className={`stink ${isReducing ? "stink--busy" : "stink--clean"}`}>
+      {isReducing ? <FanIcon /> : <SmileIcon />}
+      <div className="stink-state">{isReducing ? "저감중" : "쾌적"}</div>
+      {!isReducing && (
+        <svg className="stink-wave" viewBox="0 0 232 26" preserveAspectRatio="none" fill="#fff" aria-hidden="true">
+          <path d="M0 12 Q 29 0 58 12 T 116 12 T 174 12 T 232 12 V26 H0Z" />
+        </svg>
+      )}
+    </div>
   );
 }
 

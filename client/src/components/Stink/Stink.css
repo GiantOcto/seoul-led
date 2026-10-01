@@ -1,117 +1,98 @@
-.stink-data-good,
-.stink-data-running {
-    width: 100px;
-    height: 150px;
-    border: 3px solid aliceblue;
-    border-radius: 15px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    left: 1px;
-  }
-  
-  #stink-data-page2 .stink-data-good,
-  #stink-data-page2 .stink-data-running {
-    position: absolute;
-    left: 65px;
-    top: 650px;
-    transform: translate(-50%, -50%);
-    border: none;
-  }
-
-  .stink-data-good h1,
-  .stink-data-running h1 {
-    font-family: "SeoulHangangEB";
-    font-weight: 400;
-    font-size: 22px;
-    margin: 0;
-  }
-
-  .stink-data-good h1 {
-    color: rgb(0, 146, 215);
-  }
-  .stink-data-running h1 {
-    color: rgb(255, 196, 25);
-  }
-
-  .stink-data-good h2,
-  .stink-data-running h2  {
-    font-family: "SeoulHangangEB";
-    font-weight: 400;
-    font-size: 22px;
-    margin: 0;
-  }
-
-  .stink-data-running h2 {
-    font-family: "SeoulHangangEB";
-    font-weight: 400;
-    font-size: 28px;
-    margin: 0;
-  }
-
-  .stink-data-good h2 {
-    color: rgb(0, 146, 215);
-  }
-  .stink-data-running h2 {
-    color: rgb(250, 191, 28);
-  }
-
-  .stink-data-good img {
-    width: 75px;
-    height: 75px;
-    margin: 10px 0 15px 0;
-  } 
-
-  .stink-data-running img {
-    width: 75px;
-    height: 75px;
-    margin: 15px 0 15px 0;
-    animation: rotateClockwise 5s infinite linear;
-    transform-origin: center;
-    display: block;
-  }
-
-  .stink-images {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.stink-image-back {
+/* 악취 상태 패널 — LED 128×256 중 로고 아래 영역을 상태 색으로 채움 */
+#stink-data-page2 {
   position: absolute;
-  top: 38%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: pulse 2s infinite ease-in-out; 
+  left: 6px;
+  right: 6px;
+  top: 54px;
+  bottom: 6px;
 }
 
-.stink-image-front {
+.stink {
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 14px;
+  color: #fff;
+  font-family: "SeoulHangangEB";
+  font-weight: 400;
+}
+
+.stink--clean {
+  background: linear-gradient(180deg, #38bdf8 0%, #1d4ed8 100%);
+}
+
+.stink--busy {
+  background: linear-gradient(180deg, #fbbf24 0%, #ea580c 100%);
+}
+
+/* 저감중: 사선 줄무늬가 흐름 */
+.stink--busy::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 8px, transparent 8px 16px);
+  background-size: 22.6px 22.6px;
+  animation: stink-stripes 0.8s linear infinite;
+}
+
+.stink-icon {
   position: relative;
-  left: 13px;
-  z-index: 1;
 }
 
-  @keyframes headtilt {
-    0% {
-      transform: rotate(-10deg);
-    }
-    100% {
-      transform: rotate(10deg);
-    }
-  }
+.stink--clean .stink-icon {
+  animation: stink-float 3s ease-in-out infinite;
+}
 
-  @keyframes pulse {
-    0% {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: translate(-50%, -50%) scale(1.1);
-      opacity: 0.8;
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 1;
-    }
-  }
+/* 날개 끝이 뒤따라오도록 반시계 방향 회전 */
+.stink--busy .stink-icon {
+  animation: stink-spin 1.1s linear infinite;
+}
+
+.stink-state {
+  position: relative;
+  margin-top: 16px;
+  font-size: 38px;
+  line-height: 1;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+}
+
+/* 쾌·적 사이 살짝 띄움 (뒤에 붙는 간격만큼 앞을 채워 가운데 유지) */
+.stink--clean .stink-state {
+  letter-spacing: 0.2em;
+  padding-left: 0.2em;
+}
+
+.stink--busy .stink-state {
+  font-size: 33px;
+}
+
+/* 쾌적: 바닥 물결 */
+.stink-wave {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 232px;
+  height: 26px;
+  opacity: 0.28;
+  animation: stink-wave 4s linear infinite;
+}
+
+@keyframes stink-stripes {
+  to { background-position: 22.6px 0; }
+}
+
+@keyframes stink-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes stink-spin {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes stink-wave {
+  to { transform: translateX(-116px); }
+}

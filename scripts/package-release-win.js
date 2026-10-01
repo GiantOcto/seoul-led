@@ -112,7 +112,8 @@ function runRest() {
     fs.mkdirSync(path.join(OUT, 'server'), { recursive: true });
     const serverSrc = path.join(ROOT, 'server');
     for (const name of fs.readdirSync(serverSrc)) {
-        if (name === 'node_modules' || name === '.env') continue;
+        // server/.env(PORT·기상청 키)도 같이 넣어 현장 PC에서 따로 입력하지 않게 함 (.env 는 git 에는 안 올라감)
+        if (name === 'node_modules') continue;
         if (name === 'server.exe' || name === 'serve.exe') continue;
         fs.cpSync(path.join(serverSrc, name), path.join(OUT, 'server', name), {
             recursive: true,
@@ -126,7 +127,7 @@ function runRest() {
         PATH: `${nodeDir}${pathSep}${process.env.PATH || ''}`,
     };
 
-    log('5/5 server 의존성 설치 (npm ci --omit=dev) — serialport 네이티브 빌드 포함');
+    log('5/5 server 의존성 설치 (npm ci --omit=dev)');
     execSync('npm ci --omit=dev', {
         cwd: path.join(OUT, 'server'),
         env,
@@ -187,7 +188,7 @@ function runRest() {
         [
             'Garam LED — Windows 릴리즈 (포터블 Node 포함)',
             '',
-            '1. server 폴더: .env.example 을 .env 로 복사 후 COM 포트·PORT 수정',
+            '1. server/.env 에 빌드한 PC 설정(PORT·기상청 날씨 키)이 들어 있음. 없으면 .env.example 을 .env 로 복사 후 입력',
             '2. Start-GaramLED.bat 실행',
             '3. 브라우저: server/.env 의 PORT (기본 8000) — Start-GaramLED.bat 이 자동 반영',
             '',

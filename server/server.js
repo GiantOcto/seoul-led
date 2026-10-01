@@ -22,9 +22,8 @@ function resolveStaticRoot() {
 }
 
 const express = require('express');
-const { SerialPort } = require('serialport');
-const { ReadlineParser } = require('@serialport/parser-readline');
 const dgram = require('dgram');
+const { fetchKmaWeather } = require('./weather');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -46,11 +45,7 @@ app.use(express.json());
 // 연결된 클라이언트 관리
 let connectedClients = new Set();
 
-/** Node 직접 시리얼 사용 시 true (SERIAL_PORT 설정됨) */
-let nodeSerialActive = false;
 const RELAY_EVENT_UDP_PORT = parseInt(process.env.RELAY_EVENT_UDP_PORT || '19031', 10);
-/** 수위 시리얼 폴링 주기(ms). 기본 1초, .env 로 조정 가능 */
-const WATER_LEVEL_POLL_MS = parseInt(process.env.WATER_LEVEL_POLL_MS || '1000', 10);
 
 const RelayState = {
     relay1On: false,
@@ -58,195 +53,6 @@ const RelayState = {
     reducing: false,
     lastReceivedAt: null,
 };
-
-/** 최근 1분치 데이터만 메모리 보관 (폴링 주기 기준 동적 계산). 그래프 미사용, 클라는 마지막 1건만 사용 */
-const MAX_DATA_POINTS = Math.max(
-    1,
-    Math.floor(60_000 / Math.max(100, WATER_LEVEL_POLL_MS))
-);
-
-const DataStore = {
-    data: [],
-
-    // _ts(ms)를 함께 저장해 이진탐색 시 Date 파싱 생략
-    addData(newData) {
-        this.data.push({ ...newData, _ts: new Date(newData.timestamp).getTime() });
-        if (this.data.length > MAX_DATA_POINTS) {
-            this.data = this.data.slice(-MAX_DATA_POINTS);
-        }
-    },
-
-    binarySearchTimestamp(targetMs) {
-        let left = 0, right = this.data.length - 1;
-        while (left <= right) {
-            const mid = (left + right) >> 1;
-            const t = this.data[mid]._ts;
-            if (t === targetMs) return mid;
-            if (t < targetMs) left = mid + 1;
-            else right = mid - 1;
-        }
-        return left;
-    },
-
-    getData() {
-        return this.data;
-    },
-
-    getDataInRange(startTime, endTime) {
-        const startIndex = this.binarySearchTimestamp(startTime);
-        const endIndex = this.binarySearchTimestamp(endTime);
-        return this.data.slice(startIndex, endIndex + 1);
-    }
-};
-
-/**
- * Python parse_serial_data 와 동일 규칙:
- * - WL:0123,MS:1
- * - 0123,1
- */
-function parseSerialLine(raw) {
-    const s = String(raw).trim();
-    if (!s) return null;
-    try {
-        const upper = s.toUpperCase();
-        if (upper.includes('WL:') || upper.includes('MS:')) {
-            const parts = s.split(',').map((p) => p.trim());
-            const wlPart = parts.find((p) => p.toUpperCase().startsWith('WL:'));
-            const msPart = parts.find((p) => p.toUpperCase().startsWith('MS:'));
-            if (!wlPart || !msPart) throw new Error('WL/MS');
-            const water_level = parseInt(wlPart.split(/:/i)[1].trim(), 10);
-            const msVal = msPart.split(/:/i)[1].trim();
-            if (msVal !== '0' && msVal !== '1') throw new Error('MS');
-            if (Number.isNaN(water_level)) throw new Error('wl');
-            return { water_level, machine_status: msVal === '1' };
-        }
-        const parts = s.split(',');
-        if (parts.length < 2) throw new Error('comma');
-        const water_level_str = parts[0].trim();
-        if (water_level_str.length !== 4) throw new Error('len4');
-        const water_level = parseInt(water_level_str, 10);
-        const machine_status_str = parts[1].trim();
-        if (machine_status_str !== '0' && machine_status_str !== '1') throw new Error('ms');
-        if (Number.isNaN(water_level)) throw new Error('nan');
-        return { water_level, machine_status: machine_status_str === '1' };
-    } catch {
-        return null;
-    }
-}
-
-function isValidSerialData(data) {
-    try {
-        if (!data || typeof data !== 'object') return false;
-
-        if (!data.timestamp || isNaN(new Date(data.timestamp).getTime())) {
-            return false;
-        }
-
-        if (!Number.isInteger(data.water_level) ||
-            data.water_level < 0 ||
-            data.water_level > 9999) {
-            return false;
-        }
-
-        if (typeof data.machine_status !== 'boolean') {
-            return false;
-        }
-
-        return true;
-    } catch (error) {
-        console.error('Data validation error', error);
-        return false;
-    }
-}
-
-/** 저장 + 브로드캐스트 (Socket.IO / Node 시리얼 공통) */
-function ingestSerialPayload(data) {
-    if (!isValidSerialData(data)) {
-        console.error('Invalid serial data:', data);
-        return false;
-    }
-    if (process.env.NODE_ENV === 'development') console.log('[serial] 수신:', data);
-    DataStore.addData(data);
-    io.emit('new_data', data);
-    return true;
-}
-
-const SERIAL_RETRY_MS = 5000;
-
-function startNodeSerialListener() {
-    const serialPath = process.env.SERIAL_PORT;
-    if (!serialPath || String(serialPath).trim() === '') {
-        console.log('[serial] SERIAL_PORT 미설정 — 시리얼 비활성');
-        nodeSerialActive = false;
-        return;
-    }
-
-    const baudRate = parseInt(process.env.BAUD_RATE || '9600', 10);
-
-    let port;
-    try {
-        port = new SerialPort({
-            path: String(serialPath).trim(),
-            baudRate,
-            autoOpen: true
-        });
-    } catch (err) {
-        console.error('[serial] SerialPort 생성 실패:', err.message);
-        nodeSerialActive = false;
-        scheduleSerialRetry();
-        return;
-    }
-
-    const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
-
-    parser.on('data', (line) => {
-        try {
-            const text = String(line).trim();
-            const parsed = parseSerialLine(text);
-            if (!parsed) {
-                console.warn('[serial] 파싱 실패:', text);
-                return;
-            }
-            const data = {
-                timestamp: new Date().toISOString(),
-                water_level: parsed.water_level,
-                machine_status: parsed.machine_status,
-                raw_data: text
-            };
-            ingestSerialPayload(data);
-        } catch (err) {
-            console.error('[serial] 데이터 처리 오류:', err.message);
-        }
-    });
-
-    port.on('error', (err) => {
-        console.error('[serial] 포트 오류:', err.message);
-        nodeSerialActive = false;
-        scheduleSerialRetry();
-    });
-
-    port.on('open', () => {
-        nodeSerialActive = true;
-        console.log(`[serial] 연결됨: ${serialPath} @ ${baudRate}`);
-    });
-
-    port.on('close', () => {
-        if (nodeSerialActive) {
-            console.warn('[serial] 연결 끊김 — 재연결 예약');
-            nodeSerialActive = false;
-            scheduleSerialRetry();
-        }
-    });
-}
-
-function scheduleSerialRetry() {
-    if (serialRetryTimer) return;
-    console.log(`[serial] ${SERIAL_RETRY_MS / 1000}초 후 재연결 시도...`);
-    serialRetryTimer = setTimeout(() => {
-        serialRetryTimer = null;
-        startNodeSerialListener();
-    }, SERIAL_RETRY_MS);
-}
 
 function setRelayReducing(nextReducing, source) {
     const changed = RelayState.reducing !== nextReducing;
@@ -293,14 +99,42 @@ function startRelayUdpListener() {
     });
 }
 
+// ── 날씨 (기상청 단기예보) — 서버가 10분마다 받아 소켓으로 화면에 전달 ──
+const KMA_SERVICE_KEY = (process.env.KMA_SERVICE_KEY || '').trim();
+const KMA_NX = process.env.KMA_NX || '63';   // 기본: 성남시 수정·중원구 격자
+const KMA_NY = process.env.KMA_NY || '124';
+const WEATHER_REFRESH_MS = 10 * 60 * 1000;
+
+/** { temp, sky, pop, updatedAt } — 아직 못 받았으면 null */
+let weatherState = null;
+
+async function refreshWeather() {
+    try {
+        const weather = await fetchKmaWeather({ serviceKey: KMA_SERVICE_KEY, nx: KMA_NX, ny: KMA_NY });
+        weatherState = { ...weather, updatedAt: new Date().toISOString() };
+        io.emit('weather_update', weatherState);
+    } catch (err) {
+        // 실패하면 마지막 값을 그대로 둠 (화면은 이전 날씨 유지)
+        console.warn('[weather] 기상청 조회 실패:', err.message);
+    }
+}
+
+function startWeatherPolling() {
+    if (!KMA_SERVICE_KEY) {
+        console.log('[weather] KMA_SERVICE_KEY 미설정 — 날씨 표시 안 함');
+        return;
+    }
+    refreshWeather();
+    setInterval(refreshWeather, WEATHER_REFRESH_MS);
+}
+
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
     connectedClients.add(socket.id);
 
-    // 클라이언트에 현재 데이터 전송
+    // 클라이언트에 현재 저감 상태 전송
     try {
-        socket.emit('initial_data', DataStore.getData());
         socket.emit('relay_reduction_status', {
             reducing: RelayState.reducing,
             relay1On: RelayState.relay1On,
@@ -308,8 +142,9 @@ io.on('connection', (socket) => {
             lastReceivedAt: RelayState.lastReceivedAt,
             source: 'initial',
         });
+        if (weatherState) socket.emit('weather_update', weatherState);
     } catch (err) {
-        console.error('[socket] initial_data 전송 오류:', err.message);
+        console.error('[socket] 초기 상태 전송 오류:', err.message);
     }
 
     // 연결 해제 처리
@@ -319,68 +154,19 @@ io.on('connection', (socket) => {
     });
 });
 
-// REST API 엔드포인트
-app.get('/api/data', (req, res) => {
-    try {
-        res.json(DataStore.getData());
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).json({ error: '데이터 조회 중 오류가 발생했습니다.' });
-    }
-});
-
-// 최신 데이터 조회
-app.get('/api/current-status', (req, res) => {
-    try {
-        const data = DataStore.getData();
-        const latestData = data[data.length - 1] || {
-            water_level: 0,
-            machine_status: false,
-            timestamp: new Date()
-        };
-        res.json(latestData);
-    } catch (error) {
-        console.error('Error fetching current status:', error);
-        res.status(500).json({ error: '현재 상태 조회 중 오류가 발생했습니다.' });
-    }
-});
-
-// 특정 기간 데이터 조회
-app.get('/api/data-history', (req, res) => {
-    try {
-        let hours = parseInt(req.query.hours) || 1;
-
-        if (hours < 1) hours = 1;
-        if (hours > 24) hours = 24;
-
-        const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-        const filteredData = DataStore.getDataInRange(cutoff.getTime(), Date.now());
-
-        res.json(filteredData);
-    } catch (error) {
-        console.error('Error fetching data history:', error);
-        res.status(500).json({ error: '데이터 히스토리 조회 중 오류가 발생했습니다.' });
-    }
-});
-
 // 현재 연결 상태 확인
 app.get('/api/status', (req, res) => {
     try {
         res.json({
             connectedClients: Array.from(connectedClients),
-            dataPoints: DataStore.getData().length,
-            nodeSerial: {
-                active: nodeSerialActive,
-                path: process.env.SERIAL_PORT || null,
-                baudRate: process.env.BAUD_RATE ? parseInt(process.env.BAUD_RATE, 10) : null
-            },
             relayReduction: {
                 reducing: RelayState.reducing,
                 relay1On: RelayState.relay1On,
                 relay2On: RelayState.relay2On,
                 lastReceivedAt: RelayState.lastReceivedAt,
                 udpPort: RELAY_EVENT_UDP_PORT,
-            }
+            },
+            weather: weatherState,
         });
     } catch (error) {
         console.error('Error fetching status:', error);
@@ -432,6 +218,6 @@ process.on('unhandledRejection', (reason) => {
 const PORT = process.env.PORT || 8000;
 http.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-    startNodeSerialListener();
     startRelayUdpListener();
+    startWeatherPolling();
 });

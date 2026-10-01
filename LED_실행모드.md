@@ -34,14 +34,13 @@ npm run release:win
 `server/.env.example` 을 복사해 `server/.env` 로 두고 수정:
 
 ```env
-SERIAL_PORT=COM3
-BAUD_RATE=9600
 PORT=8000
+KMA_SERVICE_KEY=공공데이터포털_인증키
 ```
 
-- **`SERIAL_PORT`**: 시리얼 사용 시 COM 포트
-- **`BAUD_RATE`**: 기본 `9600`
 - **`PORT`**: 웹+API **동일 포트** (기본 `8000`)
+- **`KMA_SERVICE_KEY`**: 디지털 시계 아래 날씨(기온·강수확률)용 공공데이터포털 인증키. 해당 계정에서 **기상청_단기예보 ((구)_동네예보) 조회서비스** 활용신청 필요. 비워두면 날씨 표시 안 함
+- **`KMA_NX` / `KMA_NY`**: 기상청 격자 좌표 (기본 성남시 수정·중원구 `63` / `124`)
 
 ## 접속
 

@@ -36,6 +36,8 @@ export const saveMediaToIndexedDB = async (sectionIndex, mediaData) => {
     const data = {
       type: mediaData.type,
       base64: mediaData.base64,
+      // 원본도 저장해 둬야 새로고침 후 로고 표시를 바꿔도 원본에서 다시 리사이징됨 (화질 유지)
+      originalBase64: mediaData.originalBase64 || null,
       fileName: mediaData.fileName || null,
       timestamp: Date.now(),
     };
@@ -66,6 +68,7 @@ export const loadMediaFromIndexedDB = async (sectionIndex) => {
             type: request.result.type,
             url: request.result.base64, // base64를 직접 URL로 사용
             base64: request.result.base64,
+            originalBase64: request.result.originalBase64 || null,
             fileName: request.result.fileName || null,
           });
         } else {

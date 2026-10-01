@@ -1,75 +1,67 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import Event from "../components/Event/Event";
 import RotatingLogo34 from "../components/Logo/RotatingLogo34";
-import Clock from "../components/Clock/Clock";
-import Clock2 from "../components/Clock/Clock2";
-import DigitalClock from "../components/Clock/DigitalClock";
-import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
-import WaterLevel from "../components/WaterLevel/WaterLevel";
+import AnalogClock from "../components/Clock/AnalogClock";
+import DigitalClock from "../components/Clock/DigitalClock";
+import { LED_WIDTH, getMediaHeight } from "../constants/led";
 import {
   saveMediaToIndexedDB,
-  loadMediaFromIndexedDB,
   loadAllMediaFromIndexedDB,
   deleteMediaFromIndexedDB,
 } from "../utils/indexedDB";
 
-const INTERVALS = [30000, 20000, 20000, 20000, 20000];
+const INTERVALS = { 0: 20000, 1: 20000 }; // 기본 섹션 인터벌 (시계, 악취)
 const DEFAULT_CUSTOM_INTERVAL = 20000; // 새로운 섹션의 기본 인터벌 (20초)
-const PROTECTED_SECTIONS = [0, 1]; // 제거 불가능한 기본 섹션들 (행사 섹션 비활성화)
+const PROTECTED_SECTIONS = [0, 1]; // 제거 불가능한 기본 섹션 (시계, 악취)
 const MAX_SECTIONS = 16; // 최대 섹션 개수
 
-export const useSectionManager = (
-  initialDistrict = "성남시",
-  onWaterLevelChange,
-  waterLevel,
-  sectionOrder = null
-) => {
-  // localStorage에서 커스텀 섹션 정보 불러오기 (섹션 목록, 인터벌, 이름, 시계 타입, 레이아웃, 활성화 여부)
+export const useSectionManager = (sectionOrder = null) => {
+  // localStorage에서 커스텀 섹션 정보 불러오기 (섹션 목록, 인터벌, 이름, 시계 타입, 활성화 여부)
   const loadFromStorage = () => {
     try {
       const savedSections = localStorage.getItem('customSections');
       const savedIntervals = localStorage.getItem('customIntervals');
       const savedNames = localStorage.getItem('customSectionNames');
       const savedClockType = localStorage.getItem('clockType');
-      const savedLayouts = localStorage.getItem('customSectionLayouts');
+      const savedLogos = localStorage.getItem('customSectionLogos');
       const savedActiveSections = localStorage.getItem('activeSections');
-      
+
       return {
         sections: savedSections ? JSON.parse(savedSections) : [],
         intervals: savedIntervals ? JSON.parse(savedIntervals) : {},
         names: savedNames ? JSON.parse(savedNames) : {},
         clockType: savedClockType || 'analog', // 기본값: 아날로그
-        layouts: savedLayouts ? JSON.parse(savedLayouts) : {}, // 기본값: 빈 객체 (MIDDLE only)
+        logos: savedLogos ? JSON.parse(savedLogos) : {}, // 기본값: 로고 없이 전체화면
         activeSections: savedActiveSections ? JSON.parse(savedActiveSections) : null, // null이면 기본값 사용
       };
     } catch (error) {
       console.error('localStorage 로드 실패:', error);
-      return { sections: [], intervals: {}, names: {}, clockType: 'analog', layouts: {}, activeSections: null };
+      return { sections: [], intervals: {}, names: {}, clockType: 'analog', logos: {}, activeSections: null };
     }
   };
 
   const savedData = loadFromStorage();
 
-  const DISABLED_SECTIONS = [3]; // 비활성화된 섹션 (행사)
+  // 제거된 섹션 (수위 2, 행사 3) — 예전 저장값에 남아 있어도 걸러냄
+  const DISABLED_SECTIONS = [2, 3];
 
   const computeInitialActiveSections = (data) => {
     let sections;
     if (data.activeSections && Array.isArray(data.activeSections)) {
       sections = data.activeSections;
     } else {
-      const baseSections = [0, 1];
+      const baseSections = [...PROTECTED_SECTIONS];
       sections = data.sections.length > 0
         ? [...baseSections, ...data.sections].sort()
         : baseSections;
     }
-    // 비활성화된 섹션 강제 제거
-    return sections.filter(s => !DISABLED_SECTIONS.includes(s));
+    // 비활성화된 섹션 강제 제거 (예전 저장값에 제거된 섹션만 켜져 있었으면 기본 섹션으로 대체)
+    const enabled = sections.filter(s => !DISABLED_SECTIONS.includes(s));
+    return enabled.length > 0 ? enabled : [...PROTECTED_SECTIONS];
   };
 
   const initialActiveSections = computeInitialActiveSections(savedData);
 
-  const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [activeSections, setActiveSections] = useState(() => initialActiveSections);
   const [currentSection, setCurrentSection] = useState(() =>
     initialActiveSections.length > 0 ? Math.min(...initialActiveSections) : 0
@@ -87,10 +79,8 @@ export const useSectionManager = (
   
   // 기본 섹션의 기본 이름과 저장된 이름 병합
   const defaultNames = {
-    0: "문구",
-    1: "미세먼지 및 오존",
-    2: "수위데이터",
-    3: "이벤트",
+    0: "시계",
+    1: "악취",
   };
   const initialNames = { ...savedData.names };
   PROTECTED_SECTIONS.forEach(index => {
@@ -108,8 +98,8 @@ export const useSectionManager = (
     }
   };
 
-  const [clockType, setClockType] = useState(savedData.clockType); // 시계 타입: 'analog' 또는 'digital'
-  const [customSectionLayouts, setCustomSectionLayouts] = useState(savedData.layouts); // 커스텀 섹션의 레이아웃 저장 { sectionIndex: 'top-middle-bottom' | 'top-middle' | 'middle' }
+  const [clockType, setClockType] = useState(savedData.clockType); // 시계 타입: 'analog' | 'analog2' | 'digital'
+  const [customSectionLogos, setCustomSectionLogos] = useState(savedData.logos); // 커스텀 섹션 로고 표시 { sectionIndex: boolean }
 
   // 현재 섹션이 비활성이면, 켜진 섹션 중 가장 작은 인덱스로 (재시작 시 0만 켜져 있지 않을 때 빈 화면 방지)
   useEffect(() => {
@@ -130,12 +120,7 @@ export const useSectionManager = (
       }
     };
     loadMedia();
-  }, []); 
-  const [weatherData, setWeatherData] = useState({
-    pm10Grade: "점검중",
-    pm2_5Grade: "점검중",
-  });
-  const [machineStatus, setMachineStatus] = useState(false);
+  }, []);
 
   // 섹션의 인터벌을 가져오는 함수
   const getSectionInterval = (sectionIndex) => {
@@ -151,7 +136,7 @@ export const useSectionManager = (
     return DEFAULT_CUSTOM_INTERVAL;
   };
 
-  // localStorage에 섹션 정보 저장 (커스텀 섹션 목록, 모든 섹션의 인터벌과 이름, 시계 타입, 레이아웃, 활성화 여부)
+  // localStorage에 섹션 정보 저장 (커스텀 섹션 목록, 모든 섹션의 인터벌과 이름, 시계 타입, 활성화 여부)
   useEffect(() => {
     try {
       localStorage.setItem('customSections', JSON.stringify(customSections));
@@ -159,12 +144,12 @@ export const useSectionManager = (
       localStorage.setItem('customIntervals', JSON.stringify(customIntervals));
       localStorage.setItem('customSectionNames', JSON.stringify(customSectionNames));
       localStorage.setItem('clockType', clockType);
-      localStorage.setItem('customSectionLayouts', JSON.stringify(customSectionLayouts));
+      localStorage.setItem('customSectionLogos', JSON.stringify(customSectionLogos));
       localStorage.setItem('activeSections', JSON.stringify(activeSections));
     } catch (error) {
       console.error('localStorage 저장 실패:', error);
     }
-  }, [customSections, customIntervals, customSectionNames, clockType, customSectionLayouts, activeSections]);
+  }, [customSections, customIntervals, customSectionNames, clockType, customSectionLogos, activeSections]);
 
   // IndexedDB에 미디어 저장
   useEffect(() => {
@@ -229,7 +214,10 @@ export const useSectionManager = (
               : "none",
         }}
       >
-       <RotatingLogo34 style={{ width: "126px", height: "50px" }} />
+        <RotatingLogo34 style={{ width: "126px" }} />
+        {clockType === 'digital'
+          ? <DigitalClock />
+          : <AnalogClock variant={clockType === 'analog2' ? 'light' : 'dark'} />}
       </div>,
 
       <div
@@ -241,333 +229,54 @@ export const useSectionManager = (
             currentSection === 1 && activeSections.includes(1)
               ? "flex"
               : "none",
-          "--filter-value1":
-            weatherData.pm10Grade === "좋음"
-              ? "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)"
-              : weatherData.pm10Grade === "보통"
-              ? "invert(60%) sepia(84%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
-              : weatherData.pm10Grade === "나쁨"
-              ? "invert(10%) sepia(95%) saturate(2574%) hue-rotate(3deg) brightness(153%) contrast(95%)"
-              : "invert(57%) sepia(44%) saturate(539%) hue-rotate(314deg) brightness(100%) contrast(89%)",
-          "--filter-value2":
-            weatherData.pm2_5Grade === "좋음"
-              ? "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)"
-              : weatherData.pm2_5Grade === "보통"
-              ? "invert(35%) sepia(94%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
-              : weatherData.pm2_5Grade === "나쁨"
-              ? "invert(76%) sepia(98%) saturate(784%) hue-rotate(17deg) brightness(123%) contrast(104%)"
-              : "invert(62%) sepia(50%) saturate(420%) hue-rotate(20deg) brightness(122%) contrast(130%)",
-          "--filter-value3": machineStatus
-            ? "invert(8%) sepia(90%) saturate(345%) hue-rotate(341deg) brightness(101%) contrast(102%)"
-            : "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)",
         }}
       >
-        <div className="background3"></div>
         <RotatingLogo34 style={{ width: "126px" }} />
-        <div className="air-quality">
-          <div className="air-quality-text">
-            <h1>{selectedDistrict}</h1>
-            <p>오늘의 대기질</p>
-          </div>
-
-          <Weather
-            selectedDistrict={selectedDistrict}
-            onWeatherUpdate={setWeatherData}
-          />
-          <Stink id="stink-data-page2" onStatusChange={setMachineStatus} />
-        </div>
-      </div>,
-
-      // <div
-      //   key="top3"
-      //   className="section-top"
-      //   id="top3"
-      //   style={{
-      //     display:
-      //       currentSection === 2 && activeSections.includes(2)
-      //         ? "flex"
-      //         : "none",
-      //   }}
-      // >
-      //   <Logo2 />
-      //   <Clock />
-      // </div>,
-      <div
-        key="top4"
-        className="section-top"
-        id="top4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <RotatingLogo34 style={{ width: "126px", height: "70px" }} />
-        {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
-        <span style={{ color: "white" }}>문화행사</span>
-      </div>,
-      <div
-        key="top5"
-        className="section-top"
-        id="top5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <RotatingLogo34 style={{ width: "126px", height: "70px" }} />
-          {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
-        <span style={{ color: "white" }}>문화행사</span>
+        <Stink id="stink-data-page2" />
       </div>,
     ],
 
-    middle: [
-      <div
-        key="middle1"
-        className="section-middle"
-        id="middle1"
-        style={{
-          display:
-            currentSection === 0 && activeSections.includes(0)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <img
-          src="/images/홍보문구.png"
-          alt="middle1"
-          style={{ width: "85%", height: "100%", marginTop: "30%" }}
-        />
-      </div>,
-      <div
-        key="middle2"
-        className="section-middle"
-        id="middle2"
-        style={{
-          display:
-            currentSection === 1 && activeSections.includes(1)
-              ? "flex"
-              : "none",
-        }}
-      ></div>,
-      // <div
-      //   key="middle3"
-      //   className="section-middle"
-      //   id="middle3"
-      //   style={{
-      //     display:
-      //       currentSection === 2 && activeSections.includes(2)
-      //         ? "flex"
-      //         : "none",
-      //   }}
-      // >
-      //   <WaterLevel onWaterLevelChange={onWaterLevelChange} />
-      // </div>,
-      <div
-        key="middle4"
-        className="section-middle"
-        id="middle4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="middle4-event"
-          selectedDistrict={selectedDistrict}
-          position="middle4"
-        />
-      </div>,
-    ],
-
-    bottom: [
-      <div
-        key="bottom1"
-        className="section-bottom"
-        id="bottom1"
-        style={{
-          display:
-            currentSection === 0 && activeSections.includes(0)
-              ? "flex"
-              : "none",
-        }}
-      ></div>,
-      <div
-        key="bottom2"
-        className="section-bottom"
-        id="bottom2"
-        style={{
-          display:
-            currentSection === 1 && activeSections.includes(1)
-              ? "flex"
-              : "none",
-        }}
-      ></div>,
-      // <div
-      //   key="bottom3"
-      //   className="section-bottom"
-      //   id="bottom3"
-      //   style={{
-      //     display:
-      //       currentSection === 2 && activeSections.includes(2)
-      //         ? "flex"
-      //         : "none",
-      //   }}
-      // >
-      //   <div className="water-level-warning">
-      //     <p>
-      //       다른 도로로
-      //       <br />
-      //       우회하세요
-      //     </p>
-      //     <img src="/images/우회 화살표.png" alt="우회 화살표" />
-      //   </div>
-      // </div>,
-      <div
-        key="bottom4"
-        className="section-bottom"
-        id="bottom4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="bottom4-event"
-          selectedDistrict={selectedDistrict}
-          position="bottom4"
-        />
-      </div>,
-    ],
+    middle: [],
     };
 
-    // 커스텀 섹션을 동적으로 추가 (레이아웃에 따라)
+    // 커스텀 섹션을 동적으로 추가 (전체화면, 또는 로고 표시 시 위에 로고 + 아래 미디어)
     customSections.forEach((sectionIndex) => {
       if (activeSections.includes(sectionIndex)) {
         const media = customMedia[sectionIndex];
         const isActive = currentSection === sectionIndex && activeSections.includes(sectionIndex);
-        const layout = customSectionLayouts[sectionIndex] || 'middle'; // 기본값: middle only
-        
-        // 미디어 렌더링 함수
-        const renderMedia = () => {
-          if (!media || !media.url) {
-            return (
-              <div style={{ color: "#fff", padding: "10px", fontSize: "12px" }}>
-                미디어 없음 (섹션 {sectionIndex})
-              </div>
-            );
-          }
-          
-          if (media.type === "image") {
-            return (
-              <img
-                key={`img-${sectionIndex}-${Date.now()}`}
-                src={media.url}
-                alt={`Custom section ${sectionIndex}`}
-                style={{
-                  width: "128px",
-                  height: "768px",
-                  display: "block",
-                  visibility: "visible",
-                  opacity: 1,
-                  position: "relative",
-                  zIndex: 1001,
-                }}
-                onLoad={(e) => {
-                  const img = e.target;
-                  const computed = window.getComputedStyle(img);
-                  const parent = img.parentElement;
-                  const parentComputed = window.getComputedStyle(parent);
-                  console.log(`[섹션 ${sectionIndex}] 이미지 로드 성공`);
-                  console.log(`  - URL: ${media.url}`);
-                  console.log(`  - 원본: ${img.naturalWidth}x${img.naturalHeight}`);
-                  console.log(`  - 표시: ${img.width}x${img.height}`);
-                  console.log(`  - display: ${computed.display}`);
-                  console.log(`  - visibility: ${computed.visibility}`);
-                  console.log(`  - opacity: ${computed.opacity}`);
-                  console.log(`  - 부모 display: ${parentComputed.display}`);
-                  console.log(`  - 부모 position: ${parentComputed.position}`);
-                  console.log(`  - 부모 z-index: ${parentComputed.zIndex}`);
-                  console.log(`  - DOM에 존재:`, document.body.contains(img));
-                }}
-                onError={(e) => {
-                  console.error(`[섹션 ${sectionIndex}] 이미지 로드 실패:`, media.url);
-                }}
-              />
-            );
-          }
-          
-          if (media.type === "video") {
-            return (
-              <video
-                key={`video-${sectionIndex}-${media.url}`}
-                src={media.url}
-                autoPlay
-                loop
-                muted
-                playsInline
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-            );
-          }
-          
-          return null;
-        };
+        const hasLogo = Boolean(customSectionLogos[sectionIndex]);
+        const mediaHeight = getMediaHeight(hasLogo);
 
-        // 레이아웃에 따라 다른 위치에 렌더링
-        if (layout === 'top-middle-bottom') {
-          // TOP: 로고 + 시계 (기본 섹션 top4, top5와 동일한 구조)
-          const isActive = currentSection === sectionIndex && activeSections.includes(sectionIndex);
-          
-          baseSections.top.push(
+        baseSections.middle.push(
+          <div
+            key={`custom-section-${sectionIndex}`}
+            className={`section-middle${hasLogo ? " custom-section--logo" : ""}`}
+            id={`custom-section-${sectionIndex}`}
+            style={{
+              display: isActive ? "flex" : "none",
+              flexDirection: "column",
+              justifyContent: hasLogo ? "flex-start" : "center",
+              alignItems: "center",
+              width: "100%",
+              height: "100%",
+              overflow: "hidden",
+              position: isActive ? "absolute" : "relative",
+              top: 0,
+              left: 0,
+              backgroundColor: "#000",
+              zIndex: isActive ? 1000 : 0,
+            }}
+          >
+            {hasLogo && <RotatingLogo34 style={{ width: "126px" }} />}
             <div
-              key={`custom-top-${sectionIndex}`}
-              className="section-top"
-              id={`custom-top-${sectionIndex}`}
               style={{
-                display: isActive ? "flex" : "none",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "1rem",
-                minHeight: "25%",
-                paddingBottom: "1rem",
-              }}
-            >
-              <RotatingLogo34
-                style={{ width: "126px", height: "70px", marginTop: "8px" }}
-              />
-              <div style={{ marginTop: "-1.5rem" }}>
-                {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
-              </div>
-            </div>
-          );
-          
-          // MIDDLE: 이미지/영상
-          baseSections.middle.push(
-            <div
-              key={`custom-middle-${sectionIndex}`}
-              className="section-middle"
-              id={`custom-middle-${sectionIndex}`}
-              style={{
-                display: isActive ? "flex" : "none",
+                width: `${LED_WIDTH}px`,
+                height: `${mediaHeight}px`,
+                display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                width: "100%",
-                height: "100%",
                 overflow: "hidden",
+                flexShrink: 0,
               }}
             >
               {(() => {
@@ -578,49 +287,24 @@ export const useSectionManager = (
                     </div>
                   );
                 }
-                
+
                 if (media.type === "image") {
-                  // 레이아웃에 맞는 정확한 크기 계산
-                  let imageHeight = 768; // 기본값: MIDDLE only
-                  let marginTop = 0;
-                  
-                  if (layout === 'top-middle') {
-                    imageHeight = 698;
-                    marginTop = -(768 - 698); // -70px (위로 올림)
-                  } else if (layout === 'top-middle-bottom') {
-                    imageHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
-                  }
-                  
                   return (
                     <img
                       key={`img-middle-${sectionIndex}`}
                       src={media.url}
                       alt={`Custom section ${sectionIndex}`}
                       style={{
-                        width: "128px",
-                        height: `${imageHeight}px`,
+                        width: `${LED_WIDTH}px`,
+                        height: `${mediaHeight}px`,
                         display: "block",
-                        marginTop: `${marginTop}px`,
                       }}
                     />
                   );
                 }
-                
-                // 동영상은 원본 크기로 재생되면서 잘리도록 설정
+
+                // 동영상은 원본 비율로 재생되면서 넘치는 좌우가 잘리도록 설정
                 if (media.type === "video") {
-                  // 레이아웃에 맞는 높이 계산
-                  let videoHeight = 768; // 기본값: MIDDLE only
-                  let marginTop = 0;
-                  
-                  if (layout === 'top-middle') {
-                    videoHeight = 698;
-                    marginTop = -(768 - 698); // -70px (위로 올림)
-                  } else if (layout === 'top-middle-bottom') {
-                    videoHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
-                  }
-                  
                   return (
                     <video
                       key={`video-middle-${sectionIndex}`}
@@ -631,221 +315,18 @@ export const useSectionManager = (
                       playsInline
                       style={{
                         width: "auto",
-                        height: `${videoHeight}px`,
+                        height: `${mediaHeight}px`,
                         display: "block",
-                        marginTop: `${marginTop}px`,
                       }}
                     />
                   );
                 }
-                
+
                 return null;
               })()}
             </div>
-          );
-        } else if (layout === 'top-middle') {
-          // TOP: 로고만
-          baseSections.top.push(
-            <div
-              key={`custom-top-${sectionIndex}`}
-              className="section-top"
-              id={`custom-top-${sectionIndex}`}
-              style={{
-                display: isActive ? "flex" : "none",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <RotatingLogo34
-                style={{ width: "126px", height: "70px", marginTop: "8px" }}
-              />
-            </div>
-          );
-          
-          // MIDDLE: 미디어 (COVER)
-          baseSections.middle.push(
-            <div
-              key={`custom-middle-${sectionIndex}`}
-              className="section-middle"
-              id={`custom-middle-${sectionIndex}`}
-              style={{
-                display: isActive ? "flex" : "none",
-                justifyContent: "center",
-                alignItems: "center",
-                width: "100%",
-                height: "100%",
-                overflow: "hidden",
-              }}
-            >
-              {(() => {
-                if (!media || !media.url) {
-                  return (
-                    <div style={{ color: "#fff", padding: "10px", fontSize: "12px" }}>
-                      미디어 없음 (섹션 {sectionIndex})
-                    </div>
-                  );
-                }
-                
-                if (media.type === "image") {
-                  // 레이아웃에 맞는 정확한 크기 계산
-                  let imageHeight = 768; // 기본값: MIDDLE only
-                  let marginTop = 0;
-                  
-                  if (layout === 'top-middle') {
-                    imageHeight = 698;
-                    marginTop = -(768 - 698); // -70px (위로 올림)
-                  } else if (layout === 'top-middle-bottom') {
-                    imageHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
-                  }
-                  
-                  return (
-                    <img
-                      key={`img-middle-${sectionIndex}`}
-                      src={media.url}
-                      alt={`Custom section ${sectionIndex}`}
-                      style={{
-                        width: "128px",
-                        height: `${imageHeight}px`,
-                        display: "block",
-                        marginTop: `${marginTop}px`,
-                      }}
-                    />
-                  );
-                }
-                
-                // 동영상은 원본 크기로 재생되면서 잘리도록 설정
-                if (media.type === "video") {
-                  // 레이아웃에 맞는 높이 계산
-                  let videoHeight = 768; // 기본값: MIDDLE only
-                  let marginTop = 0;
-                  
-                  if (layout === 'top-middle') {
-                    videoHeight = 698;
-                    marginTop = -(768 - 698); // -70px (위로 올림)
-                  } else if (layout === 'top-middle-bottom') {
-                    videoHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
-                  }
-                  
-                  return (
-                    <video
-                      key={`video-middle-${sectionIndex}`}
-                      src={media.url}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      style={{
-                        width: "auto",
-                        height: `${videoHeight}px`,
-                        display: "block",
-                        marginTop: `${marginTop}px`,
-                      }}
-                    />
-                  );
-                }
-                
-                return null;
-              })()}
-            </div>
-          );
-        } else {
-          // MIDDLE only: 기존 방식
-          baseSections.middle.push(
-            <div
-              key={`custom-section-${sectionIndex}`}
-              className="section-middle"
-              id={`custom-section-${sectionIndex}`}
-              style={{
-                display: isActive ? "flex" : "none",
-                justifyContent: "center",
-                alignItems: "center",
-                width: "100%",
-                height: "100%",
-                overflow: "hidden",
-                position: isActive ? "absolute" : "relative",
-                top: 0,
-                left: 0,
-                backgroundColor: "#000",
-                zIndex: isActive ? 1000 : 0,
-              }}
-            >
-              {(() => {
-                if (!media || !media.url) {
-                  return (
-                    <div style={{ color: "#fff", padding: "10px", fontSize: "12px" }}>
-                      미디어 없음 (섹션 {sectionIndex})
-                    </div>
-                  );
-                }
-                
-                if (media.type === "image") {
-                  // 레이아웃에 맞는 정확한 크기 계산
-                  let imageHeight = 768; // 기본값: MIDDLE only
-                  let marginTop = 0;
-                  
-                  if (layout === 'top-middle') {
-                    imageHeight = 698;
-                    marginTop = -(768 - 698); // -70px (위로 올림)
-                  } else if (layout === 'top-middle-bottom') {
-                    imageHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
-                  }
-                  
-                  return (
-                    <img
-                      key={`img-middle-${sectionIndex}`}
-                      src={media.url}
-                      alt={`Custom section ${sectionIndex}`}
-                      style={{
-                        width: "128px",
-                        height: `${imageHeight}px`,
-                        display: "block",
-                        marginTop: `${marginTop}px`,
-                      }}
-                    />
-                  );
-                }
-                
-                // 동영상은 원본 크기로 재생되면서 잘리도록 설정
-                if (media.type === "video") {
-                  // 레이아웃에 맞는 높이 계산
-                  let videoHeight = 768; // 기본값: MIDDLE only
-                  let marginTop = 0;
-                  
-                  if (layout === 'top-middle') {
-                    videoHeight = 698;
-                    marginTop = -(768 - 698); // -70px (위로 올림)
-                  } else if (layout === 'top-middle-bottom') {
-                    videoHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
-                  }
-                  
-                  return (
-                    <video
-                      key={`video-middle-${sectionIndex}`}
-                      src={media.url}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      style={{
-                        width: "auto",
-                        height: `${videoHeight}px`,
-                        display: "block",
-                        marginTop: `${marginTop}px`,
-                      }}
-                    />
-                  );
-                }
-                
-                return null;
-              })()}
-            </div>
-          );
-        }
+          </div>
+        );
       }
     });
 
@@ -853,20 +334,13 @@ export const useSectionManager = (
   }, [
     customSections, 
     customMedia, 
-    activeSections, 
-    currentSection, 
-    selectedDistrict, 
-    weatherData, 
-    machineStatus,
+    activeSections,
+    currentSection,
     clockType,
-    customSectionLayouts
+    customSectionLogos,
   ]);
 
   const toggleSection = useCallback((index) => {
-    if (index === 2 && waterLevel < 2) {
-      return;
-    }
-
     // 버튼 클릭 시 활성화된 섹션으로만 전환 (활성화/비활성화는 설정 탭에서만)
     if (activeSections.includes(index)) {
       if (currentSection !== index) {
@@ -957,6 +431,9 @@ export const useSectionManager = (
     const newNames = { ...customSectionNames };
     delete newNames[index];
     setCustomSectionNames(newNames);
+    const newLogos = { ...customSectionLogos };
+    delete newLogos[index];
+    setCustomSectionLogos(newLogos);
     const newMedia = { ...customMedia };
     // 섹션 삭제 시 ObjectURL 해제 (탭 메모리 누수 방지)
     revokeBlobUrl(newMedia[index]?.url);
@@ -1016,41 +493,17 @@ export const useSectionManager = (
     return true;
   };
 
+  // 커스텀 섹션 로고 표시 켜기/끄기 (켜면 미디어가 128×206으로 리사이징됨 — App.js)
+  const setCustomSectionLogo = (index, isOn) => {
+    setCustomSectionLogos({ ...customSectionLogos, [index]: isOn });
+  };
+
   // 섹션 이름 가져오기 (커스텀 이름이 있으면 사용, 없으면 기본값)
   const getSectionName = (index) => {
     if (customSectionNames[index]) {
       return customSectionNames[index];
     }
     return `섹션 ${index}`;
-  };
-
-  // 섹션이 보호된 섹션인지 확인
-  const isProtectedSection = (index) => {
-    return PROTECTED_SECTIONS.includes(index);
-  };
-
-  // 커스텀 섹션의 레이아웃 설정
-  const setCustomSectionLayout = (index, layout) => {
-    if (PROTECTED_SECTIONS.includes(index)) {
-      console.warn(`섹션 ${index}는 기본 섹션이므로 레이아웃을 설정할 수 없습니다.`);
-      return false;
-    }
-    if (!customSections.includes(index)) {
-      console.warn(`섹션 ${index}는 커스텀 섹션이 아닙니다.`);
-      return false;
-    }
-    if (!['top-middle-bottom', 'top-middle', 'middle'].includes(layout)) {
-      console.warn(`잘못된 레이아웃 타입입니다: ${layout}`);
-      return false;
-    }
-    
-    setCustomSectionLayouts({ ...customSectionLayouts, [index]: layout });
-    return true;
-  };
-
-  // 커스텀 섹션의 레이아웃 가져오기
-  const getCustomSectionLayout = (index) => {
-    return customSectionLayouts[index] || 'middle'; // 기본값: middle only
   };
 
   const getButtonStyle = (index) => ({
@@ -1064,8 +517,6 @@ export const useSectionManager = (
   });
 
   return {
-    selectedDistrict,
-    setSelectedDistrict,
     toggleSection,
     getButtonStyle,
     sections,
@@ -1073,18 +524,14 @@ export const useSectionManager = (
     setActiveSections,
     currentSection,
     setCurrentSection,
-    machineStatus,
-    setMachineStatus,
     // 섹션 추가/제거 기능
     addCustomSection,
     removeCustomSection,
-    isProtectedSection,
     customSections,
     protectedSections: PROTECTED_SECTIONS,
     // 인터벌 관리
     setCustomSectionInterval,
     getSectionInterval,
-    customIntervals,
     defaultCustomInterval: DEFAULT_CUSTOM_INTERVAL,
     // 이름 관리
     setCustomSectionName,
@@ -1096,9 +543,8 @@ export const useSectionManager = (
     // 시계 타입 관리
     clockType,
     setClockType,
-    // 레이아웃 관리
-    setCustomSectionLayout,
-    getCustomSectionLayout,
-    customSectionLayouts,
+    // 커스텀 섹션 로고 표시
+    customSectionLogos,
+    setCustomSectionLogo,
   };
 };
