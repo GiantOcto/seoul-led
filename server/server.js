@@ -2,6 +2,8 @@ const path = require('path');
 const fs = require('fs');
 // server.js 와 같은 폴더의 .env (배치가 프로젝트 루트여도 server\.env 적용)
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+// 콘솔 출력·종료 사유를 logs/server 에 일자별 기록 (다른 모듈보다 먼저 설치)
+require('./server-logger').installServerLogger();
 
 /** React 빌드 폴더 (없으면 API만 동작). 우선순위: STATIC_DIR → ../build → ../client/build */
 function resolveStaticRoot() {
@@ -131,12 +133,18 @@ function isValidModbusData(data) {
     }
 }
 
+let invalidDataLogged = false; // 비정상 데이터가 연속될 때 첫 건만 로그 (500ms마다 파일에 쌓이지 않게)
+
 /** 저장 + 브로드캐스트 (Modbus → Socket.IO) */
 function ingestSerialPayload(data) {
     if (!isValidModbusData(data)) {
-        console.error('Invalid modbus data:', data);
+        if (!invalidDataLogged) {
+            invalidDataLogged = true;
+            console.error('Invalid modbus data (정상 데이터 올 때까지 반복 로그 생략):', data);
+        }
         return false;
     }
+    invalidDataLogged = false;
     if (process.env.NODE_ENV === 'development') console.log('[modbus] 수신:', data);
     DataStore.addData(data);
     logWaterLevel(data); // CSV 기록 (내부에서 1분 스로틀)
