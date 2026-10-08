@@ -9,6 +9,7 @@ let pollTimer = null;
 let retryTimer = null;
 let pollInFlight = false;
 let active = false;
+let readFailing = false; // 연속 읽기 실패 중 — 실패 시작/복구 순간만 로그 (매 폴링마다 찍지 않음)
 
 function getSensorCount() {
     return Math.max(1, parseInt(process.env.PLC_SENSOR_COUNT || '10', 10));
@@ -178,8 +179,15 @@ function openPort(cfg, opts) {
                 );
                 const payload = mapModbusRegisters(words);
                 opts.ingest(payload);
+                if (readFailing) {
+                    readFailing = false;
+                    console.log('[modbus] PLC 응답 복구');
+                }
             } catch (err) {
-                if (process.env.NODE_ENV === 'development') {
+                if (!readFailing) {
+                    readFailing = true;
+                    console.warn('[modbus] PLC 읽기 실패 (복구될 때까지 반복 로그 생략):', err.message);
+                } else if (process.env.NODE_ENV === 'development') {
                     console.warn('[modbus] 읽기 실패:', err.message);
                 }
             } finally {
