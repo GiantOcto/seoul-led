@@ -2,6 +2,8 @@ const path = require('path');
 const fs = require('fs');
 // server.js 와 같은 폴더의 .env (배치가 프로젝트 루트여도 server\.env 적용)
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+// 콘솔 출력·종료 사유를 logs/server 에 일자별 기록 (다른 모듈보다 먼저 설치)
+require('./server-logger').installServerLogger();
 
 /** React 빌드 폴더 (없으면 API만 동작). 우선순위: STATIC_DIR → ../build → ../client/build */
 function resolveStaticRoot() {
