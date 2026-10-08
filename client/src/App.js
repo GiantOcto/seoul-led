@@ -24,13 +24,6 @@ const ClockThumbnail = ({ type }) => {
 };
 
 function App() {
-  const [waterLevel, setWaterLevel] = useState(0);
-  const [previousSections, setPreviousSections] = useState([0, 1, 2, 3, 4, 5]);
-
-  const handleWaterLevelChange = (level) => {
-    setWaterLevel(level);
-  };
-
   // 모든 섹션의 순서를 관리하는 state (localStorage에 저장)
   const [sectionOrder, setSectionOrder] = useState(() => {
     try {
@@ -72,7 +65,7 @@ function App() {
     setCustomSectionLayout,
     getCustomSectionLayout,
     customSectionLayouts,
-  } = useSectionManager("성남시", handleWaterLevelChange, waterLevel, sectionOrder);
+  } = useSectionManager("성남시", sectionOrder);
 
   const [newSectionName, setNewSectionName] = useState("");
   const [newSectionInterval, setNewSectionInterval] = useState(defaultCustomInterval / 1000); // 초 단위로 표시
@@ -390,7 +383,6 @@ function App() {
     const names = {
       0: "문구",
       1: "미세먼지 및 오존",
-      2: "수위데이터",
       3: "이벤트",
     };
     if (names[index] !== undefined) {
@@ -638,43 +630,6 @@ function App() {
       return;
     }
     toggleSection(index);
-  };
-
-  useEffect(() => {
-    if (waterLevel >= 0.2) {
-      if (!activeSections.includes(2)) {
-        setPreviousSections([...activeSections]);
-        setActiveSections([2]);
-        setCurrentSection(2);
-      }
-    } else if (waterLevel < 0.2 && activeSections.includes(2)) {
-      if (activeSections.length === 1) {
-        setActiveSections([...previousSections]);
-        setCurrentSection(previousSections[0]);
-      } else {
-        setActiveSections(activeSections.filter(section => section !== 2));
-      }
-    }
-  }, [waterLevel, activeSections]);
-
-  const getWaterButtonStyle = (index) => {
-    const baseStyle = getButtonStyle(index);
-    if (index === 2) {
-      if (waterLevel >= 0.2) {
-        return {
-          ...baseStyle,
-          backgroundColor: "red",
-          cursor: "pointer"
-        };
-      } else if (waterLevel === 0) {
-        return {
-          ...baseStyle,
-          opacity: 0.5,
-          cursor: "not-allowed"
-        };
-      }
-    }
-    return baseStyle;
   };
 
   return (
@@ -1401,9 +1356,7 @@ function App() {
               onDragEnd={handleDragEnd}
               onDrop={(e) => handleDrop(e, buttonIndex)}
               style={{
-                ...(index === 0 || index === 1 || index === 3 || index === 4 
-                  ? getWaterButtonStyle(index) 
-                  : getButtonStyle(index)),
+                ...getButtonStyle(index),
                 cursor: "grab",
                 opacity: draggedIndex === buttonIndex ? 0.3 : 1,
                 position: "relative",

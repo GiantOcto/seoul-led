@@ -126,7 +126,7 @@ function runRest() {
         PATH: `${nodeDir}${pathSep}${process.env.PATH || ''}`,
     };
 
-    log('5/5 server 의존성 설치 (npm ci --omit=dev) — serialport 네이티브 빌드 포함');
+    log('5/5 server 의존성 설치 (npm ci --omit=dev)');
     execSync('npm ci --omit=dev', {
         cwd: path.join(OUT, 'server'),
         env,
@@ -198,7 +198,7 @@ function runRest() {
         [
             'Garam LED — Windows 릴리즈 (포터블 Node 포함)',
             '',
-            '1. server 폴더: .env.example 을 .env 로 복사 후 COM 포트·PORT 수정',
+            '1. server 폴더: .env.example 을 .env 로 복사 후 PORT 수정',
             '2. Start-GaramLED.bat 실행',
             '3. 브라우저: server/.env 의 PORT (기본 8000) — Start-GaramLED.bat 이 자동 반영',
             '',
