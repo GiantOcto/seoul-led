@@ -4,100 +4,98 @@ import "./Weather.css";
 const AIR_KOREA_KEY = "hdY4oBjOnFqA%2BJyW%2Bkzoyx0iCeR8iu5iz4L2gHBvK3C%2FzN8ATC5DxGOPBBimYveDh1LXwswQxuLEGQvxeNe1eg%3D%3D";
 const SEOUL_API_KEY = "465456775772656e3532726c4a4d74";
 
+// 미세먼지 측정소 (에어코리아·서울시 공통 이름) — 구별 브랜치마다 다름
+const STATION_NAME = "강남구";
+
+const REFRESH_INTERVAL = 60 * 60 * 1000; // 성공 후 1시간마다 새 값으로 갱신
+const RETRY_DELAY = 60 * 1000; // 실패 시 1분 뒤 재시도 (부팅 직후 인터넷 미연결 등)
+const CACHE_KEY = `airQuality_cache_${STATION_NAME}`;
+const CACHE_TIME_KEY = `airQuality_time_${STATION_NAME}`;
+
+function readCache() {
+  try {
+    const data = localStorage.getItem(CACHE_KEY);
+    const time = parseInt(localStorage.getItem(CACHE_TIME_KEY), 10);
+    if (!data || !Number.isFinite(time)) return null;
+    return { data: JSON.parse(data), time };
+  } catch (e) {
+    console.error("캐시 읽기 실패:", e);
+    return null;
+  }
+}
+
+function writeCache(data) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+  } catch (e) {
+    console.error("캐시 저장 실패:", e);
+  }
+}
+
+/** 에어코리아 → 실패 시 서울시 API. 성공하면 { pm10Value, pm25Value ... }, 둘 다 실패면 null */
+async function fetchAirQuality() {
+  try {
+    const airKoreaUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?stationName=${encodeURIComponent(STATION_NAME)}&dataTerm=daily&pageNo=1&numOfRows=1&returnType=json&ver=1.3&serviceKey=${AIR_KOREA_KEY}`;
+    const airKoreaJson = await (await fetch(airKoreaUrl)).json();
+    const item = airKoreaJson?.response?.body?.items?.[0];
+    if (item) return item;
+    console.warn("에어코리아 응답에 데이터 없음:", airKoreaJson?.response?.header);
+  } catch (e) {
+    console.warn("에어코리아 에러:", e.message);
+  }
+
+  try {
+    const seoulUrl = `http://openAPI.seoul.go.kr:8088/${SEOUL_API_KEY}/json/RealtimeCityAir/1/25/`;
+    const seoulJson = await (await fetch(seoulUrl)).json();
+    // 서울시 API 항목명 변경 대응 (신: MSRSTN_NM/PM/FPM, 구: MSRSTE_NM/PM10/PM25)
+    const row = seoulJson?.RealtimeCityAir?.row?.find(
+      (r) => (r.MSRSTN_NM ?? r.MSRSTE_NM) === STATION_NAME
+    );
+    if (row) return { pm10Value: row.PM ?? row.PM10, pm25Value: row.FPM ?? row.PM25 };
+    console.warn("서울시 API 응답에 측정소 없음:", seoulJson?.RealtimeCityAir?.RESULT);
+  } catch (e) {
+    console.warn("서울시 API 에러:", e.message);
+  }
+
+  return null;
+}
+
 function Weather({ onWeatherUpdate }) {
   const [pollutionData, setPollutionData] = useState(null);
 
-  // 캐시 관리 설정
-  const CACHE_DURATION = 60 * 60 * 1000; // 1시간
-  const CACHE_KEY = 'songpaAirQuality_cache';
-  const CACHE_TIME_KEY = 'songpaAirQuality_time';
-
-  // 앱 시작시 서초구 미세먼지만 호출
+  // 시작 시 캐시 표시 → 1시간마다 갱신, 실패하면 1분마다 재시도 (페이지를 오래 켜둬도 값이 갱신되게)
   useEffect(() => {
-    const fetchSeochoData = async () => {
-      try {
-        // localStorage에서 캐시 확인
-        const cachedData = localStorage.getItem(CACHE_KEY);
-        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
-        
-        // 캐시가 있고 1시간 이내면 API 호출 안함
-        if (cachedData && cachedTime && 
-            (Date.now() - parseInt(cachedTime) < CACHE_DURATION)) {
-          const parsedData = JSON.parse(cachedData);
-          setPollutionData(parsedData);
-          return;
-        }
+    let timer = null;
+    let cancelled = false;
 
-        // ⭐ 1단계: 에어코리아 API 시도
-        console.log("1단계: 에어코리아 API 시도...");
-        try {
-          const airKoreaUrl = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?stationName=서초구&dataTerm=daily&pageNo=1&numOfRows=1&returnType=json&ver=1.3&serviceKey=${AIR_KOREA_KEY}`;
-          
-          const airKoreaResponse = await fetch(airKoreaUrl);
-          const airKoreaJson = await airKoreaResponse.json();
-
-          if (airKoreaJson?.response?.body?.items?.[0]) {
-            console.log("✅ 에어코리아 API 성공");
-            const data = airKoreaJson.response.body.items[0];
-            
-            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-            localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-            setPollutionData(data);
-            return;
-          }
-        } catch (e) {
-          console.log("⚠️ 에어코리아 에러:", e.message);
-        }
-
-        // ⭐ 2단계: 서울시 API 시도
-        console.log("⚠️ 에어코리아 실패, 서울시 API 시도...");
-        const seoulUrl = `http://openAPI.seoul.go.kr:8088/${SEOUL_API_KEY}/json/RealtimeCityAir/1/25/`;
-        
-        const seoulResponse = await fetch(seoulUrl);
-        const seoulJson = await seoulResponse.json();
-        
-        if (seoulJson?.RealtimeCityAir?.row) {
-          const songpaData = seoulJson.RealtimeCityAir.row.find(
-            item => item.MSRSTE_NM === "서초구"
-          );
-          
-          if (songpaData) {
-            console.log("✅ 서울시 API 성공");
-            // 에어코리아 형식으로 변환
-            const converted = {
-              pm10Value: songpaData.PM10,
-              pm25Value: songpaData.PM25
-            };
-            
-            localStorage.setItem(CACHE_KEY, JSON.stringify(converted));
-            localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-            setPollutionData(converted);
-            return;
-          }
-        }
-
-        throw new Error("모든 API 실패");
-
-      } catch (error) {
-        console.error("❌ 모든 API 실패, 캐시 사용:", error);
-        
-        // ⭐ 3단계: 캐시 사용
-        const cachedData = localStorage.getItem(CACHE_KEY);
-        if (cachedData) {
-          try {
-            console.log("📦 캐시 데이터 사용");
-            setPollutionData(JSON.parse(cachedData));
-          } catch (e) {
-            console.error('캐시 파싱 실패:', e);
-            localStorage.removeItem(CACHE_KEY);
-            localStorage.removeItem(CACHE_TIME_KEY);
-          }
-        }
+    const load = async () => {
+      const data = await fetchAirQuality();
+      if (cancelled) return;
+      if (data) {
+        writeCache(data);
+        setPollutionData(data);
+        timer = setTimeout(load, REFRESH_INTERVAL);
+        return;
       }
+      console.error("미세먼지 API 모두 실패 — 1분 뒤 재시도 (이전 값이 있으면 유지)");
+      timer = setTimeout(load, RETRY_DELAY);
     };
 
-    fetchSeochoData();
-  }, []); // 앱 시작시 1회만
+    const cached = readCache();
+    if (cached) setPollutionData(cached.data);
+    const age = cached ? Date.now() - cached.time : Infinity;
+    if (age < REFRESH_INTERVAL) {
+      timer = setTimeout(load, REFRESH_INTERVAL - age);
+    } else {
+      load();
+    }
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, []);
 
   // ⭐ 데이터 변경 시 처리
   useEffect(() => {
