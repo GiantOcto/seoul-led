@@ -33,7 +33,10 @@ function timeStr(d) {
  * @param {number|undefined} state D1004 값 (1=ON, 0=OFF)
  */
 function logD1004(state) {
-    if (state !== 0 && state !== 1) return; // 값 없음/비정상은 무시
+    if (state !== 0 && state !== 1) {
+        lastState = null; // 값 없음(PLC OFF 등)/비정상은 기록 안 함 — 다음 ON 은 새로 켜진 것으로 기록
+        return;
+    }
 
     const turnedOn = state === 1 && lastState !== 1;
     lastState = state;

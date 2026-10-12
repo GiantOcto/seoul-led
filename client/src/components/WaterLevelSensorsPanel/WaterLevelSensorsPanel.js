@@ -220,7 +220,8 @@ function WaterLevelSensorsPanel() {
 
       >
 
-        <span>{d1004 === null ? "신호 없음" : d1004 === 1 ? "동작 감지" : "정상"}</span>
+        {/* PLC OFF 이면 서버가 D1004 를 보내지 않음(null) — 신호 없음 대신 PLC OFF 로 표시 */}
+        <span>{d1004 === null ? (plcStatus === 0 ? "PLC OFF" : "신호 없음") : d1004 === 1 ? "동작 감지" : "정상"}</span>
 
       </div>
 
