@@ -155,11 +155,14 @@ function runRest() {
             // 화면 출력은 영문 — chcp 65001 콘솔에서 한글 echo 가 겹쳐 보이는 표시 버그 회피
             'echo Web+API: %GARAM_URL%  (PORT in server\\.env)',
             'echo [1/2] Starting server (auto restart 5s after exit)...',
+            // 서버 창 콘솔 "빠른 편집" 끄기 (창 제목별 설정) — 창을 클릭해 "선택" 모드가 되면 node 가 출력에서 멈춤
+            'reg add "HKCU\\Console\\GaramLED Server" /v QuickEdit /t REG_DWORD /d 0 /f > nul',
             // 무한 루프: node 가 어떤 이유로든 끝나면 다시 실행. 서버 창을 닫으면 루프도 함께 종료
             'start "GaramLED Server" /min cmd /c "cd /d %~dp0server && for /l %%i in (0,0,1) do (node server.js & echo Server stopped - restarting in 5s & timeout /t 5 /nobreak > nul)"',
             // 고정 대기 대신 서버 응답까지 대기 (부팅 직후 크롬이 먼저 떠서 빈 화면으로 멈추는 문제)
             'echo Waiting for server (max 90s)...',
-            'powershell -NoProfile -Command "$deadline=(Get-Date).AddSeconds(90); while((Get-Date) -lt $deadline){ try { $r=Invoke-WebRequest -Uri \'http://127.0.0.1:%GARAM_PORT%/api/status\' -UseBasicParsing -TimeoutSec 2; if($r.StatusCode -eq 200){ exit 0 } } catch {}; Start-Sleep -Seconds 1 }"',
+            // 이 창(감시 창)은 대기·감시 중 화면에 아무것도 쓰지 않음 (> nul) — 창이 "선택" 모드여도 멈추지 않게
+            'powershell -NoProfile -Command "$deadline=(Get-Date).AddSeconds(90); while((Get-Date) -lt $deadline){ try { $r=Invoke-WebRequest -Uri \'http://127.0.0.1:%GARAM_PORT%/api/status\' -UseBasicParsing -TimeoutSec 2; if($r.StatusCode -eq 200){ exit 0 } } catch {}; Start-Sleep -Seconds 1 }" > nul 2>&1',
             'echo [2/2] Starting Chrome kiosk (relaunch within 10s if closed)...',
             'for /f "tokens=1-4 delims=," %%a in (\'powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $screens=[System.Windows.Forms.Screen]::AllScreens; $target=$screens | Sort-Object { $_.Bounds.Width * $_.Bounds.Height } -Descending | Select-Object -First 1; if(-not $target){$target=$screens[0]}; $b=$target.Bounds; Write-Output ($b.X.ToString()+\',\'+$b.Y.ToString()+\',\'+$b.Width.ToString()+\',\'+$b.Height.ToString())"\') do (',
             '  set "MON_X=%%a"',
@@ -171,13 +174,16 @@ function runRest() {
             'set "MON_H=1080"',
             'echo Monitor: %MON_X%,%MON_Y% / Size: %MON_W%x%MON_H%',
             'echo This window watches Chrome. Close this window first before closing Chrome for maintenance.',
-            // 이 프로필(chrome-profile)로 뜬 Chrome 이 없으면 다시 실행 (10초 간격 확인)
+            'echo Chrome restarts are logged to logs\\server\\chrome-watch.log',
+            'if not exist "%~dp0logs\\server" mkdir "%~dp0logs\\server"',
+            // 이 프로필(chrome-profile)로 뜬 Chrome 이 없으면 다시 실행 (10초 간격 확인). 기록은 화면 대신 파일로
             ':chrome_watch',
-            'powershell -NoProfile -Command "if (Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \'chrome.exe\' -and $_.CommandLine -like \'*%~dp0chrome-profile*\' }) { exit 1 }"',
+            'powershell -NoProfile -Command "if (Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \'chrome.exe\' -and $_.CommandLine -like \'*%~dp0chrome-profile*\' }) { exit 1 }" > nul 2>&1',
             'if errorlevel 1 goto chrome_wait',
-            'echo [%date% %time%] Chrome started',
+            '>> "%~dp0logs\\server\\chrome-watch.log" echo [%date% %time%] Chrome started',
             'start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" ^',
             '    --new-window ^',
+            '    --kiosk ^',
             '    --start-fullscreen ^',
             '    --window-position=%MON_X%,%MON_Y% ^',
             '    --window-size=%MON_W%,%MON_H% ^',
