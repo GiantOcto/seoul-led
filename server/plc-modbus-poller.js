@@ -30,7 +30,8 @@ function mapModbusRegisters(registers) {
     const sensorErrorWord = registers.length >= 3 ? registers[2] : 0;
     // D1004: 1=ON, 0=OFF (4워드째 — regCount 3으로 줄이면 undefined)
     // 현장 배선/래더가 반대면 D1004_INVERT=1 로 0↔1 뒤집어 해석 (표시등·로그 모두 적용됨)
-    const d1004Raw = registers.length >= 4 ? registers[3] : undefined;
+    // PLC OFF(D1002=0)일 땐 D1004 가 의미 없으므로 신호 없음 처리 (반전 시 0→1 로 "동작 감지" 오표시·ON 로그 방지)
+    const d1004Raw = registers.length >= 4 && errorCode !== 0 ? registers[3] : undefined;
     const d1004Invert = process.env.D1004_INVERT === '1';
     const d1004 = (d1004Raw === 0 || d1004Raw === 1)
         ? (d1004Invert ? 1 - d1004Raw : d1004Raw)
