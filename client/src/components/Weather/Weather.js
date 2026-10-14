@@ -3,17 +3,18 @@ import "./Weather.css";
 
 const AIR_KOREA_KEY = "hdY4oBjOnFqA%2BJyW%2Bkzoyx0iCeR8iu5iz4L2gHBvK3C%2FzN8ATC5DxGOPBBimYveDh1LXwswQxuLEGQvxeNe1eg%3D%3D";
 
-// 성남시 측정소 (상대원동 기본, 안 뜨면 단대동 폴백)
-const PRIMARY_STATION = "상대원동";
-const FALLBACK_STATION = "단대동";
+// 포항시 측정소 (포항시청 근처 남구 대도동 기본, 값이 비면 송도동으로 채움)
+const PRIMARY_STATION = "대도동";
+const FALLBACK_STATION = "송도동";
+const RETRY_DELAY = 60 * 1000; // 실패 시 1분 뒤 재시도 (부팅 직후 인터넷 미연결 등)
 
 function Weather({ onWeatherUpdate }) {
   const [pollutionData, setPollutionData] = useState(null);
 
   // 캐시 관리 설정
   const CACHE_DURATION = 1 * 60 * 60 * 1000; // 1시간 (매 정시 갱신)
-  const CACHE_KEY = 'seongnamAirQuality_cache';
-  const CACHE_TIME_KEY = 'seongnamAirQuality_time';
+  const CACHE_KEY = 'pohangAirQuality_cache';
+  const CACHE_TIME_KEY = 'pohangAirQuality_time';
 
   // 에어코리아 API 호출 헬퍼
   const fetchStation = async (stationName) => {
@@ -26,9 +27,12 @@ function Weather({ onWeatherUpdate }) {
   // 값이 유효한지 (숫자인지) 체크
   const isValidValue = (val) => val && val !== "-" && !isNaN(parseInt(val, 10));
 
-  // 앱 시작시 성남시 미세먼지 호출
+  // 앱 시작시 포항시 미세먼지 호출
   useEffect(() => {
+    let retryTimer = null;
+
     const fetchAirData = async () => {
+      clearTimeout(retryTimer);
       try {
         // localStorage에서 캐시 확인
         const cachedData = localStorage.getItem(CACHE_KEY);
@@ -42,8 +46,8 @@ function Weather({ onWeatherUpdate }) {
           return;
         }
 
-        // 1단계: 상대원동 API 시도
-        console.log("1단계: 에어코리아 상대원동 시도...");
+        // 1단계: 기본 측정소 API 시도
+        console.log(`1단계: 에어코리아 ${PRIMARY_STATION} 시도...`);
 
         let data = await fetchStation(PRIMARY_STATION);
 
@@ -51,7 +55,7 @@ function Weather({ onWeatherUpdate }) {
           let needFallback = false;
 
           if (!isValidValue(data.pm25Value) || !isValidValue(data.pm10Value)) {
-            console.log("⚠️ 상대원동 데이터 불완전, 단대동 폴백...");
+            console.log(`⚠️ ${PRIMARY_STATION} 데이터 불완전, ${FALLBACK_STATION} 폴백...`);
             needFallback = true;
           }
 
@@ -60,11 +64,11 @@ function Weather({ onWeatherUpdate }) {
             if (fallbackData) {
               if (!isValidValue(data.pm25Value) && isValidValue(fallbackData.pm25Value)) {
                 data.pm25Value = fallbackData.pm25Value;
-                console.log(`✅ 단대동 PM2.5: ${fallbackData.pm25Value}`);
+                console.log(`✅ ${FALLBACK_STATION} PM2.5: ${fallbackData.pm25Value}`);
               }
               if (!isValidValue(data.pm10Value) && isValidValue(fallbackData.pm10Value)) {
                 data.pm10Value = fallbackData.pm10Value;
-                console.log(`✅ 단대동 PM10: ${fallbackData.pm10Value}`);
+                console.log(`✅ ${FALLBACK_STATION} PM10: ${fallbackData.pm10Value}`);
               }
             }
           }
@@ -92,6 +96,9 @@ function Weather({ onWeatherUpdate }) {
             localStorage.removeItem(CACHE_TIME_KEY);
           }
         }
+
+        // 다음 정시까지 기다리지 않고 1분 뒤 다시 시도
+        retryTimer = setTimeout(fetchAirData, RETRY_DELAY);
       }
     };
 
@@ -109,6 +116,7 @@ function Weather({ onWeatherUpdate }) {
 
     return () => {
       clearTimeout(firstTimer);
+      clearTimeout(retryTimer);
       if (hourlyInterval) clearInterval(hourlyInterval);
     };
   }, []);

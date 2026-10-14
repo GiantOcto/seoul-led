@@ -304,13 +304,40 @@ input:focus {
 .container {
   background: #000000;
   width: 128px;
-  height: 768px;
-  display: inline-block;
-  position: relative;
+  height: 768px; /* LED 패널 크기 — constants/led.js 와 동일하게 유지 */
+  /* 화면 고정 좌표 (left/top 은 App.js 에서 설정값으로 지정) — 창 크기가 바뀌어도 움직이지 않음 */
+  position: fixed;
   overflow: hidden;
   padding: 0;
-  margin-left: 50px;
-  margin-top: 87px;
+}
+
+/* 커스텀 섹션 "로고+시계+이미지" 위쪽 칸 128×208 (constants/led.js CLOCK_BLOCK_HEIGHT)
+   로고 50(위 여백 8 + 42) + 시계 패널(ClockPanel: top 54 ~ bottom 6 → 높이 148) */
+.clock-block {
+  position: relative;
+  width: 100%;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.clock-block .logo-3,
+.clock-block .logo-4 {
+  position: relative;
+  width: 126px;
+  height: 42px;
+  margin: 8px 0 8px;
+}
+
+/* 패널 높이 148 에 맞춤: 날짜 18 + 간격 8 + 시계판 104 */
+.clock-block .clock-panel .analog-face {
+  margin-top: 8px;
+}
+
+/* 208 칸엔 날씨 자리가 없어 숨김 (날씨를 쓰려면 CLOCK_BLOCK_HEIGHT 256 + 이 규칙 제거) */
+.clock-block .weather-summary {
+  display: none;
 }
 
 #top1 {

@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import Event from "../components/Event/Event";
 import RotatingLogo34 from "../components/Logo/RotatingLogo34";
-import Clock from "../components/Clock/Clock";
-import Clock2 from "../components/Clock/Clock2";
+import AnalogClock from "../components/Clock/AnalogClock";
 import DigitalClock from "../components/Clock/DigitalClock";
+import { LED_HEIGHT, CLOCK_BLOCK_HEIGHT } from "../constants/led";
 import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
 import {
@@ -19,7 +18,7 @@ const PROTECTED_SECTIONS = [0, 1]; // 제거 불가능한 기본 섹션들 (행�
 const MAX_SECTIONS = 16; // 최대 섹션 개수
 
 export const useSectionManager = (
-  initialDistrict = "성남시",
+  initialDistrict = "포항시",
   sectionOrder = null
 ) => {
   // localStorage에서 커스텀 섹션 정보 불러오기 (섹션 목록, 인터벌, 이름, 시계 타입, 레이아웃, 활성화 여부)
@@ -48,7 +47,7 @@ export const useSectionManager = (
 
   const savedData = loadFromStorage();
 
-  const DISABLED_SECTIONS = [2, 3]; // 비활성화된 섹션 (2: 수위 — 제거됨, 3: 행사)
+  const DISABLED_SECTIONS = [2, 3]; // 비활성화된 섹션 (2: 수위, 3: 행사 — 둘 다 제거됨. 예전 저장값에 남아 있어도 무시)
 
   const computeInitialActiveSections = (data) => {
     let sections;
@@ -273,51 +272,6 @@ export const useSectionManager = (
           <Stink id="stink-data-page2" onStatusChange={setMachineStatus} />
         </div>
       </div>,
-
-      // <div
-      //   key="top3"
-      //   className="section-top"
-      //   id="top3"
-      //   style={{
-      //     display:
-      //       currentSection === 2 && activeSections.includes(2)
-      //         ? "flex"
-      //         : "none",
-      //   }}
-      // >
-      //   <Logo2 />
-      //   <Clock />
-      // </div>,
-      <div
-        key="top4"
-        className="section-top"
-        id="top4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <RotatingLogo34 style={{ width: "126px", height: "70px" }} />
-        {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
-        <span style={{ color: "white" }}>문화행사</span>
-      </div>,
-      <div
-        key="top5"
-        className="section-top"
-        id="top5"
-        style={{
-          display:
-            currentSection === 4 && activeSections.includes(4)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <RotatingLogo34 style={{ width: "126px", height: "70px" }} />
-          {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
-        <span style={{ color: "white" }}>문화행사</span>
-      </div>,
     ],
 
     middle: [
@@ -349,23 +303,6 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
-      <div
-        key="middle4"
-        className="section-middle"
-        id="middle4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="middle4-event"
-          selectedDistrict={selectedDistrict}
-          position="middle4"
-        />
-      </div>,
     ],
 
     bottom: [
@@ -391,23 +328,6 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
-      <div
-        key="bottom4"
-        className="section-bottom"
-        id="bottom4"
-        style={{
-          display:
-            currentSection === 3 && activeSections.includes(3)
-              ? "flex"
-              : "none",
-        }}
-      >
-        <Event
-          key="bottom4-event"
-          selectedDistrict={selectedDistrict}
-          position="bottom4"
-        />
-      </div>,
     ],
     };
 
@@ -491,30 +411,23 @@ export const useSectionManager = (
 
         // 레이아웃에 따라 다른 위치에 렌더링
         if (layout === 'top-middle-bottom') {
-          // TOP: 로고 + 시계 (기본 섹션 top4, top5와 동일한 구조)
+          // TOP: 로고 + 시계 칸 128×208 (로고 50 + 시계 패널 158 — 성남시-256 시계 디자인을 원래 칸 크기에 맞춤)
           const isActive = currentSection === sectionIndex && activeSections.includes(sectionIndex);
-          
+
           baseSections.top.push(
             <div
               key={`custom-top-${sectionIndex}`}
-              className="section-top"
+              className="section-top clock-block"
               id={`custom-top-${sectionIndex}`}
               style={{
                 display: isActive ? "flex" : "none",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "1rem",
-                minHeight: "25%",
-                paddingBottom: "1rem",
+                height: `${CLOCK_BLOCK_HEIGHT}px`,
               }}
             >
-              <RotatingLogo34
-                style={{ width: "126px", height: "70px", marginTop: "8px" }}
-              />
-              <div style={{ marginTop: "-1.5rem" }}>
-                {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
-              </div>
+              <RotatingLogo34 style={{ width: "126px" }} />
+              {clockType === 'digital'
+                ? <DigitalClock />
+                : <AnalogClock variant={clockType === 'analog2' ? 'light' : 'dark'} />}
             </div>
           );
           
@@ -551,8 +464,8 @@ export const useSectionManager = (
                     imageHeight = 698;
                     marginTop = -(768 - 698); // -70px (위로 올림)
                   } else if (layout === 'top-middle-bottom') {
-                    imageHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
+                    imageHeight = LED_HEIGHT - CLOCK_BLOCK_HEIGHT; // 560 (위 시계 칸 208)
+                    marginTop = -CLOCK_BLOCK_HEIGHT; // -208px (위로 올림)
                   }
                   
                   return (
@@ -580,8 +493,8 @@ export const useSectionManager = (
                     videoHeight = 698;
                     marginTop = -(768 - 698); // -70px (위로 올림)
                   } else if (layout === 'top-middle-bottom') {
-                    videoHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
+                    videoHeight = LED_HEIGHT - CLOCK_BLOCK_HEIGHT; // 560 (위 시계 칸 208)
+                    marginTop = -CLOCK_BLOCK_HEIGHT; // -208px (위로 올림)
                   }
                   
                   return (
@@ -659,8 +572,8 @@ export const useSectionManager = (
                     imageHeight = 698;
                     marginTop = -(768 - 698); // -70px (위로 올림)
                   } else if (layout === 'top-middle-bottom') {
-                    imageHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
+                    imageHeight = LED_HEIGHT - CLOCK_BLOCK_HEIGHT; // 560 (위 시계 칸 208)
+                    marginTop = -CLOCK_BLOCK_HEIGHT; // -208px (위로 올림)
                   }
                   
                   return (
@@ -688,8 +601,8 @@ export const useSectionManager = (
                     videoHeight = 698;
                     marginTop = -(768 - 698); // -70px (위로 올림)
                   } else if (layout === 'top-middle-bottom') {
-                    videoHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
+                    videoHeight = LED_HEIGHT - CLOCK_BLOCK_HEIGHT; // 560 (위 시계 칸 208)
+                    marginTop = -CLOCK_BLOCK_HEIGHT; // -208px (위로 올림)
                   }
                   
                   return (
@@ -753,8 +666,8 @@ export const useSectionManager = (
                     imageHeight = 698;
                     marginTop = -(768 - 698); // -70px (위로 올림)
                   } else if (layout === 'top-middle-bottom') {
-                    imageHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
+                    imageHeight = LED_HEIGHT - CLOCK_BLOCK_HEIGHT; // 560 (위 시계 칸 208)
+                    marginTop = -CLOCK_BLOCK_HEIGHT; // -208px (위로 올림)
                   }
                   
                   return (
@@ -782,8 +695,8 @@ export const useSectionManager = (
                     videoHeight = 698;
                     marginTop = -(768 - 698); // -70px (위로 올림)
                   } else if (layout === 'top-middle-bottom') {
-                    videoHeight = 560;
-                    marginTop = -(768 - 560); // -208px (위로 올림)
+                    videoHeight = LED_HEIGHT - CLOCK_BLOCK_HEIGHT; // 560 (위 시계 칸 208)
+                    marginTop = -CLOCK_BLOCK_HEIGHT; // -208px (위로 올림)
                   }
                   
                   return (

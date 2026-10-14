@@ -1,33 +1,16 @@
 import React from "react";
 import "./Logo.css";
 
-export function Logo1({ id }) {
-  return (
-    <div className="logo-1" id={id}>
-      <img id="logo-seoul" src="/images/서울1.png" alt="Seoul Logo" />
-    </div>
-  );
-}
-
-export function Logo2({ id }) {
-  return (
-    <div className="logo-2" id={id}>
-      <img
-        id="logo-donghang"
-        src="/images/동행·매력_특별시_서울.png"
-        alt="Seoul Logo"
-      />
-    </div>
-  );
-}
+// 포항시 슬로건·CI — 로고 칸 126×42 안에 들어가도록 가로 110px (비율 유지)
+// 슬로건 "Powerful Pohang" 110×42, CI "pohang" 110×33
 
 export function Logo3({ id, style }) {
   return (
     <div className="logo-3" id={id}>
       <img
-        id="logo-gangnam"
-        src="/images/slogans/성남시.png"
-        alt="성남시 slogan"
+        id="logo-slogan"
+        src="/images/slogans/포항시.png"
+        alt="Powerful Pohang"
         style={style}
       />
     </div>
@@ -38,13 +21,10 @@ export function Logo4({ id }) {
   return (
     <div className="logo-4" id={id}>
       <img
-        id="logo-gangnamCI"
-        src="/images/성남시CI.png"
-        alt="성남시 CI"
+        id="logo-ci"
+        src="/images/포항시CI.png"
+        alt="pohang"
       />
     </div>
   );
 }
-
-// 기본 내보내기는 Logo1으로 유지
-export default Logo1;

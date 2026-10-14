@@ -1,0 +1,28 @@
+.weather-summary {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.weather-summary-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weather-summary-main svg {
+  display: block;
+}
+
+.weather-summary-temp {
+  font-size: 24px;
+  color: #fff;
+}
+
+/* LED에서 뭉개지지 않도록 크게 + 남색 바탕 대비 높은 밝은 하늘색 */
+.weather-summary-pop {
+  font-size: 16px;
+  color: #bae6fd;
+}

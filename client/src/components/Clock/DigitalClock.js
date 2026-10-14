@@ -1,103 +1,77 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import './DigitalClock.css';
+import React from "react";
+import ClockPanel from "./ClockPanel";
+import WeatherSummary from "./WeatherSummary";
+import { useNow } from "./useNow";
+import "./DigitalClock.css";
 
-// 7세그먼트 디스플레이 숫자 컴포넌트
-const SevenSegmentDigit = ({ digit }) => {
-  const segments = {
-    0: ['a', 'b', 'c', 'd', 'e', 'f'],
-    1: ['b', 'c'],
-    2: ['a', 'b', 'd', 'e', 'g'],
-    3: ['a', 'b', 'c', 'd', 'g'],
-    4: ['b', 'c', 'f', 'g'],
-    5: ['a', 'c', 'd', 'f', 'g'],
-    6: ['a', 'c', 'd', 'e', 'f', 'g'],
-    7: ['a', 'b', 'c'],
-    8: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
-    9: ['a', 'b', 'c', 'd', 'f', 'g'],
-  };
+// 7세그먼트 획 위치 (viewBox 0 0 20 38 기준 [x, y, w, h])
+const SEGMENTS = {
+  a: [4, 0, 12, 4],
+  b: [16, 3, 4, 15],
+  c: [16, 20, 4, 15],
+  d: [4, 34, 12, 4],
+  e: [0, 20, 4, 15],
+  f: [0, 3, 4, 15],
+  g: [4, 17, 12, 4],
+};
+const DIGIT_SEGMENTS = ["abcdef", "bc", "abdeg", "abcdg", "bcfg", "acdfg", "acdefg", "abc", "abcdefg", "abcdfg"];
 
-  const activeSegments = segments[digit] || [];
+const pad2 = (n) => String(n).padStart(2, "0");
 
+const CELL_WIDTH = 20;
+// "1"은 오른쪽 세로획만 켜져서 칸을 다 쓰면 오른쪽으로 쏠려 보이고,
+// 세로획이 가로획 자리만큼 짧아 키도 작아 보임 → 획 둘레만 좁게 그리고 세로획을 늘림
+// (끝까지 늘리면 둥근 가로획으로 끝나는 다른 숫자보다 길어 보여서 위아래 1.5씩 남김)
+const NARROW_ONE = { x: 14, width: 8 };
+const ONE_BARS = [
+  [16, 1.5, 4, 16.5],
+  [16, 20, 4, 16.5],
+];
+
+/** 7세그먼트 숫자 하나 — 켜진 획만 그림 (1은 칸 없이 좁게) */
+function SegmentDigit({ digit, width, height }) {
+  const isOne = digit === 1;
+  const viewX = isOne ? NARROW_ONE.x : 0;
+  const viewWidth = isOne ? NARROW_ONE.width : CELL_WIDTH;
+  const lit = DIGIT_SEGMENTS[digit];
+  const rects = isOne
+    ? ONE_BARS.map((bar, i) => [`one-${i}`, bar])
+    : Object.entries(SEGMENTS).filter(([name]) => lit.includes(name));
   return (
-    <div className="seven-segment">
-      <div className={`segment segment-a ${activeSegments.includes('a') ? 'active' : ''}`}></div>
-      <div className={`segment segment-b ${activeSegments.includes('b') ? 'active' : ''}`}></div>
-      <div className={`segment segment-c ${activeSegments.includes('c') ? 'active' : ''}`}></div>
-      <div className={`segment segment-d ${activeSegments.includes('d') ? 'active' : ''}`}></div>
-      <div className={`segment segment-e ${activeSegments.includes('e') ? 'active' : ''}`}></div>
-      <div className={`segment segment-f ${activeSegments.includes('f') ? 'active' : ''}`}></div>
-      <div className={`segment segment-g ${activeSegments.includes('g') ? 'active' : ''}`}></div>
+    <svg width={(width * viewWidth) / CELL_WIDTH} height={height} viewBox={`${viewX} 0 ${viewWidth} 38`} aria-hidden="true">
+      {rects.map(([key, [x, y, w, h]]) => (
+        <rect key={key} x={x} y={y} width={w} height={h} rx="1.6" className="seg-on" />
+      ))}
+    </svg>
+  );
+}
+
+/** HH:MM 7세그먼트 한 줄 */
+export function SegmentTime({ now, digitWidth = 22, digitHeight = 42 }) {
+  const digits = pad2(now.getHours()) + pad2(now.getMinutes());
+  const digit = (i) => <SegmentDigit digit={Number(digits[i])} width={digitWidth} height={digitHeight} />;
+  return (
+    <div className="seg-time">
+      {digit(0)}
+      {digit(1)}
+      <div className="seg-colon" style={{ gap: `${Math.round(digitHeight / 4)}px` }}>
+        <i />
+        <i />
+      </div>
+      {digit(2)}
+      {digit(3)}
     </div>
   );
-};
+}
 
+/** 디지털 시계 페이지 */
 function DigitalClock() {
-  const [time, setTime] = useState(() => new Date());
-
-  const { date, dayOfWeek } = useMemo(() => {
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    const year = time.getFullYear();
-    const month = String(time.getMonth() + 1).padStart(2, '0');
-    const day = String(time.getDate()).padStart(2, '0');
-    return {
-      date: `${year}-${month}-${day}`,
-      dayOfWeek: days[time.getDay()],
-    };
-  }, [time]);
-
-  useEffect(() => {
-    let intervalId = null;
-
-    const tick = () => setTime(new Date());
-
-    const start = () => {
-      tick();
-      intervalId = setInterval(tick, 1000);
-    };
-
-    const stop = () => {
-      if (intervalId != null) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    };
-
-    const onVisibility = () => {
-      if (document.hidden) stop();
-      else start();
-    };
-
-    if (!document.hidden) start();
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      stop();
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, []);
-
-  const hours = String(time.getHours()).padStart(2, '0');
-  const minutes = String(time.getMinutes()).padStart(2, '0');
-
-  const firstDigit = parseInt(hours[0]);
-  const firstMinuteDigit = parseInt(minutes[0]);
-  const isCentered = firstDigit === 0 || firstDigit === 2;
-  const isMinuteShifted = firstMinuteDigit === 1;
-  const isBothOne = firstDigit === 1 && firstMinuteDigit === 1;
-
+  const now = useNow();
   return (
-    <div className="digital-clock-container">
-      <div className="digital-date">{date} ({dayOfWeek})</div>
-      <div className={`digital-time ${isCentered ? 'centered' : ''} ${isBothOne ? 'both-one' : ''}`}>
-        <SevenSegmentDigit digit={firstDigit} />
-        <SevenSegmentDigit digit={parseInt(hours[1])} />
-        <span className="digital-separator"></span>
-        <div className={`digital-minutes ${isMinuteShifted ? 'shifted' : ''}`}>
-          <SevenSegmentDigit digit={firstMinuteDigit} />
-          <SevenSegmentDigit digit={parseInt(minutes[1])} />
-        </div>
-      </div>
-    </div>
+    <ClockPanel now={now}>
+      <SegmentTime now={now} />
+      <WeatherSummary />
+    </ClockPanel>
   );
 }
 

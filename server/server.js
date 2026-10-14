@@ -25,6 +25,7 @@ function resolveStaticRoot() {
 
 const express = require('express');
 const dgram = require('dgram');
+const { fetchKmaWeather } = require('./weather');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -100,6 +101,35 @@ function startRelayUdpListener() {
     });
 }
 
+// ── 날씨 (기상청 단기예보) — 서버가 10분마다 받아 소켓으로 화면에 전달 ──
+const KMA_SERVICE_KEY = (process.env.KMA_SERVICE_KEY || '').trim();
+const KMA_NX = process.env.KMA_NX || '102';  // 기본: 포항시청(남구) 격자
+const KMA_NY = process.env.KMA_NY || '94';
+const WEATHER_REFRESH_MS = 10 * 60 * 1000;
+
+/** { temp, sky, pop, updatedAt } — 아직 못 받았으면 null */
+let weatherState = null;
+
+async function refreshWeather() {
+    try {
+        const weather = await fetchKmaWeather({ serviceKey: KMA_SERVICE_KEY, nx: KMA_NX, ny: KMA_NY });
+        weatherState = { ...weather, updatedAt: new Date().toISOString() };
+        io.emit('weather_update', weatherState);
+    } catch (err) {
+        // 실패하면 마지막 값을 그대로 둠 (화면은 이전 날씨 유지)
+        console.warn('[weather] 기상청 조회 실패:', err.message);
+    }
+}
+
+function startWeatherPolling() {
+    if (!KMA_SERVICE_KEY) {
+        console.log('[weather] KMA_SERVICE_KEY 미설정 — 날씨 표시 안 함');
+        return;
+    }
+    refreshWeather();
+    setInterval(refreshWeather, WEATHER_REFRESH_MS);
+}
+
 // Socket.IO 연결 처리
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
@@ -114,6 +144,7 @@ io.on('connection', (socket) => {
             lastReceivedAt: RelayState.lastReceivedAt,
             source: 'initial',
         });
+        if (weatherState) socket.emit('weather_update', weatherState);
     } catch (err) {
         console.error('[socket] 초기 상태 전송 오류:', err.message);
     }
@@ -136,7 +167,8 @@ app.get('/api/status', (req, res) => {
                 relay2On: RelayState.relay2On,
                 lastReceivedAt: RelayState.lastReceivedAt,
                 udpPort: RELAY_EVENT_UDP_PORT,
-            }
+            },
+            weather: weatherState,
         });
     } catch (error) {
         console.error('Error fetching status:', error);
@@ -189,4 +221,5 @@ const PORT = process.env.PORT || 8000;
 http.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     startRelayUdpListener();
+    startWeatherPolling();
 });

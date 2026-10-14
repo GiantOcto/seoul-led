@@ -1,0 +1,8 @@
+.analog-face {
+  display: block;
+  overflow: visible;
+}
+
+.clock-panel .analog-face {
+  margin-top: 14px;
+}
