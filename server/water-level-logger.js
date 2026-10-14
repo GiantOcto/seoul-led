@@ -10,10 +10,6 @@ const LOG_DIR = process.env.WATER_LEVEL_LOG_DIR
     ? path.resolve(process.env.WATER_LEVEL_LOG_DIR)
     : path.join(LOG_ROOT, 'water-level');
 
-// LED 수위 화면과 동일한 설치 기준 오프셋(mm)을 더해 기록
-// (client/src/utils/waterLevelDisplay.js 의 WATER_LEVEL_OFFSET_MM=250 과 일치)
-const OFFSET_MM = parseInt(process.env.WATER_LEVEL_OFFSET_MM ?? '250', 10);
-
 const CSV_HEADER = '날짜,시간,수위(mm)\n';
 
 let lastLoggedMinute = ''; // 'YYYY-MM-DD HH:MM' — 이미 기록한 분
@@ -45,9 +41,9 @@ function logWaterLevel(data) {
         }
         const file = path.join(LOG_DIR, `water_level_${dateStr(now)}.csv`);
         const isNewFile = !fs.existsSync(file);
-        const displayMm = data.water_level + OFFSET_MM; // LED 표시값과 동일
+        // PLC 수위 원값(mm) 그대로 기록 — LED 화면은 설치 기준 +250 을 더해 보여주지만 로그는 원값
         // 시각은 해당 분의 정각(:00)으로 표기 — RelaySystem CSV와 동일한 격자
-        const row = `${dateStr(now)},${pad2(now.getHours())}:${pad2(now.getMinutes())}:00,${displayMm}\n`;
+        const row = `${dateStr(now)},${pad2(now.getHours())}:${pad2(now.getMinutes())}:00,${data.water_level}\n`;
         fs.appendFileSync(file, (isNewFile ? CSV_HEADER : '') + row, 'utf8');
     } catch (err) {
         console.error('[water-level-csv] 기록 실패:', err.message);
