@@ -6,7 +6,7 @@ const { LOG_ROOT } = require('./log-root');
 // 서버 콘솔 출력을 일자별 파일로도 기록 — 현장에서 프로그램이 꺼졌을 때 원인 추적용
 // 종료 사유(콘솔 창 닫힘 / Ctrl+C / 종료 코드)도 함께 남김
 
-// 저장 위치: 기본 <드라이브 루트>/GaramLED-logs/server (프로그램 폴더 밖 — 폴더를 새로 깔아도 유지), 필요 시 env로 변경
+// 저장 위치: 기본 <프로그램 폴더>/logs/server, 필요 시 env로 변경
 const LOG_DIR = process.env.SERVER_LOG_DIR
     ? path.resolve(process.env.SERVER_LOG_DIR)
     : path.join(LOG_ROOT, 'server');
