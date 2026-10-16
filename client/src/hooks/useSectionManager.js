@@ -6,7 +6,6 @@ import Clock2 from "../components/Clock/Clock2";
 import DigitalClock from "../components/Clock/DigitalClock";
 import Weather from "../components/Weather/Weather";
 import Stink from "../components/Stink/Stink";
-import WaterLevel from "../components/WaterLevel/WaterLevel";
 import {
   saveMediaToIndexedDB,
   loadMediaFromIndexedDB,
@@ -21,8 +20,6 @@ const MAX_SECTIONS = 16; // 최대 섹션 개수
 
 export const useSectionManager = (
   initialDistrict = "구로구",
-  onWaterLevelChange,
-  waterLevel,
   sectionOrder = null
 ) => {
   // localStorage에서 커스텀 섹션 정보 불러오기 (섹션 목록, 인터벌, 이름, 시계 타입, 레이아웃, 활성화 여부)
@@ -51,9 +48,11 @@ export const useSectionManager = (
 
   const savedData = loadFromStorage();
 
+  const REMOVED_SECTIONS = [2]; // 2: 수위 — 제거됨 (예전 저장값에 남아 있어도 무시)
+
   const computeInitialActiveSections = (data) => {
     if (data.activeSections && Array.isArray(data.activeSections)) {
-      return data.activeSections;
+      return data.activeSections.filter(s => !REMOVED_SECTIONS.includes(s));
     }
     const baseSections = [0, 1, 3, 4];
     return data.sections.length > 0
@@ -83,7 +82,6 @@ export const useSectionManager = (
   const defaultNames = {
     0: "문구",
     1: "미세먼지 및 오존",
-    2: "수위데이터",
     3: "이벤트",
     4: "전체 이벤트",
   };
@@ -369,19 +367,6 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
-      // <div
-      //   key="middle3"
-      //   className="section-middle"
-      //   id="middle3"
-      //   style={{
-      //     display:
-      //       currentSection === 2 && activeSections.includes(2)
-      //         ? "flex"
-      //         : "none",
-      //   }}
-      // >
-      //   <WaterLevel onWaterLevelChange={onWaterLevelChange} />
-      // </div>,
       <div
         key="middle4"
         className="section-middle"
@@ -441,26 +426,6 @@ export const useSectionManager = (
               : "none",
         }}
       ></div>,
-      // <div
-      //   key="bottom3"
-      //   className="section-bottom"
-      //   id="bottom3"
-      //   style={{
-      //     display:
-      //       currentSection === 2 && activeSections.includes(2)
-      //         ? "flex"
-      //         : "none",
-      //   }}
-      // >
-      //   <div className="water-level-warning">
-      //     <p>
-      //       다른 도로로
-      //       <br />
-      //       우회하세요
-      //     </p>
-      //     <img src="/images/우회 화살표.png" alt="우회 화살표" />
-      //   </div>
-      // </div>,
       <div
         key="bottom4"
         className="section-bottom"
@@ -913,10 +878,6 @@ export const useSectionManager = (
   ]);
 
   const toggleSection = useCallback((index) => {
-    if (index === 2 && waterLevel < 2) {
-      return;
-    }
-
     // 버튼 클릭 시 활성화된 섹션으로만 전환 (활성화/비활성화는 설정 탭에서만)
     if (activeSections.includes(index)) {
       if (currentSection !== index) {

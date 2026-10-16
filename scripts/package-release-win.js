@@ -126,7 +126,7 @@ function runRest() {
         PATH: `${nodeDir}${pathSep}${process.env.PATH || ''}`,
     };
 
-    log('5/5 server 의존성 설치 (npm ci --omit=dev) — serialport 네이티브 빌드 포함');
+    log('5/5 server 의존성 설치 (npm ci --omit=dev)');
     execSync('npm ci --omit=dev', {
         cwd: path.join(OUT, 'server'),
         env,
@@ -219,12 +219,12 @@ function runRest() {
         [
             'Garam LED — Windows 릴리즈 (포터블 Node 포함)',
             '',
-            '1. server 폴더: .env.example 을 .env 로 복사 후 COM 포트·PORT 수정',
+            '1. server 폴더: .env.example 을 .env 로 복사 후 PORT 수정',
             '2. Start-GaramLED.bat 실행',
             '3. 브라우저: server/.env 의 PORT (기본 8000) — Start-GaramLED.bat 이 자동 반영',
             '',
             '키오스크: Chrome이 위 PORT의 http://localhost:PORT 로 열림 (서버 응답 확인 후, 최대 90초 대기)',
-            '서버 로그: logs\\server\\server_날짜.log — 설치 파일로 업데이트·제거해도 유지 (콘솔 출력·시리얼 연결 실패·종료 사유)',
+            '서버 로그: logs\\server\\server_날짜.log — 설치 파일로 업데이트·제거해도 유지 (콘솔 출력·종료 사유)',
             '',
             '자동 재시작:',
             '- 서버(node)가 비정상 종료되면 5초 후 다시 실행 ("GaramLED Server" 창을 닫으면 멈춤)',

@@ -34,13 +34,9 @@ npm run release:win
 `server/.env.example` 을 복사해 `server/.env` 로 두고 수정:
 
 ```env
-SERIAL_PORT=COM3
-BAUD_RATE=9600
 PORT=8000
 ```
 
-- **`SERIAL_PORT`**: 시리얼 사용 시 COM 포트
-- **`BAUD_RATE`**: 기본 `9600`
 - **`PORT`**: 웹+API **동일 포트** (기본 `8000`)
 
 ## 접속
