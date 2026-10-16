@@ -26,7 +26,7 @@ const ClockThumbnail = ({ type }) => {
 
 function App() {
   const [waterLevel, setWaterLevel] = useState(0);
-  const [previousSections, setPreviousSections] = useState([0, 1, 2, 3]);
+  const [previousSections, setPreviousSections] = useState([0, 2, 3]);
 
   const handleWaterLevelChange = (level) => {
     setWaterLevel(level);
@@ -94,7 +94,7 @@ function App() {
   }, []);
 
   // 섹션 개수 확인 (버튼 비활성화용)
-  const PROTECTED_SECTIONS_COUNT = [0, 1, 2, 3];
+  const PROTECTED_SECTIONS_COUNT = [0, 2, 3];
   const allSectionsCount = [...PROTECTED_SECTIONS_COUNT, ...customSections].length;
   const isMaxSectionsReached = allSectionsCount >= 16;
 
@@ -105,7 +105,7 @@ function App() {
     }
     
     // 사용 가능한 다음 섹션 번호 찾기
-    const PROTECTED_SECTIONS = [0, 1, 2, 3];
+    const PROTECTED_SECTIONS = [0, 2, 3]; // 1(문구(2))은 제거됨 — 커스텀 번호는 4부터라 다시 쓰이지 않음
     const allUsedSections = [...PROTECTED_SECTIONS, ...customSections].sort();
     
     // 최대 섹션 개수 확인 (16개)
@@ -390,8 +390,7 @@ function App() {
     // 기본 섹션의 기본 이름
     const names = {
       0: "문구(1)",
-      1: "문구(2)",
-      2: "문구(3)",
+      2: "문구(2)",
       3: "수위데이터",
     };
     if (names[index] !== undefined) {
@@ -1405,7 +1404,7 @@ function App() {
               onDragEnd={handleDragEnd}
               onDrop={(e) => handleDrop(e, buttonIndex)}
               style={{
-                ...(index === 0 || index === 1 || index === 2 || index === 3 
+                ...(index === 0 || index === 2 || index === 3
                   ? getWaterButtonStyle(index) 
                   : getButtonStyle(index)),
                 cursor: "grab",
