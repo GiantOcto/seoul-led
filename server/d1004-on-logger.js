@@ -5,7 +5,7 @@ const { LOG_ROOT } = require('./log-root');
 // D1004 ON 로그 — OFF(0)→ON(1) 전환 순간 즉시 기록(초까지) + ON 유지 중에는 매분 정각(:00) 격자로 기록.
 // OFF는 기록 안 함. (로그만 봐도 켜진 시각과 지속 시간이 보이도록)
 
-// 저장 위치: 기본 <드라이브 루트>/GaramLED-logs/d1004-on (프로그램 폴더 밖 — 폴더를 새로 깔아도 유지), 필요 시 env로 변경
+// 저장 위치: 기본 <프로그램 폴더>/logs/d1004-on, 필요 시 env로 변경
 const LOG_DIR = process.env.D1004_LOG_DIR
     ? path.resolve(process.env.D1004_LOG_DIR)
     : path.join(LOG_ROOT, 'd1004-on');
