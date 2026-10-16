@@ -139,6 +139,11 @@ function runRest() {
         startBat,
         [
             '@echo off',
+            // 감시 창(이 bat)은 최소화로 다시 띄우고 원래 창은 닫음 — 크롬 키오스크 화면을 cmd 창이 가리지 않게
+            'if not "%~1"=="min" (',
+            '  start "GaramLED Chrome Watch" /min cmd /c ""%~f0" min"',
+            '  exit /b',
+            ')',
             'chcp 65001 > nul',
             'cd /d "%~dp0"',
             'set "PATH=%~dp0node;%PATH%"',
@@ -152,11 +157,18 @@ function runRest() {
             'echo Node:',
             'node -v',
             'echo.',
-            'echo 웹+API: %GARAM_URL%  (server\\.env 의 PORT)',
-            'echo [1/2] Node 서버 시작...',
-            'start "" /min cmd /c "cd /d %~dp0server && node server.js"',
-            'timeout /t 6 /nobreak > nul',
-            'echo [2/2] Chrome 키오스크 시작...',
+            // 화면 출력은 영문 — chcp 65001 콘솔에서 한글 echo 가 겹쳐 보이는 표시 버그 회피
+            'echo Web+API: %GARAM_URL%  (PORT in server\\.env)',
+            'echo [1/2] Starting server (auto restart 5s after exit)...',
+            // 서버 창 콘솔 "빠른 편집" 끄기 (창 제목별 설정) — 창을 클릭해 "선택" 모드가 되면 node 가 출력에서 멈춤
+            'reg add "HKCU\\Console\\GaramLED Server" /v QuickEdit /t REG_DWORD /d 0 /f > nul',
+            // 무한 루프: node 가 어떤 이유로든 끝나면 다시 실행. 서버 창을 닫으면 루프도 함께 종료
+            'start "GaramLED Server" /min cmd /c "cd /d %~dp0server && for /l %%i in (0,0,1) do (node server.js & echo Server stopped - restarting in 5s & timeout /t 5 /nobreak > nul)"',
+            // 고정 대기 대신 서버 응답까지 대기 (부팅 직후 크롬이 먼저 떠서 빈 화면으로 멈추는 문제)
+            'echo Waiting for server (max 90s)...',
+            // 이 창(감시 창)은 대기·감시 중 화면에 아무것도 쓰지 않음 (> nul) — 창이 "선택" 모드여도 멈추지 않게
+            'powershell -NoProfile -Command "$deadline=(Get-Date).AddSeconds(90); while((Get-Date) -lt $deadline){ try { $r=Invoke-WebRequest -Uri \'http://127.0.0.1:%GARAM_PORT%/api/status\' -UseBasicParsing -TimeoutSec 2; if($r.StatusCode -eq 200){ exit 0 } } catch {}; Start-Sleep -Seconds 1 }" > nul 2>&1',
+            'echo [2/2] Starting Chrome kiosk (relaunch within 10s if closed)...',
             'for /f "tokens=1-4 delims=," %%a in (\'powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $screens=[System.Windows.Forms.Screen]::AllScreens; $target=$screens | Sort-Object { $_.Bounds.Width * $_.Bounds.Height } -Descending | Select-Object -First 1; if(-not $target){$target=$screens[0]}; $b=$target.Bounds; Write-Output ($b.X.ToString()+\',\'+$b.Y.ToString()+\',\'+$b.Width.ToString()+\',\'+$b.Height.ToString())"\') do (',
             '  set "MON_X=%%a"',
             '  set "MON_Y=%%b"',
@@ -165,9 +177,18 @@ function runRest() {
             ')',
             'set "MON_W=1920"',
             'set "MON_H=1080"',
-            'echo 모니터 위치: %MON_X%,%MON_Y% / 크기: %MON_W%x%MON_H%',
+            'echo Monitor: %MON_X%,%MON_Y% / Size: %MON_W%x%MON_H%',
+            'echo This window watches Chrome. Close this window first before closing Chrome for maintenance.',
+            'echo Chrome restarts are logged to %~dp0logs\\server\\chrome-watch.log',
+            'if not exist "%~dp0logs\\server" mkdir "%~dp0logs\\server"',
+            // 이 프로필(chrome-profile)로 뜬 Chrome 이 없으면 다시 실행 (10초 간격 확인). 기록은 화면 대신 파일로
+            ':chrome_watch',
+            'powershell -NoProfile -Command "if (Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \'chrome.exe\' -and $_.CommandLine -like \'*%~dp0chrome-profile*\' }) { exit 1 }" > nul 2>&1',
+            'if errorlevel 1 goto chrome_wait',
+            '>> "%~dp0logs\\server\\chrome-watch.log" echo [%date% %time%] Chrome started',
             'start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" ^',
             '    --new-window ^',
+            '    --kiosk ^',
             '    --start-fullscreen ^',
             '    --window-position=%MON_X%,%MON_Y% ^',
             '    --window-size=%MON_W%,%MON_H% ^',
@@ -184,8 +205,9 @@ function runRest() {
             '    --force-dark-mode ^',
             '    --enable-features=WebUIDarkMode ^',
             '    "%GARAM_URL%"',
-            'timeout /t 1 /nobreak > nul',
-            'exit /b 0',
+            ':chrome_wait',
+            'timeout /t 10 /nobreak > nul',
+            'goto chrome_watch',
             '',
         ].join('\r\n'),
         'utf8'
@@ -201,7 +223,12 @@ function runRest() {
             '2. Start-GaramLED.bat 실행',
             '3. 브라우저: server/.env 의 PORT (기본 8000) — Start-GaramLED.bat 이 자동 반영',
             '',
-            '키오스크: Chrome이 위 PORT의 http://localhost:PORT 로 열림',
+            '키오스크: Chrome이 위 PORT의 http://localhost:PORT 로 열림 (서버 응답 확인 후, 최대 90초 대기)',
+            '서버 로그: logs\\server\\server_날짜.log — 설치 파일로 업데이트·제거해도 유지 (콘솔 출력·시리얼 연결 실패·종료 사유)',
+            '',
+            '자동 재시작:',
+            '- 서버(node)가 비정상 종료되면 5초 후 다시 실행 ("GaramLED Server" 창을 닫으면 멈춤)',
+            '- Chrome 이 꺼지면 10초 안에 다시 실행 (작업표시줄에 최소화된 "GaramLED Chrome Watch" 창이 감시 — 점검 시 이 창을 먼저 닫기)',
             '',
         ].join('\r\n'),
         'utf8'
@@ -209,6 +236,44 @@ function runRest() {
 
     log(`완료: ${OUT}`);
     log('실행: dist\\GaramLED\\Start-GaramLED.bat');
+
+    buildInstaller();
+}
+
+/**
+ * 인노셋업과 설치 스크립트가 있으면 설치 파일까지 만듦.
+ * 스크립트는 저장소 밖 ..\AI parking iss\GaramLED.iss (GARAM_ISS 로 변경 가능), 결과는 그 폴더의 Output\
+ */
+function buildInstaller() {
+    const iss = process.env.GARAM_ISS || path.join(ROOT, '..', 'AI parking iss', 'GaramLED.iss');
+    if (!fs.existsSync(iss)) {
+        log(`설치 파일 건너뜀 — 설치 스크립트 없음: ${iss}`);
+        return;
+    }
+
+    const candidates = [
+        process.env.INNO_SETUP_COMPILER,
+        path.join(process.env['ProgramFiles(x86)'] || '', 'Inno Setup 6', 'ISCC.exe'),
+        path.join(process.env.ProgramFiles || '', 'Inno Setup 6', 'ISCC.exe'),
+        path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Inno Setup 6', 'ISCC.exe'),
+    ].filter(Boolean);
+    const iscc = candidates.find((p) => fs.existsSync(p));
+    if (!iscc) {
+        log('설치 파일 건너뜀 — 인노셋업(ISCC.exe) 없음 (INNO_SETUP_COMPILER 로 경로 지정 가능)');
+        return;
+    }
+
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+    const now = new Date(); // 버전 = 빌드 날짜 (KST 로컬 시간)
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const version = `${now.getFullYear()}.${pad2(now.getMonth() + 1)}.${pad2(now.getDate())}`;
+
+    log(`설치 파일 생성 (${branch} ${version})`);
+    execSync(
+        `"${iscc}" /Q /DSiteName="${branch}" /DMyAppVersion="${version}" "${iss}"`,
+        { cwd: ROOT, stdio: 'inherit', shell: true }
+    );
+    log(`설치 파일: ${path.join(path.dirname(iss), 'Output', `GaramLED_${branch}_Setup_${version}.exe`)}`);
 }
 
 main().catch((e) => {

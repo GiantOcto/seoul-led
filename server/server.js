@@ -2,6 +2,8 @@ const path = require('path');
 const fs = require('fs');
 // server.js 와 같은 폴더의 .env (배치가 프로젝트 루트여도 server\.env 적용)
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+// 콘솔 출력·종료 사유를 logs/server 에 일자별 기록 (다른 모듈보다 먼저 설치)
+require('./server-logger').installServerLogger();
 
 /** React 빌드 폴더 (없으면 API만 동작). 우선순위: STATIC_DIR → ../build → ../client/build */
 function resolveStaticRoot() {
@@ -159,12 +161,18 @@ function isValidSerialData(data) {
     }
 }
 
+let serialBadDataLogged = false; // 잘못된 데이터가 연속될 때 첫 건만 로그 (파일에 계속 쌓이지 않게)
+
 /** 저장 + 브로드캐스트 (Socket.IO / Node 시리얼 공통) */
 function ingestSerialPayload(data) {
     if (!isValidSerialData(data)) {
-        console.error('Invalid serial data:', data);
+        if (!serialBadDataLogged) {
+            serialBadDataLogged = true;
+            console.error('Invalid serial data (정상 데이터 올 때까지 반복 로그 생략):', data);
+        }
         return false;
     }
+    serialBadDataLogged = false;
     if (process.env.NODE_ENV === 'development') console.log('[serial] 수신:', data);
     DataStore.addData(data);
     io.emit('new_data', data);
@@ -172,6 +180,15 @@ function ingestSerialPayload(data) {
 }
 
 const SERIAL_RETRY_MS = 5000;
+let serialRetryTimer = null;
+
+let serialFailLogged = false; // 연결 실패가 반복될 때 첫 건만 로그 (장치 없으면 5초마다 쌓이지 않게)
+
+function logSerialFailure(label, err) {
+    if (serialFailLogged) return;
+    serialFailLogged = true;
+    console.error(`[serial] ${label} — ${SERIAL_RETRY_MS / 1000}초마다 재연결 시도 (연결될 때까지 반복 로그 생략):`, err.message);
+}
 
 function startNodeSerialListener() {
     const serialPath = process.env.SERIAL_PORT;
@@ -191,7 +208,7 @@ function startNodeSerialListener() {
             autoOpen: true
         });
     } catch (err) {
-        console.error('[serial] SerialPort 생성 실패:', err.message);
+        logSerialFailure('SerialPort 생성 실패', err);
         nodeSerialActive = false;
         scheduleSerialRetry();
         return;
@@ -204,7 +221,10 @@ function startNodeSerialListener() {
             const text = String(line).trim();
             const parsed = parseSerialLine(text);
             if (!parsed) {
-                console.warn('[serial] 파싱 실패:', text);
+                if (!serialBadDataLogged) {
+                    serialBadDataLogged = true;
+                    console.warn('[serial] 파싱 실패 (정상 데이터 올 때까지 반복 로그 생략):', text);
+                }
                 return;
             }
             const data = {
@@ -220,13 +240,14 @@ function startNodeSerialListener() {
     });
 
     port.on('error', (err) => {
-        console.error('[serial] 포트 오류:', err.message);
+        logSerialFailure('포트 오류', err);
         nodeSerialActive = false;
         scheduleSerialRetry();
     });
 
     port.on('open', () => {
         nodeSerialActive = true;
+        serialFailLogged = false;
         console.log(`[serial] 연결됨: ${serialPath} @ ${baudRate}`);
     });
 
@@ -241,7 +262,6 @@ function startNodeSerialListener() {
 
 function scheduleSerialRetry() {
     if (serialRetryTimer) return;
-    console.log(`[serial] ${SERIAL_RETRY_MS / 1000}초 후 재연결 시도...`);
     serialRetryTimer = setTimeout(() => {
         serialRetryTimer = null;
         startNodeSerialListener();
