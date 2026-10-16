@@ -5,7 +5,7 @@ const { LOG_ROOT } = require('./log-root');
 // 기록 주기 — 매분 정각(:00) 격자로 1분에 한 번만 CSV에 기록 (폴링/소켓 전송은 그대로 실시간)
 // RelaySystem CSV와 동일한 방식: 분이 바뀌는 첫 폴링에서 기록하고 시각은 HH:MM:00으로 표기
 
-// 저장 위치: 기본 <드라이브 루트>/GaramLED-logs/water-level (프로그램 폴더 밖 — 폴더를 새로 깔아도 유지), 필요 시 env로 변경
+// 저장 위치: 기본 <프로그램 폴더>/logs/water-level, 필요 시 env로 변경
 const LOG_DIR = process.env.WATER_LEVEL_LOG_DIR
     ? path.resolve(process.env.WATER_LEVEL_LOG_DIR)
     : path.join(LOG_ROOT, 'water-level');
