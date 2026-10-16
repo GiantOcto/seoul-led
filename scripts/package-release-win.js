@@ -220,6 +220,44 @@ function runRest() {
 
     log(`완료: ${OUT}`);
     log('실행: dist\\GaramLED\\Start-GaramLED.bat');
+
+    buildInstaller();
+}
+
+/**
+ * 인노셋업과 설치 스크립트가 있으면 설치 파일까지 만듦.
+ * 스크립트는 저장소 밖 ..\AI parking iss\GaramLED.iss (GARAM_ISS 로 변경 가능), 결과는 그 폴더의 Output\
+ */
+function buildInstaller() {
+    const iss = process.env.GARAM_ISS || path.join(ROOT, '..', 'AI parking iss', 'GaramLED.iss');
+    if (!fs.existsSync(iss)) {
+        log(`설치 파일 건너뜀 — 설치 스크립트 없음: ${iss}`);
+        return;
+    }
+
+    const candidates = [
+        process.env.INNO_SETUP_COMPILER,
+        path.join(process.env['ProgramFiles(x86)'] || '', 'Inno Setup 6', 'ISCC.exe'),
+        path.join(process.env.ProgramFiles || '', 'Inno Setup 6', 'ISCC.exe'),
+        path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Inno Setup 6', 'ISCC.exe'),
+    ].filter(Boolean);
+    const iscc = candidates.find((p) => fs.existsSync(p));
+    if (!iscc) {
+        log('설치 파일 건너뜀 — 인노셋업(ISCC.exe) 없음 (INNO_SETUP_COMPILER 로 경로 지정 가능)');
+        return;
+    }
+
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+    const now = new Date(); // 버전 = 빌드 날짜 (KST 로컬 시간)
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const version = `${now.getFullYear()}.${pad2(now.getMonth() + 1)}.${pad2(now.getDate())}`;
+
+    log(`설치 파일 생성 (${branch} ${version})`);
+    execSync(
+        `"${iscc}" /Q /DSiteName="${branch}" /DMyAppVersion="${version}" "${iss}"`,
+        { cwd: ROOT, stdio: 'inherit', shell: true }
+    );
+    log(`설치 파일: ${path.join(path.dirname(iss), 'Output', `GaramLED_${branch}_Setup_${version}.exe`)}`);
 }
 
 main().catch((e) => {
