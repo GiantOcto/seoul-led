@@ -14,9 +14,9 @@ import {
 
 const INTERVALS = [30000, 30000, 30000, 30000, 30000, 30000, 30000, 30000];
 const DEFAULT_CUSTOM_INTERVAL = 20000; // 새로운 섹션의 기본 인터벌 (20초)
-const REMOVED_SECTIONS = [];
-const PROTECTED_SECTIONS = [0, 1, 2, 3];
-const BASE_SECTIONS = [0, 1, 2, 3];
+const REMOVED_SECTIONS = [1]; // 1: 문구(2) 페이지 제거 — 예전 저장값에 남아 있어도 무시
+const PROTECTED_SECTIONS = [0, 2, 3];
+const BASE_SECTIONS = [0, 2, 3];
 const MAX_SECTIONS = 16; // 최대 섹션 개수
 
 const normalizeIndexes = (value) => {
@@ -106,11 +106,12 @@ export const useSectionManager = (
   // 기본 섹션의 기본 이름과 저장된 이름 병합
   const defaultNames = {
     0: "문구(1)",
-    1: "문구(2)",
-    2: "문구(3)",
+    2: "문구(2)",
     3: "수위데이터",
   };
   const initialNames = { ...savedData.names };
+  // 예전 기본 이름 "문구(3)"으로 저장돼 있으면 새 이름으로 (문구(2) 제거 후 번호 정리)
+  if (initialNames[2] === "문구(3)") initialNames[2] = "문구(2)";
   PROTECTED_SECTIONS.forEach(index => {
     if (initialNames[index] === undefined && defaultNames[index]) {
       initialNames[index] = defaultNames[index];
@@ -278,23 +279,6 @@ export const useSectionManager = (
         </div>,
 
         <div
-          key="top2"
-          className="section-top"
-          id="top2"
-          style={{
-            display:
-              currentSection === 1 && activeSections.includes(1)
-                ? "flex"
-                : "none",
-            height: "100%",
-            backgroundImage: "url(/images/홍보문구2.png)",
-            backgroundSize: "100% 100%",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        ></div>,
-
-        <div
           key="top3"
           className="section-top"
           id="top3"
@@ -338,16 +322,6 @@ export const useSectionManager = (
         ></div>,
 
         <div
-          key="middle2"
-          className="section-middle"
-          id="middle2"
-          style={{
-            display: "none",
-            height: 0,
-          }}
-        ></div>,
-
-        <div
           key="middle3"
           className="section-middle"
           id="middle3"
@@ -377,16 +351,6 @@ export const useSectionManager = (
           key="bottom1"
           className="section-bottom"
           id="bottom1"
-          style={{
-            display: "none",
-            height: 0,
-          }}
-        ></div>,
-
-        <div
-          key="bottom2"
-          className="section-bottom"
-          id="bottom2"
           style={{
             display: "none",
             height: 0,
