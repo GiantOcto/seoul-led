@@ -1,5 +1,5 @@
 /*
- * LED(.container)는 main-page flex에만 참여 → 예전과 동일한 가운데 정렬.
+ * LED(.container)는 화면 고정 좌표(설정 "LED 위치") — 패널 위치와 무관.
  * 패널은 flex 밖(absolute). 가로: LED 오른쪽 끝 + gap(아래 4px, 더 붙이려면 줄이기).
  * 세로: 높이 768 + margin-top 87 기준으로 LED 상단과 맞춤.
  */

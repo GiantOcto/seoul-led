@@ -305,12 +305,10 @@ input:focus {
   background: #000000;
   width: 128px;
   height: 768px;
-  display: inline-block;
-  position: relative;
+  /* 화면 고정 좌표 (left/top 은 App.js 에서 설정값으로 지정) — 창 크기가 바뀌어도 움직이지 않음 */
+  position: fixed;
   overflow: hidden;
   padding: 0;
-  margin-left: 50px;
-  margin-top: 87px;
 }
 
 #top1 {

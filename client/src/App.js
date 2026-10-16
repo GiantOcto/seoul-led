@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useSectionManager } from "./hooks/useSectionManager";
 import { Logo34PairProvider } from "./components/Logo/Logo34PairContext";
 import WaterLevelSensorsPanel from "./components/WaterLevelSensorsPanel/WaterLevelSensorsPanel";
+import { LED_DEFAULT_POSITION } from "./constants/led";
 import "./App.css";
 
 // 시계 썸네일 컴포넌트
@@ -74,6 +75,41 @@ function App() {
     getCustomSectionLayout,
     customSectionLayouts,
   } = useSectionManager("강남구", handleWaterLevelChange, waterLevel, sectionOrder);
+
+  // LED 패널 화면 고정 좌표 (현장 LED 송출 캡처 좌표에 맞춤)
+  // 직접 조정했을 때만 localStorage에 저장 → 조정 안 한 PC는 코드 기본값을 따라감
+  const [ledPosition, setLedPosition] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ledPosition'));
+      if (saved && Number.isInteger(saved.left) && Number.isInteger(saved.top)) {
+        return saved;
+      }
+    } catch (error) {
+      console.error('ledPosition 로드 실패:', error);
+    }
+    return LED_DEFAULT_POSITION;
+  });
+
+  const updateLedPosition = (axis, value) => {
+    const px = parseInt(value, 10);
+    if (!Number.isInteger(px) || px < 0) return;
+    const next = { ...ledPosition, [axis]: px };
+    setLedPosition(next);
+    try {
+      localStorage.setItem('ledPosition', JSON.stringify(next));
+    } catch (error) {
+      console.error('ledPosition 저장 실패:', error);
+    }
+  };
+
+  const resetLedPosition = () => {
+    setLedPosition(LED_DEFAULT_POSITION);
+    try {
+      localStorage.removeItem('ledPosition');
+    } catch (error) {
+      console.error('ledPosition 초기화 실패:', error);
+    }
+  };
 
   const [newSectionName, setNewSectionName] = useState("");
   const [newSectionInterval, setNewSectionInterval] = useState(defaultCustomInterval / 1000); // 초 단위로 표시
@@ -861,6 +897,62 @@ function App() {
                 </div>
               </section>
 
+              {/* LED 위치: LED 송출 프로그램 캡처 좌표에 맞춤 */}
+              <section style={{ marginTop: "0", marginBottom: "2.5rem" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+                  <h3 style={{ fontSize: "13px", fontWeight: 700, color: "#60a5fa", textTransform: "uppercase", letterSpacing: "0.3em", margin: 0 }}>
+                    LED 위치
+                  </h3>
+                  <div style={{ height: "1px", flex: 1, margin: "0 1.5rem", backgroundColor: "rgba(59, 130, 246, 0.2)" }}></div>
+                </div>
+                <div className="glass-card" style={{ backgroundColor: "rgba(59, 130, 246, 0.06)", borderColor: "rgba(59, 130, 246, 0.2)", padding: "1.5rem" }}>
+                  <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+                    {[["left", "가로 X"], ["top", "세로 Y"]].map(([axis, label]) => (
+                      <label key={axis} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "13px", fontWeight: 600, color: "#94a3b8", width: "120px" }}>
+                        {label} (px)
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          aria-label={`LED 위치 ${label}`}
+                          value={ledPosition[axis]}
+                          onChange={(e) => updateLedPosition(axis, e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "0.6rem 0.9rem",
+                            fontSize: "1rem",
+                            color: "#ffffff",
+                            backgroundColor: "rgba(0, 0, 0, 0.3)",
+                            border: "1px solid rgba(59, 130, 246, 0.2)",
+                            borderRadius: "0.75rem",
+                            outline: "none",
+                          }}
+                        />
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={resetLedPosition}
+                      style={{
+                        height: "2.6rem",
+                        padding: "0 1rem",
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                        color: "#e2e8f0",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderRadius: "0.75rem",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                      }}
+                    >
+                      기본값 ({LED_DEFAULT_POSITION.left}, {LED_DEFAULT_POSITION.top})
+                    </button>
+                  </div>
+                  <p style={{ margin: "1rem 0 0", fontSize: "12px", color: "#94a3b8", lineHeight: 1.6 }}>
+                    LED 송출 프로그램이 잘라 가는 화면 좌표와 같게 맞추세요. 창 크기·작업표시줄과 관계없이 이 자리에 고정됩니다.
+                  </p>
+                </div>
+              </section>
+
               {/* 섹션 활성화/비활성화 */}
               <section style={{ marginTop: "0", marginBottom: "2.5rem" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
@@ -1353,7 +1445,7 @@ function App() {
 
       <Logo34PairProvider>
         <div className="main-page">
-          <div className="container">
+          <div className="container" style={{ left: `${ledPosition.left}px`, top: `${ledPosition.top}px` }}>
             {sections.top}
 
             {sections.middle}
