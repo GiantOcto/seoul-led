@@ -139,6 +139,11 @@ function runRest() {
         startBat,
         [
             '@echo off',
+            // 감시 창(이 bat)은 최소화로 다시 띄우고 원래 창은 닫음 — 크롬 키오스크 화면을 cmd 창이 가리지 않게
+            'if not "%~1"=="min" (',
+            '  start "GaramLED Chrome Watch" /min cmd /c ""%~f0" min"',
+            '  exit /b',
+            ')',
             'chcp 65001 > nul',
             'cd /d "%~dp0"',
             'set "PATH=%~dp0node;%PATH%"',
@@ -212,7 +217,7 @@ function runRest() {
             '',
             '자동 재시작:',
             '- 서버(node)가 비정상 종료되면 5초 후 다시 실행 ("GaramLED Server" 창을 닫으면 멈춤)',
-            '- Chrome 이 꺼지면 10초 안에 다시 실행 (Start-GaramLED.bat 창이 감시 — 점검 시 이 창을 먼저 닫기)',
+            '- Chrome 이 꺼지면 10초 안에 다시 실행 (작업표시줄에 최소화된 "GaramLED Chrome Watch" 창이 감시 — 점검 시 이 창을 먼저 닫기)',
             '',
         ].join('\r\n'),
         'utf8'
