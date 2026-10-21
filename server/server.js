@@ -30,6 +30,7 @@ const { logWaterLevel } = require('./water-level-logger');
 const { logD1004 } = require('./d1004-on-logger');
 const { startPcbStatusReader } = require('./pcb-status-reader');
 const { startPcbStatusForwarder } = require('./pcb-status-forwarder');
+const { isLocalRequest, requestProgramShutdown } = require('./program-shutdown');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -289,6 +290,19 @@ app.get('/api/status', (req, res) => {
         console.error('Error fetching status:', error);
         res.status(500).json({ error: '상태 조회 중 오류가 발생했습니다.' });
     }
+});
+
+// 설정 화면 "프로그램 종료" — 서버·크롬·감시 창까지 모두 끔 (같은 PC에서만)
+app.post('/api/shutdown', (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 종료할 수 있습니다.' });
+    }
+    const result = requestProgramShutdown();
+    if (!result.ok) {
+        return res.status(409).json({ error: result.error });
+    }
+    console.warn('[server] 설정 화면에서 프로그램 종료 요청 — 서버·크롬·감시 창 종료');
+    res.json({ success: true });
 });
 
 const staticRoot = resolveStaticRoot();
