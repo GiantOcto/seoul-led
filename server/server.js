@@ -29,6 +29,7 @@ const { startPlcModbusPoller, getModbusStatus } = require('./plc-modbus-poller')
 const { logWaterLevel } = require('./water-level-logger');
 const { logD1004 } = require('./d1004-on-logger');
 const { startPcbStatusReader } = require('./pcb-status-reader');
+const { startPcbStatusForwarder } = require('./pcb-status-forwarder');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -339,9 +340,12 @@ http.listen(PORT, () => {
     });
     startRelayUdpListener();
     // 서초구-구버전 현장: 저감중 표시는 RelaySystem UDP 대신 PCB 신호("0123,1"의 1/0)로 받음
+    // 같은 신호를 릴레이 시스템에도 넘겨줌 — 릴레이 보드 없이 PCB 가 송풍기를 돌리므로 송풍기 카드·MQTT 에 사용
+    const pcbForwarder = startPcbStatusForwarder();
     startPcbStatusReader({
         onStatus: (status) => {
             setRelayReducing(status === 1, 'pcb');
+            pcbForwarder.update(status);
         },
     });
 });
