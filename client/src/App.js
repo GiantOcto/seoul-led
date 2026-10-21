@@ -4,6 +4,7 @@ import { Logo34PairProvider } from "./components/Logo/Logo34PairContext";
 import AnalogFace from "./components/Clock/AnalogFace";
 import { SegmentTime } from "./components/Clock/DigitalClock";
 import { LED_WIDTH, LED_DEFAULT_POSITION, getMediaHeight } from "./constants/led";
+import { getSocketUrl } from "./utils/socketUrl";
 import "./App.css";
 
 // 시계 썸네일 — LED에 나오는 시계를 10:10으로 고정해 작게 그림
@@ -89,6 +90,20 @@ function App() {
       localStorage.removeItem('ledPosition');
     } catch (error) {
       console.error('ledPosition 초기화 실패:', error);
+    }
+  };
+
+  // 프로그램 종료 — 서버·크롬·감시 창까지 모두 끔 (다시 켜려면 바탕화면 "Garam LED")
+  const exitProgram = async () => {
+    try {
+      const res = await fetch(`${getSocketUrl()}/api/shutdown`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        window.alert(body.error || "프로그램을 종료하지 못했습니다.");
+      }
+    } catch (error) {
+      console.error('프로그램 종료 요청 실패:', error);
+      window.alert("서버에 연결하지 못해 종료하지 못했습니다.");
     }
   };
 
@@ -664,13 +679,31 @@ function App() {
               설정
             </h5>
             </div>
-            <button
-              type="button"
-              className="btn-close btn-close-white"
-              data-bs-dismiss="offcanvas"
-              aria-label="Close"
-              style={{ opacity: 0.7 }}
-            ></button>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginLeft: "auto" }}>
+              <button
+                type="button"
+                onClick={exitProgram}
+                style={{
+                  padding: "0.45rem 0.9rem",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#ffffff",
+                  backgroundColor: "transparent",
+                  border: "1.5px solid rgba(255, 255, 255, 0.8)",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                }}
+              >
+                프로그램 종료
+              </button>
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                data-bs-dismiss="offcanvas"
+                aria-label="Close"
+                style={{ opacity: 0.7 }}
+              ></button>
+            </div>
           </div>
           <div className="offcanvas-body" style={{ padding: "0 1.5rem 1.5rem 1.5rem", scrollbarWidth: "none", msOverflowStyle: "none" }}>
             <div className="section-management" style={{ maxHeight: "100%", overflowY: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
