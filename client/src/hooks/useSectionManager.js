@@ -6,6 +6,15 @@ import Clock2 from "../components/Clock/Clock2";
 import DigitalClock from "../components/Clock/DigitalClock";
 import Stink from "../components/Stink/Stink";
 import WaterLevel from "../components/WaterLevel/WaterLevel";
+import Weather from "../components/Weather/Weather";
+import Event from "../components/Event/Event";
+import {
+  DUST_SECTION,
+  EVENT_SECTION,
+  ALL_EVENT_SECTION,
+  ADDED_SECTIONS,
+  BASE_SECTIONS,
+} from "../constants/sections";
 import {
   saveMediaToIndexedDB,
   loadAllMediaFromIndexedDB,
@@ -15,8 +24,9 @@ import {
 const INTERVALS = [30000, 30000, 30000, 30000, 30000, 30000, 30000, 30000];
 const DEFAULT_CUSTOM_INTERVAL = 20000; // 새로운 섹션의 기본 인터벌 (20초)
 const REMOVED_SECTIONS = [1]; // 1: 문구(2) 페이지 제거 — 예전 저장값에 남아 있어도 무시
-const PROTECTED_SECTIONS = [0, 2, 3];
-const BASE_SECTIONS = [0, 2, 3];
+const PROTECTED_SECTIONS = BASE_SECTIONS; // 0 문구(1), 2 문구(2), 3 수위데이터, 16~18 미세먼지·이벤트·전체이벤트
+// 미세먼지·이벤트·전체이벤트를 예전 저장값에 한 번만 켜서 붙였는지 (이후 사용자가 끈 건 그대로 둠)
+const ADDED_SECTIONS_FLAG = 'dustEventSectionsAdded';
 const MAX_SECTIONS = 16; // 최대 섹션 개수
 
 const normalizeIndexes = (value) => {
@@ -75,10 +85,21 @@ export const useSectionManager = (
 
   const savedData = loadFromStorage();
 
+  // 미세먼지·이벤트·전체이벤트가 생기기 전 저장값이면 한 번만 켜서 붙임
+  const addNewSectionsOnce = (sections) => {
+    let done = true;
+    try {
+      done = Boolean(localStorage.getItem(ADDED_SECTIONS_FLAG));
+    } catch (error) {
+      console.error('섹션 추가 표시 확인 실패:', error);
+    }
+    return done ? sections : normalizeIndexes([...sections, ...ADDED_SECTIONS]);
+  };
+
   const computeInitialActiveSections = (data) => {
     if (data.activeSections && Array.isArray(data.activeSections) && data.activeSections.length > 0) {
       const sanitized = sanitizeActiveSections(data.activeSections, data.sections);
-      if (sanitized.length > 0) return sanitized;
+      if (sanitized.length > 0) return addNewSectionsOnce(sanitized);
     }
 
     const merged = [...BASE_SECTIONS, ...sanitizeCustomSections(data.sections)];
@@ -108,6 +129,9 @@ export const useSectionManager = (
     0: "문구(1)",
     2: "문구(2)",
     3: "수위데이터",
+    [DUST_SECTION]: "미세먼지및 오존",
+    [EVENT_SECTION]: "이벤트",
+    [ALL_EVENT_SECTION]: "전체이벤트",
   };
   const initialNames = { ...savedData.names };
   // 예전 기본 이름 "문구(3)"으로 저장돼 있으면 새 이름으로 (문구(2) 제거 후 번호 정리)
@@ -149,7 +173,20 @@ export const useSectionManager = (
     };
     loadMedia();
   }, []); 
+  const [weatherData, setWeatherData] = useState({
+    pm10Grade: "좋음",
+    pm2_5Grade: "좋음",
+  });
   const [machineStatus, setMachineStatus] = useState(false);
+
+  // 새 탭을 붙인 뒤 표시 — 다음부터는 사용자가 끈 상태를 그대로 둠
+  useEffect(() => {
+    try {
+      localStorage.setItem(ADDED_SECTIONS_FLAG, '1');
+    } catch (error) {
+      console.error('섹션 추가 표시 저장 실패:', error);
+    }
+  }, []);
 
   // 섹션의 인터벌을 가져오는 함수
   const getSectionInterval = (sectionIndex) => {
@@ -259,23 +296,93 @@ export const useSectionManager = (
                 : "none",
             height: "100%",
             position: "relative",
-            backgroundImage: "url(/images/홍보문구.png)",
+            // ?v=2: 글자 위치를 바꾼 그림 — 크롬에 남은 예전 그림 대신 새로 받게
+            backgroundImage: "url(/images/홍보문구.png?v=2)",
             backgroundSize: "100% 100%",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
           }}
+        ></div>,
+
+        // 미세먼지및 오존 (강남과 같은 구성 — 악취 저감중 표시도 여기)
+        <div
+          key="top2"
+          className="section-top"
+          id="top2"
+          style={{
+            display:
+              currentSection === DUST_SECTION && activeSections.includes(DUST_SECTION)
+                ? "flex"
+                : "none",
+            "--filter-value1":
+              weatherData.pm10Grade === "좋음"
+                ? "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)"
+                : weatherData.pm10Grade === "보통"
+                ? "invert(60%) sepia(84%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
+                : weatherData.pm10Grade === "나쁨"
+                ? "invert(10%) sepia(95%) saturate(2574%) hue-rotate(3deg) brightness(153%) contrast(95%)"
+                : "invert(57%) sepia(44%) saturate(539%) hue-rotate(314deg) brightness(100%) contrast(89%)",
+            "--filter-value2":
+              weatherData.pm2_5Grade === "좋음"
+                ? "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)"
+                : weatherData.pm2_5Grade === "보통"
+                ? "invert(35%) sepia(94%) saturate(381%) hue-rotate(38deg) brightness(95%) contrast(99%)"
+                : weatherData.pm2_5Grade === "나쁨"
+                ? "invert(76%) sepia(98%) saturate(784%) hue-rotate(17deg) brightness(123%) contrast(104%)"
+                : "invert(62%) sepia(50%) saturate(420%) hue-rotate(20deg) brightness(122%) contrast(130%)",
+            "--filter-value3": machineStatus
+              ? "invert(8%) sepia(90%) saturate(345%) hue-rotate(341deg) brightness(101%) contrast(102%)"
+              : "invert(40%) sepia(90%) saturate(1956%) hue-rotate(172deg) brightness(92%) contrast(104%)",
+          }}
         >
-          <div
-            style={{
-              position: "absolute",
-              top: "70%",
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 10,
-            }}
-          >
-            <Stink id="stink-data-page1" onStatusChange={setMachineStatus} />
+          <div className="background3"></div>
+          <RotatingLogo34 fixed style={{ width: "126px" }} />
+          <div className="air-quality">
+            <div className="air-quality-text">
+              <h1>{selectedDistrict}</h1>
+              <p>오늘의 대기질</p>
+            </div>
+
+            <Weather
+              selectedDistrict={selectedDistrict}
+              onWeatherUpdate={setWeatherData}
+            />
+            <Stink id="stink-data-page2" onStatusChange={setMachineStatus} />
           </div>
+        </div>,
+
+        // 이벤트 (문화행사) — 서초는 top3·top4 를 문구(2)·수위데이터가 써서 이름을 따로 둠
+        <div
+          key="top-event"
+          className="section-top"
+          id="top-event"
+          style={{
+            display:
+              currentSection === EVENT_SECTION && activeSections.includes(EVENT_SECTION)
+                ? "flex"
+                : "none",
+          }}
+        >
+          <RotatingLogo34 fixed style={{ width: "126px", height: "70px" }} />
+          {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
+          <span style={{ color: "white" }}>문화행사</span>
+        </div>,
+
+        // 전체이벤트
+        <div
+          key="top-event-all"
+          className="section-top"
+          id="top-event-all"
+          style={{
+            display:
+              currentSection === ALL_EVENT_SECTION && activeSections.includes(ALL_EVENT_SECTION)
+                ? "flex"
+                : "none",
+          }}
+        >
+          <RotatingLogo34 fixed style={{ width: "126px", height: "70px" }} />
+          {clockType === 'digital' ? <DigitalClock /> : clockType === 'analog2' ? <Clock2 /> : <Clock />}
+          <span style={{ color: "white" }}>문화행사</span>
         </div>,
 
         <div
@@ -322,6 +429,46 @@ export const useSectionManager = (
         ></div>,
 
         <div
+          key="middle2"
+          className="section-middle"
+          id="middle2"
+          style={{
+            display:
+              currentSection === DUST_SECTION && activeSections.includes(DUST_SECTION)
+                ? "flex"
+                : "none",
+          }}
+        ></div>,
+
+        <div
+          key="middle-event"
+          className="section-middle"
+          id="middle-event"
+          style={{
+            display:
+              currentSection === EVENT_SECTION && activeSections.includes(EVENT_SECTION)
+                ? "flex"
+                : "none",
+          }}
+        >
+          <Event key="middle-event-list" selectedDistrict={selectedDistrict} position="middle4" />
+        </div>,
+
+        <div
+          key="middle-event-all"
+          className="section-middle"
+          id="middle-event-all"
+          style={{
+            display:
+              currentSection === ALL_EVENT_SECTION && activeSections.includes(ALL_EVENT_SECTION)
+                ? "flex"
+                : "none",
+          }}
+        >
+          <Event key="middle-event-all-list" selectedDistrict={selectedDistrict} position="middle5" />
+        </div>,
+
+        <div
           key="middle3"
           className="section-middle"
           id="middle3"
@@ -356,6 +503,46 @@ export const useSectionManager = (
             height: 0,
           }}
         ></div>,
+
+        <div
+          key="bottom2"
+          className="section-bottom"
+          id="bottom2"
+          style={{
+            display:
+              currentSection === DUST_SECTION && activeSections.includes(DUST_SECTION)
+                ? "flex"
+                : "none",
+          }}
+        ></div>,
+
+        <div
+          key="bottom-event"
+          className="section-bottom"
+          id="bottom-event"
+          style={{
+            display:
+              currentSection === EVENT_SECTION && activeSections.includes(EVENT_SECTION)
+                ? "flex"
+                : "none",
+          }}
+        >
+          <Event key="bottom-event-list" selectedDistrict={selectedDistrict} position="bottom4" />
+        </div>,
+
+        <div
+          key="bottom-event-all"
+          className="section-bottom"
+          id="bottom-event-all"
+          style={{
+            display:
+              currentSection === ALL_EVENT_SECTION && activeSections.includes(ALL_EVENT_SECTION)
+                ? "flex"
+                : "none",
+          }}
+        >
+          <Event key="bottom-event-all-list" selectedDistrict={selectedDistrict} position="bottom5" />
+        </div>,
 
         <div
           key="bottom3"
@@ -796,8 +983,10 @@ export const useSectionManager = (
     customSections, 
     customMedia, 
     activeSections, 
-    currentSection, 
+    currentSection,
     machineStatus,
+    weatherData,
+    selectedDistrict,
     clockType,
     customSectionLayouts
   ]);

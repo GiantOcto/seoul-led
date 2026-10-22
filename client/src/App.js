@@ -4,6 +4,14 @@ import { Logo34PairProvider } from "./components/Logo/Logo34PairContext";
 import WaterLevelSensorsPanel from "./components/WaterLevelSensorsPanel/WaterLevelSensorsPanel";
 import { LED_DEFAULT_POSITION } from "./constants/led";
 import { getSocketUrl } from "./utils/socketUrl";
+import {
+  DUST_SECTION,
+  EVENT_SECTION,
+  ALL_EVENT_SECTION,
+  BASE_SECTIONS,
+  DEFAULT_SECTION_ORDER,
+  withAddedSections,
+} from "./constants/sections";
 import "./App.css";
 
 // 시계 썸네일 컴포넌트
@@ -28,7 +36,7 @@ const ClockThumbnail = ({ type }) => {
 
 function App() {
   const [waterLevel, setWaterLevel] = useState(0);
-  const [previousSections, setPreviousSections] = useState([0, 2, 3]);
+  const [previousSections, setPreviousSections] = useState(DEFAULT_SECTION_ORDER);
 
   const handleWaterLevelChange = (level) => {
     setWaterLevel(level);
@@ -39,7 +47,10 @@ function App() {
     try {
       const saved = localStorage.getItem('sectionOrder');
       if (saved) {
-        return JSON.parse(saved);
+        // 예전 순서에 미세먼지·이벤트·전체이벤트가 없으면 수위데이터 앞에 끼워 넣음
+        const order = withAddedSections(JSON.parse(saved));
+        localStorage.setItem('sectionOrder', JSON.stringify(order));
+        return order;
       }
     } catch (error) {
       console.error('sectionOrder 로드 실패:', error);
@@ -145,7 +156,7 @@ function App() {
   }, []);
 
   // 섹션 개수 확인 (버튼 비활성화용)
-  const PROTECTED_SECTIONS_COUNT = [0, 2, 3];
+  const PROTECTED_SECTIONS_COUNT = BASE_SECTIONS;
   const allSectionsCount = [...PROTECTED_SECTIONS_COUNT, ...customSections].length;
   const isMaxSectionsReached = allSectionsCount >= 16;
 
@@ -156,7 +167,7 @@ function App() {
     }
     
     // 사용 가능한 다음 섹션 번호 찾기
-    const PROTECTED_SECTIONS = [0, 2, 3]; // 1(문구(2))은 제거됨 — 커스텀 번호는 4부터라 다시 쓰이지 않음
+    const PROTECTED_SECTIONS = BASE_SECTIONS; // 1(문구(2))은 제거됨 — 커스텀 번호는 4부터라 다시 쓰이지 않음
     const allUsedSections = [...PROTECTED_SECTIONS, ...customSections].sort();
     
     // 최대 섹션 개수 확인 (16개)
@@ -443,6 +454,9 @@ function App() {
       0: "문구(1)",
       2: "문구(2)",
       3: "수위데이터",
+      [DUST_SECTION]: "미세먼지및 오존",
+      [EVENT_SECTION]: "이벤트",
+      [ALL_EVENT_SECTION]: "전체이벤트",
     };
     if (names[index] !== undefined) {
       return names[index];
@@ -458,8 +472,11 @@ function App() {
   // sectionOrder 초기화 (한 번만 실행)
   useEffect(() => {
     if (sectionOrder === null && allSections.length > 0) {
-      // 기본 순서는 인덱스 순서(0,1,2,3,...)를 사용
-      const initialOrder = [...allSections];
+      // 기본 순서: 문구(1), 문구(2), 미세먼지, 이벤트, 전체이벤트, 수위데이터 → 그 뒤 커스텀 섹션
+      const initialOrder = [
+        ...DEFAULT_SECTION_ORDER.filter((section) => allSections.includes(section)),
+        ...allSections.filter((section) => !DEFAULT_SECTION_ORDER.includes(section)),
+      ];
       setSectionOrder(initialOrder);
       localStorage.setItem('sectionOrder', JSON.stringify(initialOrder));
     }
