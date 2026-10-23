@@ -21,6 +21,9 @@
   flex-direction: column;
   z-index: 40;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  /* 현장 PC마다 기본 글꼴이 달라 보여서 고정 — 숫자·영문은 Segoe UI(윈도우 기본), 한글은 Noto Sans KR(프로그램에 포함, JS 에서 불러옴)
+     큰 수위 숫자는 아래에서 따로 지정 */
+  font-family: "Segoe UI", "Noto Sans KR", sans-serif;
 }
 
 .wl-sensors-panel__head {
