@@ -2,6 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 
 import { waterLevelSocket as socket } from "../../utils/waterLevelSocket";
 
+// 패널 한글 글꼴 — 프로그램에 같이 넣어서 현장 PC에 깔린 글꼴·인터넷과 상관없이 똑같이 나옴 (패널에서 쓰는 굵기만)
+import "@fontsource/noto-sans-kr/600.css";
+import "@fontsource/noto-sans-kr/700.css";
+import "@fontsource/noto-sans-kr/800.css";
 import "./WaterLevelSensorsPanel.css";
 
 
