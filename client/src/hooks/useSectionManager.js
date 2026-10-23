@@ -294,15 +294,11 @@ export const useSectionManager = (
               currentSection === 0 && activeSections.includes(0)
                 ? "flex"
                 : "none",
-            height: "100%",
-            position: "relative",
-            // ?v=2: 글자 위치를 바꾼 그림 — 크롬에 남은 예전 그림 대신 새로 받게
-            backgroundImage: "url(/images/홍보문구.png?v=2)",
-            backgroundSize: "100% 100%",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
           }}
-        ></div>,
+        >
+          {/* 문구(1): 강남처럼 위에 로고, 아래 칸(middle1)에 문구 그림 — 큰 세로 로고는 겹쳐서 작은 로고로 고정 */}
+          <RotatingLogo34 fixed style={{ width: "126px", height: "50px" }} />
+        </div>,
 
         // 미세먼지및 오존 (강남과 같은 구성 — 악취 저감중 표시도 여기)
         <div
@@ -423,10 +419,19 @@ export const useSectionManager = (
           className="section-middle"
           id="middle1"
           style={{
-            display: "none",
-            height: 0,
+            display:
+              currentSection === 0 && activeSections.includes(0)
+                ? "flex"
+                : "none",
           }}
-        ></div>,
+        >
+          {/* ?v=3: 그림을 바꿔서 크롬에 남은 예전 그림 대신 새로 받게 */}
+          <img
+            src="/images/홍보문구.png?v=3"
+            alt="middle1"
+            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          />
+        </div>,
 
         <div
           key="middle2"
