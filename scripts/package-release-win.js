@@ -174,9 +174,11 @@ function runRest() {
             'echo Chrome restarts are logged to %~dp0logs\\server\\chrome-watch.log',
             'if not exist "%~dp0logs\\server" mkdir "%~dp0logs\\server"',
             // 이 프로필(chrome-profile)로 뜬 Chrome 이 없으면 다시 실행 (10초 간격 확인). 기록은 화면 대신 파일로
+            // 크롬은 켜져 있는 동안 프로필의 lockfile 을 잡고 있어 del 이 실패 → 파일이 남아 있으면 살아 있음
+            // 꺼졌거나 정전으로 찌꺼기만 남았으면 del 로 지워져 다시 실행 (PowerShell 을 10초마다 띄우지 않아 CPU·Defender 부담 없음)
             ':chrome_watch',
-            'powershell -NoProfile -Command "if (Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \'chrome.exe\' -and $_.CommandLine -like \'*%~dp0chrome-profile*\' }) { exit 1 }" > nul 2>&1',
-            'if errorlevel 1 goto chrome_wait',
+            'del "%~dp0chrome-profile\\lockfile" > nul 2>&1',
+            'if exist "%~dp0chrome-profile\\lockfile" goto chrome_wait',
             '>> "%~dp0logs\\server\\chrome-watch.log" echo [%date% %time%] Chrome started',
             'start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" ^',
             '    --kiosk ^',
