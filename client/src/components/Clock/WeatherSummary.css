@@ -16,7 +16,10 @@
   display: block;
 }
 
+/* 이 폰트는 숫자가 글자 칸 위쪽에 붙어 그려져 아이콘보다 높아 보임 → 2px 내림 */
 .weather-summary-temp {
+  position: relative;
+  top: 2px;
   font-size: 24px;
   color: #fff;
 }

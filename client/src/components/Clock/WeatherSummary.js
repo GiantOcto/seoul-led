@@ -20,7 +20,7 @@ const ICONS = {
       {cloud(-12, 12)}
     </>
   ),
-  cloudy: cloud(-14, 8),
+  cloudy: cloud(-14, 12), // 구름이 아이콘 칸 가운데 오도록 (다른 아이콘과 기온 높이 맞춤)
   rain: (
     <>
       {cloud(-14, 2)}
