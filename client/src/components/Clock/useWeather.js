@@ -7,7 +7,7 @@ socket.on("weather_update", (data) => {
   latestWeather = data;
 });
 
-/** { temp, sky: "clear"|"partly"|"cloudy"|"rain"|"snow", pop } 또는 null (키 미설정·조회 전) */
+/** { temp, sky: "clear"|"partly"|"cloudy"|"rain"|"snow", pop, dust: { pm10, grade } } 또는 null (키 미설정·조회 전) */
 export function useWeather() {
   const [weather, setWeather] = useState(latestWeather);
 

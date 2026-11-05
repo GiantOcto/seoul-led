@@ -26,6 +26,7 @@ function resolveStaticRoot() {
 const express = require('express');
 const dgram = require('dgram');
 const { fetchKmaWeather } = require('./weather');
+const { fetchPm10 } = require('./airQuality');
 
 const { isLocalRequest, requestProgramShutdown } = require('./program-shutdown');
 
@@ -103,29 +104,40 @@ function startRelayUdpListener() {
     });
 }
 
-// ── 날씨 (기상청 단기예보) — 서버가 10분마다 받아 소켓으로 화면에 전달 ──
+// ── 날씨 (기상청 단기예보) + 미세먼지 (에어코리아) — 서버가 10분마다 받아 소켓으로 화면에 전달 ──
 const KMA_SERVICE_KEY = (process.env.KMA_SERVICE_KEY || '').trim();
+// 비어 있으면 기상청 키로 조회 (둘 다 공공데이터포털 키라 됨 — 키 없이 깔린 기존 현장 .env 대비)
+const AIR_KOREA_KEY = (process.env.AIR_KOREA_KEY || '').trim() || KMA_SERVICE_KEY;
 const KMA_NX = process.env.KMA_NX || '63';   // 기본: 성남시 수정·중원구 격자
 const KMA_NY = process.env.KMA_NY || '124';
+const AIR_STATIONS = ['상대원동', '단대동'];   // 미세먼지 측정소 (성남 768 화면과 같음, 앞 측정소 값이 비면 다음)
 const WEATHER_REFRESH_MS = 10 * 60 * 1000;
 
-/** { temp, sky, pop, updatedAt } — 아직 못 받았으면 null */
+/** { temp, sky, pop, dust: { pm10, grade, station }, updatedAt } — 아직 못 받았으면 null */
 let weatherState = null;
 
 async function refreshWeather() {
-    try {
-        const weather = await fetchKmaWeather({ serviceKey: KMA_SERVICE_KEY, nx: KMA_NX, ny: KMA_NY });
-        weatherState = { ...weather, updatedAt: new Date().toISOString() };
-        io.emit('weather_update', weatherState);
-    } catch (err) {
-        // 실패하면 마지막 값을 그대로 둠 (화면은 이전 날씨 유지)
-        console.warn('[weather] 기상청 조회 실패:', err.message);
-    }
+    const [weather, dust] = await Promise.allSettled([
+        fetchKmaWeather({ serviceKey: KMA_SERVICE_KEY, nx: KMA_NX, ny: KMA_NY }),
+        fetchPm10({ serviceKey: AIR_KOREA_KEY, stations: AIR_STATIONS }),
+    ]);
+    // 실패한 쪽은 마지막 값을 그대로 둠 (화면은 이전 값 유지)
+    if (weather.status === 'rejected') console.warn('[weather] 기상청 조회 실패:', weather.reason.message);
+    if (dust.status === 'rejected') console.warn('[weather] 미세먼지 조회 실패:', dust.reason.message);
+    if (weather.status === 'rejected' && dust.status === 'rejected') return;
+
+    weatherState = {
+        ...weatherState,
+        ...(weather.status === 'fulfilled' ? weather.value : {}),
+        ...(dust.status === 'fulfilled' ? { dust: dust.value } : {}),
+        updatedAt: new Date().toISOString(),
+    };
+    io.emit('weather_update', weatherState);
 }
 
 function startWeatherPolling() {
     if (!KMA_SERVICE_KEY) {
-        console.log('[weather] KMA_SERVICE_KEY 미설정 — 날씨 표시 안 함');
+        console.log('[weather] KMA_SERVICE_KEY 미설정 — 날씨·미세먼지 표시 안 함');
         return;
     }
     refreshWeather();

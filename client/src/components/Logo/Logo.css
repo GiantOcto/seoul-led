@@ -9,5 +9,6 @@
   position: relative;
   text-align: center;
   left: 50%;
+  top: -4px; /* CI 만 4px 위로 (보이는 여백 위 10→6, 아래 10→14). 슬로건(logo-3)은 그대로 */
   transform: translateX(-50%);
 } 

@@ -1,4 +1,4 @@
-/* 시계 패널 — LED 128×256 중 로고 아래 영역 (악취 패널과 같은 자리·모양) */
+/* 시계 패널 — LED 128×256 중 로고 아래 영역 (악취 패널과 같은 자리·모양, 테두리만 없음) */
 .clock-panel {
   position: absolute;
   left: 6px;
@@ -6,7 +6,6 @@
   top: 54px;
   bottom: 6px;
   border-radius: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.12);
   background: linear-gradient(180deg, #16203a 0%, #090e1b 100%);
   display: flex;
   flex-direction: column;

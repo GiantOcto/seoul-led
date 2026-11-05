@@ -43,20 +43,39 @@ const ICONS = {
   ),
 };
 
-/** 날씨 아이콘 + 현재 기온 + 강수확률 (날씨를 아직 못 받았으면 아무것도 안 그림) */
+// 미세먼지 등급 색 (성남 768 화면과 같은 색)
+const DUST_COLORS = {
+  좋음: "rgb(0, 146, 215)",
+  보통: "rgb(142, 195, 31)",
+  나쁨: "rgb(255, 196, 25)",
+  매우나쁨: "lightcoral",
+};
+
+/** 날씨 아이콘 + 현재 기온 + 강수확률 + 미세먼지 등급 (아직 못 받은 건 안 그림) */
 function WeatherSummary() {
   const weather = useWeather();
   if (!weather) return null;
 
   return (
     <div className="weather-summary">
-      <div className="weather-summary-main">
-        <svg width="32" height="32" viewBox="-20 -20 40 40" aria-hidden="true">
-          {ICONS[weather.sky] || ICONS.cloudy}
-        </svg>
-        <span className="weather-summary-temp">{weather.temp}°</span>
-      </div>
-      <div className="weather-summary-pop">강수확률 {weather.pop}%</div>
+      {weather.temp !== undefined && (
+        <>
+          <div className="weather-summary-main">
+            <svg width="32" height="32" viewBox="-20 -20 40 40" aria-hidden="true">
+              {ICONS[weather.sky] || ICONS.cloudy}
+            </svg>
+            <span className="weather-summary-temp">{weather.temp}°</span>
+          </div>
+          <div className="weather-summary-pop">
+            강수확률 <span className="weather-summary-pop-value">{weather.pop}%</span>
+          </div>
+        </>
+      )}
+      {weather.dust && (
+        <div className="weather-summary-dust">
+          미세먼지 <span style={{ color: DUST_COLORS[weather.dust.grade] }}>{weather.dust.grade}</span>
+        </div>
+      )}
     </div>
   );
 }
