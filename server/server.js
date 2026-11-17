@@ -31,6 +31,10 @@ const { logD1004 } = require('./d1004-on-logger');
 const { startPcbStatusReader } = require('./pcb-status-reader');
 const { startPcbStatusForwarder } = require('./pcb-status-forwarder');
 const { isLocalRequest, requestProgramShutdown } = require('./program-shutdown');
+const { bringNovaLctToFront } = require('./novalct');
+const { startChromeGuard } = require('./chrome-guard');
+const { setResolution } = require('./display-resolution');
+const { openWindowsSettings, requestWindowsRestart } = require('./windows-control');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -292,7 +296,61 @@ app.get('/api/status', (req, res) => {
     }
 });
 
-// 설정 화면 "프로그램 종료" — 서버·크롬·감시 창까지 모두 끔 (같은 PC에서만)
+// 헤더 "NovaLCT" — NovaLCT 창을 맨 앞으로, 꺼져 있으면 실행 (같은 PC에서만)
+app.post('/api/novalct', async (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 NovaLCT 를 띄울 수 있습니다.' });
+    }
+    const result = await bringNovaLctToFront();
+    if (!result.ok) {
+        console.warn('[novalct]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    res.json({ success: true });
+});
+
+// 헤더 "해상도 1920×1080" — 주 모니터 해상도를 1920x1080 으로 강제 설정 (같은 PC에서만)
+app.post('/api/resolution', async (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 해상도를 바꿀 수 있습니다.' });
+    }
+    const result = await setResolution();
+    if (!result.ok) {
+        console.warn('[resolution]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    console.log('[resolution] 해상도 1920x1080 설정');
+    res.json({ success: true });
+});
+
+// 헤더 "윈도우 설정" — 윈도우 설정 창을 LED 를 안 가리는 가운데 자리에 작게 띄움 (같은 PC에서만)
+app.post('/api/windows-settings', async (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 윈도우 설정을 열 수 있습니다.' });
+    }
+    const result = await openWindowsSettings();
+    if (!result.ok) {
+        console.warn('[windows]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    res.json({ success: true });
+});
+
+// 헤더 "윈도우 다시 시작" — 화면에서 확인을 받은 뒤 윈도우를 다시 시작 (같은 PC에서만)
+app.post('/api/windows-restart', (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 윈도우를 다시 시작할 수 있습니다.' });
+    }
+    const result = requestWindowsRestart();
+    if (!result.ok) {
+        console.warn('[windows]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    console.warn('[windows] 화면에서 윈도우 다시 시작 요청');
+    res.json({ success: true });
+});
+
+// 헤더 "프로그램 종료" — 서버·크롬·감시 창까지 모두 끔 (같은 PC에서만)
 app.post('/api/shutdown', (req, res) => {
     if (!isLocalRequest(req)) {
         return res.status(403).json({ error: '이 PC에서만 종료할 수 있습니다.' });
@@ -301,7 +359,7 @@ app.post('/api/shutdown', (req, res) => {
     if (!result.ok) {
         return res.status(409).json({ error: result.error });
     }
-    console.warn('[server] 설정 화면에서 프로그램 종료 요청 — 서버·크롬·감시 창 종료');
+    console.warn('[server] 화면에서 프로그램 종료 요청 — 서버·크롬·감시 창 종료');
     res.json({ success: true });
 });
 
@@ -353,6 +411,7 @@ http.listen(PORT, () => {
         ingest: ingestSerialPayload,
     });
     startRelayUdpListener();
+    startChromeGuard();
     // 서초구-구버전 현장: 저감중 표시는 RelaySystem UDP 대신 PCB 신호("0123,1"의 1/0)로 받음
     // 같은 신호를 릴레이 시스템에도 넘겨줌 — 릴레이 보드 없이 PCB 가 송풍기를 돌리므로 송풍기 카드·MQTT 에 사용
     const pcbForwarder = startPcbStatusForwarder();
