@@ -37,13 +37,15 @@ async function fetchStationPm10(stationName, serviceKey) {
     return parsePm10(body.response.body.items);
 }
 
-/** 측정소를 앞에서부터 조회해 처음 나온 값으로 { pm10, grade, station } (모두 비면 오류) */
+/** 측정소를 앞에서부터 조회해 처음 나온 값으로 { pm10, grade, station } (모두 비면 code 'NO_PM10' 오류) */
 async function fetchPm10({ serviceKey, stations }) {
     for (const station of stations) {
         const pm10 = await fetchStationPm10(station, serviceKey);
         if (pm10 !== null) return { pm10, grade: pm10Grade(pm10), station };
     }
-    throw new Error(`측정소 ${stations.join('·')} 모두 PM10 값 없음`);
+    const err = new Error(`측정소 ${stations.join('·')} 모두 PM10 값 없음`);
+    err.code = 'NO_PM10'; // 조회는 된 것 (점검중) — 서버가 빨리 다시 부르지 않게 구분
+    throw err;
 }
 
 module.exports = { fetchPm10, pm10Grade, parsePm10 };

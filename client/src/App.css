@@ -84,7 +84,6 @@ span {
   color: #3b82f6;
   margin: 0;
   padding: 0;
-  text-transform: uppercase;
   letter-spacing: -0.02em;
 }
 
@@ -94,25 +93,100 @@ span {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.banner-mid {
+/* 헤더 버튼 묶음 — NovaLCT 창(x 353~1113) 바로 위에 가운데 정렬. 733 = 창 가운데
+   창 자리는 NovaLCT 쪽에서 고정해 둔 값이라 여기서는 버튼만 맞춤 */
+.banner-actions {
+  position: absolute;
+  top: 50%;
+  left: 733px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* 헤더 버튼 — 제목색 계열 파랑 하나로, 프로그램 종료만 빨강. 너무 튀지 않게 밝기를 낮춘 옅은 그라데이션 */
+.banner-action {
+  padding: 0.5rem 1.2rem;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.45rem;
+  cursor: pointer;
+  background: linear-gradient(180deg, #4a86ee 0%, #2f64c8 100%);
+}
+
+.banner-action--exit {
+  background: linear-gradient(180deg, #d95050 0%, #b03030 100%);
+}
+
+/* "윈도우 다시 시작" 확인창 — 화면 가운데. 뒤를 어둡게 덮지 않음 (화면이 그대로 LED 로 나가서 LED 까지 어두워짐) */
+.restart-confirm {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  min-width: 360px;
+  padding: 1.75rem 2rem 1.5rem;
+  background: #1b1f27;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
+
+.restart-confirm p {
+  margin: 0 0 1.5rem;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.restart-confirm-buttons {
   display: flex;
   justify-content: center;
-  align-items: center;
-  flex: 1;
-  transform: translateX(-160px);
+  gap: 0.75rem;
 }
 
-.banner-mid button {
-  background-color: transparent;
-  border: 1px solid coral;
-  color: aliceblue;
-  font-size: 20px;
+.restart-confirm-cancel {
+  background: #3a4150;
 }
 
-.banner-mid button:hover {
-  background-color: transparent;
-  border: 1px solid coral;
-  color: aliceblue;
+.banner-action:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+.banner-action:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* 해상도가 낮게 잡혔을 때 — 버튼 자리가 옆 프로그램 창에 가려지므로, 해상도 버튼을 제목 바로 옆 빈 곳으로 당김 */
+@media screen and (max-width: 1700px) {
+  .banner {
+    justify-content: flex-start;
+  }
+
+  .banner-left {
+    flex: 0 0 auto;
+  }
+
+  .banner-actions {
+    position: static;
+    transform: none;
+    flex-shrink: 0;
+    margin-left: 1rem;
+  }
+
+  .banner-action {
+    white-space: nowrap;
+  }
+
+  .banner-action--resolution {
+    order: -1;
+  }
 }
 
 .offcanvas {
@@ -387,10 +461,6 @@ input:focus {
 
   .banner-left h1 {
     font-size: 1rem;
-  }
-
-  .banner-mid button {
-    font-size: 10px;
   }
 
   .main-page {

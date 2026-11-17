@@ -51,6 +51,6 @@ test('첫 측정소 값이 비면 다음 측정소 값 사용', async () => {
 
 test('모든 측정소 값이 비면 오류', async () => {
     await withFetch(fakeFetch({ 상대원동: '-', 단대동: '' }), () =>
-        assert.rejects(fetchPm10({ serviceKey: 'k', stations: ['상대원동', '단대동'] }), /PM10 값 없음/),
+        assert.rejects(fetchPm10({ serviceKey: 'k', stations: ['상대원동', '단대동'] }), { code: 'NO_PM10' }),
     );
 });

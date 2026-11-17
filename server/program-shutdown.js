@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
-// 설정 화면 "프로그램 종료" — 서버(node)·자동 재시작 창·크롬 감시 창·키오스크 크롬을 한 번에 끔
+// 헤더 "프로그램 종료" — 서버(node)·자동 재시작 창·크롬 감시 창·키오스크 크롬을 한 번에 끔
 // 감시 창이 살아 있으면 크롬·서버를 다시 켜 버리므로, 명령줄이나 실행 파일 경로에 프로그램 폴더가 들어간
 // cmd·chrome·node 를 모두 끔 (설치 파일이 업데이트 전에 멈추는 방식과 같음)
 
