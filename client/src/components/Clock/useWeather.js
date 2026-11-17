@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { socket } from "../../utils/socket";
 
-// 서버가 접속 직후 한 번 + 10분마다 보내는 날씨. 시계가 나중에 켜져도 바로 보이도록 마지막 값을 기억
+// 서버가 접속 직후 한 번 + 30분마다 보내는 날씨. 시계가 나중에 켜져도 바로 보이도록 마지막 값을 기억
 let latestWeather = null;
 socket.on("weather_update", (data) => {
   latestWeather = data;

@@ -28,6 +28,10 @@ const dgram = require('dgram');
 const { fetchKmaWeather } = require('./weather');
 
 const { isLocalRequest, requestProgramShutdown } = require('./program-shutdown');
+const { bringNovaLctToFront } = require('./novalct');
+const { startChromeGuard } = require('./chrome-guard');
+const { setResolution } = require('./display-resolution');
+const { openWindowsSettings, requestWindowsRestart } = require('./windows-control');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -103,24 +107,37 @@ function startRelayUdpListener() {
     });
 }
 
-// ── 날씨 (기상청 단기예보) — 서버가 10분마다 받아 소켓으로 화면에 전달 ──
+// ── 날씨 (기상청 단기예보) — 서버가 30분마다 받아 소켓으로 화면에 전달 ──
 const KMA_SERVICE_KEY = (process.env.KMA_SERVICE_KEY || '').trim();
 const KMA_NX = process.env.KMA_NX || '102';  // 기본: 포항시청(남구) 격자
 const KMA_NY = process.env.KMA_NY || '94';
-const WEATHER_REFRESH_MS = 10 * 60 * 1000;
+const WEATHER_REFRESH_MS = 30 * 60 * 1000;
+const POLL_RETRY_MS = 5 * 60 * 1000;   // 실패하면 다음 주기까지 안 기다리고 5분 뒤 다시 (부팅 직후 인터넷 안 붙은 경우 등)
 
 /** { temp, sky, pop, updatedAt } — 아직 못 받았으면 null */
 let weatherState = null;
 
+/** @returns {Promise<boolean>} 성공 여부 */
 async function refreshWeather() {
     try {
         const weather = await fetchKmaWeather({ serviceKey: KMA_SERVICE_KEY, nx: KMA_NX, ny: KMA_NY });
         weatherState = { ...weather, updatedAt: new Date().toISOString() };
         io.emit('weather_update', weatherState);
+        return true;
     } catch (err) {
         // 실패하면 마지막 값을 그대로 둠 (화면은 이전 날씨 유지)
         console.warn('[weather] 기상청 조회 실패:', err.message);
+        return false;
     }
+}
+
+/** task 를 바로 한 번 돌리고, 성공하면 okMs 뒤 · 실패하면 POLL_RETRY_MS 뒤 다시 */
+function pollEvery(task, okMs) {
+    const run = async () => {
+        const ok = await task();
+        setTimeout(run, ok ? okMs : POLL_RETRY_MS);
+    };
+    run();
 }
 
 function startWeatherPolling() {
@@ -128,8 +145,7 @@ function startWeatherPolling() {
         console.log('[weather] KMA_SERVICE_KEY 미설정 — 날씨 표시 안 함');
         return;
     }
-    refreshWeather();
-    setInterval(refreshWeather, WEATHER_REFRESH_MS);
+    pollEvery(refreshWeather, WEATHER_REFRESH_MS);
 }
 
 // Socket.IO 연결 처리
@@ -178,7 +194,61 @@ app.get('/api/status', (req, res) => {
     }
 });
 
-// 설정 화면 "프로그램 종료" — 서버·크롬·감시 창까지 모두 끔 (같은 PC에서만)
+// 헤더 "NovaLCT" — NovaLCT 창을 맨 앞으로, 꺼져 있으면 실행 (같은 PC에서만)
+app.post('/api/novalct', async (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 NovaLCT 를 띄울 수 있습니다.' });
+    }
+    const result = await bringNovaLctToFront();
+    if (!result.ok) {
+        console.warn('[novalct]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    res.json({ success: true });
+});
+
+// 헤더 "해상도 1920×1080" — 주 모니터 해상도를 1920x1080 으로 강제 설정 (같은 PC에서만)
+app.post('/api/resolution', async (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 해상도를 바꿀 수 있습니다.' });
+    }
+    const result = await setResolution();
+    if (!result.ok) {
+        console.warn('[resolution]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    console.log('[resolution] 해상도 1920x1080 설정');
+    res.json({ success: true });
+});
+
+// 헤더 "윈도우 설정" — 윈도우 설정 창을 LED 를 안 가리는 가운데 자리에 작게 띄움 (같은 PC에서만)
+app.post('/api/windows-settings', async (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 윈도우 설정을 열 수 있습니다.' });
+    }
+    const result = await openWindowsSettings();
+    if (!result.ok) {
+        console.warn('[windows]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    res.json({ success: true });
+});
+
+// 헤더 "윈도우 다시 시작" — 화면에서 확인을 받은 뒤 윈도우를 다시 시작 (같은 PC에서만)
+app.post('/api/windows-restart', (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 윈도우를 다시 시작할 수 있습니다.' });
+    }
+    const result = requestWindowsRestart();
+    if (!result.ok) {
+        console.warn('[windows]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    console.warn('[windows] 화면에서 윈도우 다시 시작 요청');
+    res.json({ success: true });
+});
+
+// 헤더 "프로그램 종료" — 서버·크롬·감시 창까지 모두 끔 (같은 PC에서만)
 app.post('/api/shutdown', (req, res) => {
     if (!isLocalRequest(req)) {
         return res.status(403).json({ error: '이 PC에서만 종료할 수 있습니다.' });
@@ -187,7 +257,7 @@ app.post('/api/shutdown', (req, res) => {
     if (!result.ok) {
         return res.status(409).json({ error: result.error });
     }
-    console.warn('[server] 설정 화면에서 프로그램 종료 요청 — 서버·크롬·감시 창 종료');
+    console.warn('[server] 화면에서 프로그램 종료 요청 — 서버·크롬·감시 창 종료');
     res.json({ success: true });
 });
 
@@ -237,4 +307,5 @@ http.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     startRelayUdpListener();
     startWeatherPolling();
+    startChromeGuard();
 });
