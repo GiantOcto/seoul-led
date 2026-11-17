@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useSectionManager } from "./hooks/useSectionManager";
 import { Logo34PairProvider } from "./components/Logo/Logo34PairContext";
 import WaterLevelSensorsPanel from "./components/WaterLevelSensorsPanel/WaterLevelSensorsPanel";
@@ -112,17 +113,76 @@ function App() {
     }
   };
 
+  // NovaLCT 창 띄우기 — 켜져 있으면 맨 앞으로, 꺼져 있으면 실행해서 맨 앞으로 (느린 PC 는 켜지는 데 1분 넘게 걸림)
+  // 헤더 버튼은 실패해도 팝업을 띄우지 않음 (사용자 지시) — 실패 사유는 콘솔·서버 로그에만
+  const [isOpeningNovaLct, setIsOpeningNovaLct] = useState(false);
+  const openNovaLct = async () => {
+    setIsOpeningNovaLct(true);
+    try {
+      const res = await fetch(`${getSocketUrl()}/api/novalct`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('NovaLCT 띄우기 실패:', body.error || res.status);
+      }
+    } catch (error) {
+      console.error('NovaLCT 띄우기 요청 실패:', error);
+    } finally {
+      setIsOpeningNovaLct(false);
+    }
+  };
+
+  // 해상도 1920×1080 강제 설정 — 해상도가 바뀌어 LED 송출 자리가 어긋났을 때
+  const forceResolution = async () => {
+    try {
+      const res = await fetch(`${getSocketUrl()}/api/resolution`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('해상도 설정 실패:', body.error || res.status);
+      }
+    } catch (error) {
+      console.error('해상도 설정 요청 실패:', error);
+    }
+  };
+
+  // 윈도우 설정 열기 — LED 화면을 안 가리게 가운데에 작게 뜸
+  const openWindowsSettings = async () => {
+    try {
+      const res = await fetch(`${getSocketUrl()}/api/windows-settings`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('윈도우 설정 열기 실패:', body.error || res.status);
+      }
+    } catch (error) {
+      console.error('윈도우 설정 열기 요청 실패:', error);
+    }
+  };
+
+  // 윈도우 다시 시작 — 잘못 누르면 PC 가 꺼지므로 이 버튼만 먼저 물어봄 (사용자 지시)
+  // 크롬 기본 확인창은 화면 위쪽에만 떠서, 화면 가운데 뜨는 자체 확인창을 씀
+  const [isRestartConfirmOpen, setIsRestartConfirmOpen] = useState(false);
+  const restartWindows = async () => {
+    setIsRestartConfirmOpen(false);
+    try {
+      const res = await fetch(`${getSocketUrl()}/api/windows-restart`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('윈도우 다시 시작 실패:', body.error || res.status);
+      }
+    } catch (error) {
+      console.error('윈도우 다시 시작 요청 실패:', error);
+    }
+  };
+
   // 프로그램 종료 — 서버·크롬·감시 창까지 모두 끔 (다시 켜려면 바탕화면 "Garam LED")
   const exitProgram = async () => {
     try {
       const res = await fetch(`${getSocketUrl()}/api/shutdown`, { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        window.alert(body.error || "프로그램을 종료하지 못했습니다.");
+        console.error('프로그램 종료 실패:', body.error || res.status);
       }
     } catch (error) {
       console.error('프로그램 종료 요청 실패:', error);
-      window.alert("서버에 연결하지 못해 종료하지 못했습니다.");
     }
   };
 
@@ -746,40 +806,52 @@ function App() {
     <>
       <div className="banner">
         <div className="banner-left">
-          <h1>LED Seoul</h1>
+          <h1>LED Control System</h1>
           <div className="divider"></div>
         </div>
 
-        <div className="banner-mid">
+        <div className="banner-actions">
+          <button type="button" className="banner-action" onClick={openNovaLct} disabled={isOpeningNovaLct}>
+            {isOpeningNovaLct ? "NovaLCT 여는 중…" : "NovaLCT"}
+          </button>
+          <button type="button" className="banner-action banner-action--resolution" onClick={forceResolution}>
+            해상도 1920×1080
+          </button>
           <button
             type="button"
+            className="banner-action"
             data-bs-toggle="offcanvas"
             data-bs-target="#offcanvasScrolling"
             aria-controls="offcanvasScrolling"
-            style={{
-              padding: "0.5rem",
-              backgroundColor: "transparent",
-              border: "none",
-              borderRadius: "0.5rem",
-              color: "#3b82f6",
-              cursor: "pointer",
-              transition: "all 0.2s",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
-              e.target.style.color = "#3b82f6";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = "transparent";
-              e.target.style.color = "#3b82f6";
-            }}
           >
-            <i className="fa-solid fa-cog" style={{ fontSize: "1.25rem" }}></i>
+            LED 설정
+          </button>
+          <button type="button" className="banner-action" onClick={openWindowsSettings}>
+            윈도우 설정
+          </button>
+          <button type="button" className="banner-action" onClick={() => setIsRestartConfirmOpen(true)}>
+            윈도우 다시 시작
+          </button>
+          <button type="button" className="banner-action banner-action--exit" onClick={exitProgram}>
+            프로그램 종료
           </button>
         </div>
+
+        {/* 헤더는 backdrop-filter 때문에 position: fixed 의 기준이 돼서, 화면 가운데에 띄우려면 body 에 그려야 함 */}
+        {isRestartConfirmOpen && createPortal(
+          <div className="restart-confirm" role="dialog" aria-modal="true" aria-labelledby="restartConfirmTitle">
+            <p id="restartConfirmTitle">윈도우를 다시 시작할까요?</p>
+            <div className="restart-confirm-buttons">
+              <button type="button" className="banner-action" onClick={restartWindows}>
+                확인
+              </button>
+              <button type="button" className="banner-action restart-confirm-cancel" onClick={() => setIsRestartConfirmOpen(false)}>
+                취소
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
 
         <div
           className="offcanvas offcanvas-end settings-offcanvas-top"
@@ -792,26 +864,10 @@ function App() {
           <div className="offcanvas-header">
             <div>
               <h5 className="offcanvas-title" id="offcanvasScrollingLabel" style={{ margin: 0 }}>
-              설정
+              LED 설정
             </h5>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginLeft: "auto" }}>
-              <button
-                type="button"
-                onClick={exitProgram}
-                style={{
-                  padding: "0.45rem 0.9rem",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#ffffff",
-                  backgroundColor: "transparent",
-                  border: "1.5px solid rgba(255, 255, 255, 0.8)",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                }}
-              >
-                프로그램 종료
-              </button>
               <button
                 type="button"
                 className="btn-close btn-close-white"
