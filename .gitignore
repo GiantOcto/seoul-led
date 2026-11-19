@@ -6,3 +6,6 @@ server/.env
 # 릴리즈 산출물 · Node zip 캐시
 dist/
 .release-cache/
+
+# 창 다루기 실행 파일 — server/ledwin 소스를 빌드한 산출물 (node scripts/build-ledwin.js)
+server/ledwin.exe

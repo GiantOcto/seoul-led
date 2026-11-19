@@ -54,58 +54,46 @@ span {
   transform: rotate(0.04deg);
 }
 
+/* 헤더 — 검은 띠. 자리는 전부 화면 왼쪽 기준 고정 좌표 (1920×1080 에서 오른쪽 600px 은 다른 프로그램 창이 덮음) */
 .banner {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   width: 100%;
   max-width: 100vw;
-  height: 64px;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 0 2rem;
+  height: 70px;
+  background: #000000;
+  padding: 0 0 0 50px;
   position: sticky;
   top: 0;
   z-index: 50;
   box-sizing: border-box;
 }
 
-.banner-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex: 1;
-}
-
+/* 제목 — 왼쪽 끝을 LED 왼쪽 끝(50px)에 맞춤 */
 .banner-left h1 {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #3b82f6;
+  font-family: "Segoe UI", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #ffffff;
   margin: 0;
   padding: 0;
-  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
-.banner-left .divider {
-  height: 1rem;
-  width: 1px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* 헤더 버튼 묶음 — NovaLCT 창(x 353~1113) 바로 위에 가운데 정렬. 733 = 창 가운데
-   창 자리는 NovaLCT 쪽에서 고정해 둔 값이라 여기서는 버튼만 맞춤 */
+/* 헤더 아이콘 버튼 묶음 (버튼 한 칸 80px) — 가운데 묶음은 x 430 부터, 오른쪽 종료 버튼은 x 1200 부터 */
 .banner-actions {
   position: absolute;
-  top: 50%;
-  left: 733px;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 430px;
+  height: 100%;
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
 }
 
-/* 헤더 버튼 — 제목색 계열 파랑 하나로, 프로그램 종료만 빨강. 너무 튀지 않게 밝기를 낮춘 옅은 그라데이션 */
+.banner-actions--side {
+  left: 1200px;
+}
+
+/* 확인창 버튼 (확인·취소) */
 .banner-action {
   padding: 0.5rem 1.2rem;
   font-size: 15px;
@@ -115,10 +103,6 @@ span {
   border-radius: 0.45rem;
   cursor: pointer;
   background: linear-gradient(180deg, #4a86ee 0%, #2f64c8 100%);
-}
-
-.banner-action--exit {
-  background: linear-gradient(180deg, #d95050 0%, #b03030 100%);
 }
 
 /* "윈도우 다시 시작" 확인창 — 화면 가운데. 뒤를 어둡게 덮지 않음 (화면이 그대로 LED 로 나가서 LED 까지 어두워짐) */
@@ -154,6 +138,33 @@ span {
   background: #3a4150;
 }
 
+/* "Relay 리셋" 을 누른 뒤 릴레이 시스템이 다시 켜질 때까지 띄우는 안내 — 확인창과 같은 상자에 돌아가는 고리 + 글 */
+.relay-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.relay-loading p {
+  margin: 0;
+}
+
+.relay-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.18);
+  border-top-color: #4a86ee;
+  border-radius: 50%;
+  animation: relay-loading-spin 0.9s linear infinite;
+}
+
+@keyframes relay-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .banner-action:hover:not(:disabled) {
   filter: brightness(0.9);
 }
@@ -163,28 +174,15 @@ span {
   cursor: wait;
 }
 
-/* 해상도가 낮게 잡혔을 때 — 버튼 자리가 옆 프로그램 창에 가려지므로, 해상도 버튼을 제목 바로 옆 빈 곳으로 당김 */
+/* 해상도가 낮게 잡혔을 때 — 버튼 자리가 옆 프로그램 창에 가려지므로, 버튼들을 제목 바로 뒤에 붙이고 해상도 리셋을 맨 앞으로 당김 */
 @media screen and (max-width: 1700px) {
-  .banner {
-    justify-content: flex-start;
-  }
-
-  .banner-left {
-    flex: 0 0 auto;
-  }
-
   .banner-actions {
     position: static;
-    transform: none;
     flex-shrink: 0;
-    margin-left: 1rem;
+    margin-left: 8px;
   }
 
-  .banner-action {
-    white-space: nowrap;
-  }
-
-  .banner-action--resolution {
+  .hdr-btn--resolution {
     order: -1;
   }
 }
@@ -638,10 +636,23 @@ input:focus {
   margin: 0;
 }
 
-.section-controls {
+/* 화면 맨 아래 윈도우 작업표시줄이 뜨는 자리 (윈도우 10 은 40px, 11 은 48px) — 검게 비워 둠 */
+.taskbar-zone {
   position: fixed;
   left: 0;
   bottom: 0;
+  width: 100%;
+  height: 54px;
+  background-color: #000000;
+  z-index: 999;
+}
+
+/* 아래 띠(탭 바) — 예전 그대로 화면 가로를 다 채우는 띠. 작업표시줄이 떠도 안 가려지게 그 자리(54px) 위에 놓음
+   탭 왼쪽 끝은 LED 왼쪽 끝(50px)에 맞춤 */
+.section-controls {
+  position: fixed;
+  left: 0;
+  bottom: 54px;
   width: 100%;
   max-width: 100vw;
   height: 5%;
@@ -649,7 +660,7 @@ input:focus {
   justify-content: flex-start;
   gap: 10px;
   z-index: 1000;
-  padding: 5px;
+  padding: 5px 5px 5px 50px;
   background-color: rgba(0, 0, 0, 0.8);
   box-sizing: border-box;
   overflow-x: auto;

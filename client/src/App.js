@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { createPortal } from "react-dom";
 import { useSectionManager } from "./hooks/useSectionManager";
 import { Logo34PairProvider } from "./components/Logo/Logo34PairContext";
+import HeaderButton from "./components/HeaderButton/HeaderButton";
+import { HEADER_ICONS } from "./components/HeaderButton/icons";
 import { LED_DEFAULT_POSITION } from "./constants/led";
 import { getSocketUrl } from "./utils/socketUrl";
 import "./App.css";
@@ -120,6 +122,41 @@ function App() {
       console.error('NovaLCT 띄우기 요청 실패:', error);
     } finally {
       setIsOpeningNovaLct(false);
+    }
+  };
+
+  // ViPlex 창 띄우기 — NovaLCT 버튼과 같은 방식 (켜져 있으면 맨 앞으로, 꺼져 있으면 실행해서 맨 앞으로)
+  const [isOpeningViPlex, setIsOpeningViPlex] = useState(false);
+  const openViPlex = async () => {
+    setIsOpeningViPlex(true);
+    try {
+      const res = await fetch(`${getSocketUrl()}/api/viplex`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('ViPlex 띄우기 실패:', body.error || res.status);
+      }
+    } catch (error) {
+      console.error('ViPlex 띄우기 요청 실패:', error);
+    } finally {
+      setIsOpeningViPlex(false);
+    }
+  };
+
+  // 릴레이 시스템 리셋 — 켜져 있으면 끄고 다시 켬, 꺼져 있으면 켬
+  // 서버는 릴레이 시스템 본 창이 뜬 뒤에야 답하므로, 답이 올 때까지 화면 가운데에 "켜는 중" 안내를 띄워 둠 (사용자 지시)
+  const [isResettingRelay, setIsResettingRelay] = useState(false);
+  const resetRelay = async () => {
+    setIsResettingRelay(true);
+    try {
+      const res = await fetch(`${getSocketUrl()}/api/relay-reset`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('릴레이 시스템 리셋 실패:', body.error || res.status);
+      }
+    } catch (error) {
+      console.error('릴레이 시스템 리셋 요청 실패:', error);
+    } finally {
+      setIsResettingRelay(false);
     }
   };
 
@@ -749,37 +786,40 @@ function App() {
       <div className="banner">
         <div className="banner-left">
           <h1>LED Control System</h1>
-          <div className="divider"></div>
         </div>
 
+        {/* 가운데 묶음 — 순서는 시안 그대로. 아이콘 그림은 components/HeaderButton/icons */}
         <div className="banner-actions">
-          <button type="button" className="banner-action" onClick={openNovaLct} disabled={isOpeningNovaLct}>
-            {isOpeningNovaLct ? "NovaLCT 여는 중…" : "NovaLCT"}
-          </button>
-          <button type="button" className="banner-action banner-action--resolution" onClick={forceResolution}>
-            해상도 1920×1080
-          </button>
-          <button
-            type="button"
-            className="banner-action"
+          <HeaderButton image={HEADER_ICONS.viplex} label="ViPlex" onClick={openViPlex} disabled={isOpeningViPlex} />
+          <HeaderButton image={HEADER_ICONS.novalct} label="NovaLCT" onClick={openNovaLct} disabled={isOpeningNovaLct} />
+          <HeaderButton
+            image={HEADER_ICONS.led}
+            label="LED 설정"
             data-bs-toggle="offcanvas"
             data-bs-target="#offcanvasScrolling"
             aria-controls="offcanvasScrolling"
-          >
-            LED 설정
-          </button>
-          <button type="button" className="banner-action" onClick={openWindowsSettings}>
-            윈도우 설정
-          </button>
-          <button type="button" className="banner-action" onClick={() => setIsRestartConfirmOpen(true)}>
-            윈도우 다시 시작
-          </button>
-          <button type="button" className="banner-action banner-action--exit" onClick={exitProgram}>
-            프로그램 종료
-          </button>
+          />
+          <HeaderButton image={HEADER_ICONS.windows} label="윈도우 설정" onClick={openWindowsSettings} />
+          <HeaderButton image={HEADER_ICONS.reboot} label="PC 재부팅" onClick={() => setIsRestartConfirmOpen(true)} />
+          <HeaderButton image={HEADER_ICONS.relay} label="Relay 리셋" onClick={resetRelay} disabled={isResettingRelay} />
+          <HeaderButton image={HEADER_ICONS.resolution} label="해상도 리셋" className="hdr-btn--resolution" onClick={forceResolution} />
         </div>
 
-        {/* 헤더는 backdrop-filter 때문에 position: fixed 의 기준이 돼서, 화면 가운데에 띄우려면 body 에 그려야 함 */}
+        {/* 오른쪽 — 종료 (잘못 누르면 안 되는 버튼이라 떨어뜨려 둠) */}
+        <div className="banner-actions banner-actions--side">
+          <HeaderButton image={HEADER_ICONS.exit} label="LCS 종료" onClick={exitProgram} />
+        </div>
+
+        {/* 릴레이 시스템이 다시 켜질 때까지 화면 가운데에 띄우는 안내 */}
+        {isResettingRelay && createPortal(
+          <div className="restart-confirm relay-loading" role="status" aria-live="polite">
+            <div className="relay-loading-spinner" aria-hidden="true"></div>
+            <p>릴레이 시스템을 다시 켜는 중입니다…</p>
+          </div>,
+          document.body
+        )}
+
+        {/* 확인창은 헤더 안이 아니라 body 에 그림 — 화면 가운데에 뜨게 */}
         {isRestartConfirmOpen && createPortal(
           <div className="restart-confirm" role="dialog" aria-modal="true" aria-labelledby="restartConfirmTitle">
             <p id="restartConfirmTitle">윈도우를 다시 시작할까요?</p>
@@ -1482,7 +1522,10 @@ function App() {
         </div>
       </Logo34PairProvider>
 
-      <div 
+      {/* 화면 맨 아래 윈도우 작업표시줄이 뜨는 자리 — 비워 두고, 탭 바는 그 위에 놓음 */}
+      <div className="taskbar-zone" aria-hidden="true"></div>
+
+      <div
         className="section-controls"
         ref={sectionControlsRef}
         onDragOver={handleControlsDragOver}
