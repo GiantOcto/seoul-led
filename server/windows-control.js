@@ -1,30 +1,23 @@
 const fs = require('fs');
 const path = require('path');
-const { execFile, spawn } = require('child_process');
+const { spawn } = require('child_process');
+const { runLedwin } = require('./ledwin');
 
 // 헤더 "윈도우 설정" · "윈도우 다시 시작" 버튼
 const PROGRAM_ROOT = path.resolve(__dirname, '..');
-const SETTINGS_SCRIPT = path.join(__dirname, 'windows-settings.ps1');
-const SETTINGS_TIMEOUT_MS = 60 * 1000; // 스크립트가 창을 최대 30초 기다림 + PowerShell 시작 여유
+const SETTINGS_WAIT_SEC = 30; // ledwin 이 설정 창을 기다리는 최대 시간
 const RESTART_DELAY_SEC = 3; // 화면에 응답을 먼저 보낸 뒤 다시 시작
 
-/** execFile 오류(없으면 성공) → { ok: true } | { ok: false, error } — 화면엔 팝업 없이 서버 로그에만 */
+/** 실행 오류(없으면 성공) → { ok: true } | { ok: false, error } — 화면엔 팝업 없이 서버 로그에만 */
 function settingsResultFromExit(err) {
     if (!err) return { ok: true };
     const reason = err.code === 3 ? '윈도우 설정 창이 30초 안에 뜨지 않았습니다.' : `윈도우 설정을 열지 못했습니다. (${err.message})`;
     return { ok: false, error: reason };
 }
 
-/** 윈도우 설정 창을 LED 를 안 가리는 가운데 자리에 작게 띄움 (windows-settings.ps1) */
-function openWindowsSettings() {
-    return new Promise((resolve) => {
-        execFile(
-            'powershell.exe',
-            ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', SETTINGS_SCRIPT],
-            { windowsHide: true, timeout: SETTINGS_TIMEOUT_MS },
-            (err) => resolve(settingsResultFromExit(err)),
-        );
-    });
+/** 윈도우 설정 창을 LED 를 안 가리는 가운데 자리에 작게 띄움 (ledwin.exe settings) */
+async function openWindowsSettings() {
+    return settingsResultFromExit(await runLedwin(['settings'], SETTINGS_WAIT_SEC));
 }
 
 function runRestart() {

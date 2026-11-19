@@ -1,0 +1,46 @@
+/* 헤더 아이콘 버튼 — 위에 아이콘(40px), 아래에 이름. 한 칸 80px 이라 버튼끼리 간격 없이 붙여 놓음 */
+.hdr-btn {
+  width: 80px;
+  height: 100%;
+  padding: 7px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  /* 영문은 Segoe UI. 한글은 수위계가 있는 지점이면 프로그램에 같이 들어 있는 Noto Sans KR, 없는 지점이면 윈도우 기본 맑은 고딕 */
+  font-family: "Segoe UI", "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+
+/* 아이콘 그림 — 높이 40px 에 맞추고, 가로로 긴 그림(LED·가람 로고)은 찌그러지지 않게 60px 까지만 넓어짐 */
+.hdr-btn-icon {
+  display: block;
+  height: 40px;
+  width: auto;
+  max-width: 60px;
+  object-fit: contain;
+}
+
+.hdr-btn-label {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.hdr-btn:hover:not(:disabled) .hdr-btn-icon {
+  filter: brightness(1.25);
+}
+
+.hdr-btn:active:not(:disabled) .hdr-btn-icon {
+  transform: scale(0.94);
+}
+
+.hdr-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
