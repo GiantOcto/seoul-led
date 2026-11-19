@@ -1,24 +1,34 @@
 /*
- * LED(.container)는 화면 고정 좌표(설정 "LED 위치") — 패널 위치와 무관.
- * 패널은 flex 밖(absolute). 가로: LED 오른쪽 끝 + gap(아래 4px, 더 붙이려면 줄이기).
- * 세로: 높이 768 + margin-top 87 기준으로 LED 상단과 맞춤.
+ * 수위계 — 헤더 아래에 놓는 칸 나눈 표. 화면 고정 좌표라 창 크기·LED 위치와 무관 (이 표는 x 348~1150, y 84~176).
+ * 가로 자리는 LED(x 178 까지)와 릴레이 시스템 창(x 1320 부터) 사이 빈 곳의 한가운데 — 양쪽 여백이 170px 로 같음.
+ * 칸 나눔은 화면 시안 그대로(수위 센서 줄만 더 높임), 색·점등 같은 모양은 예전 세로 패널 그대로:
+ *
+ *   ┌────────┬───────────┬────────────────┬──────────────────────────┬───────────┐
+ *   │        │ 현재 수위 │ 300 mm  [정상] │ 압축공기 배출장치 동작유무 │  [정상]   │
+ *   │ 수위계 ├───────────┼────────────────┴──────────────────────────┴───────────┤
+ *   │        │ 수위 센서 │  ①  ②  ③  ④  ⑤  ⑥  ⑦  ⑧  ⑨  ⑩                        │
+ *   └────────┴───────────┴────────────────────────────────────────────────────────┘
+ *
+ * 칸(.wl-cell) 하나하나가 왼쪽·위쪽 선을 그려서 표가 됨. 칸 너비에는 왼쪽 선 2px 이 들어 있음
  */
 .wl-sensors-panel {
-  position: absolute;
-  left: calc(20%);
-  top: calc((100% - 681px) / 2);
-  width: 300px;
-  min-height: 300px;
-  height: auto;
-  max-height: none;
-  padding: 16px 14px 18px;
+  --wl-line: rgba(59, 130, 246, 0.45);
+
+  position: fixed;
+  left: 348px;
+  top: 84px;
+  width: 802px;
+  height: 92px;
+  padding: 0;
   box-sizing: border-box;
   background: rgba(15, 23, 42, 0.92);
-  border: 2px solid rgba(59, 130, 246, 0.45);
-  border-radius: 16px;
+  border: 2px solid var(--wl-line);
+  border-radius: 6px;
   backdrop-filter: blur(12px);
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 138px 100px 190px 220px 150px;
+  grid-template-rows: 38px 50px;
   z-index: 40;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   /* 현장 PC마다 기본 글꼴이 달라 보여서 고정 — 숫자·영문은 Segoe UI(윈도우 기본), 한글은 Noto Sans KR(프로그램에 포함, JS 에서 불러옴)
@@ -26,36 +36,90 @@
   font-family: "Segoe UI", "Noto Sans KR", sans-serif;
 }
 
+/* 표의 한 칸 — 내용은 가운데, 왼쪽에 칸 나누는 선 */
+.wl-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  border-left: 2px solid var(--wl-line);
+}
+
+/* 왼쪽 제목 칸 — 두 줄을 다 차지, 표의 맨 왼쪽이라 왼쪽 선 없음 */
+.wl-cell--head {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  border-left: none;
+}
+
+.wl-cell--level-label {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.wl-cell--level {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.wl-cell--d1004-label {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.wl-cell--d1004 {
+  grid-column: 5;
+  grid-row: 1;
+}
+
+/* 아랫줄 칸은 윗줄과 나누는 선도 그림 */
+.wl-cell--sensors-label {
+  grid-column: 2;
+  grid-row: 2;
+  border-top: 2px solid var(--wl-line);
+}
+
+.wl-cell--sensors {
+  grid-column: 3 / -1;
+  grid-row: 2;
+  border-top: 2px solid var(--wl-line);
+}
+
 .wl-sensors-panel__head {
-  font-size: 15px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #60a5fa;
-  margin-bottom: 14px;
-  text-align: center;
+}
+
+/* 줄 이름 (현재 수위 / 수위 센서) — 압축공기 제목과 같은 글자 */
+.wl-sensors-panel__label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #60a5fa;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .wl-sensors-panel__mm {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 6px;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  gap: 4px;
 }
 
 .wl-sensors-panel__mm-value {
   font-family: "SeoulHangangEB", ui-sans-serif, system-ui, sans-serif;
-  font-size: 48px;
+  font-size: 28px;
   font-weight: 700;
   color: #4ade80;
   line-height: 1;
 }
 
 .wl-sensors-panel__mm-unit {
-  font-size: 18px;
+  font-size: 14px;
   color: #94a3b8;
   font-weight: 600;
 }
@@ -64,12 +128,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  font-size: 22px;
+  height: 26px;
+  padding: 0 9px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.06em;
-  border-radius: 12px;
-  margin-bottom: 10px;
+  border-radius: 8px;
+  white-space: nowrap;
 }
 
 .wl-sensors-panel__plc-status--0 {
@@ -87,21 +152,13 @@
   background: rgba(239, 68, 68, 0.12);
 }
 
-/* 센서 그리드와 D1004 구역 구분선 */
-.wl-sensors-panel__divider {
-  margin-top: 26px;
-  margin-bottom: 20px;
-  border-top: 1px solid rgba(148, 163, 184, 0.25);
-}
-
 /* D1004 구역 제목 */
 .wl-sensors-panel__d1004-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #60a5fa;
-  text-align: center;
-  margin-bottom: 14px;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 /* D1004 압축공기 배출장치 동작 표시등 — 1이면 초록 점등 */
@@ -109,13 +166,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 48px;
-  font-size: 18px;
+  width: calc(100% - 20px);
+  height: 26px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.06em;
-  border-radius: 12px;
-  margin-bottom: 4px;
+  border-radius: 8px;
+  white-space: nowrap;
   color: #94a3b8;
   background: rgba(51, 65, 85, 0.45);
 }
@@ -140,24 +197,23 @@
   font-weight: 600;
 }
 
+/* 센서 10개 — 아랫줄 칸 안에 한 줄로 */
 .wl-sensors-panel__grid {
+  width: 100%;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px 8px;
-  flex: 0 0 auto;
+  grid-template-columns: repeat(10, 1fr);
 }
 
 .wl-sensor-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 0;
+  gap: 3px;
 }
 
 .wl-sensor-cell__dot {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #334155;
   border: 2px solid #475569;
@@ -189,35 +245,4 @@
 
 .wl-sensor-cell--error .wl-sensor-cell__num {
   color: #fecaca;
-}
-
-@media screen and (max-width: 1440px) {
-  .wl-sensors-panel {
-    width: 260px;
-    top: calc((100% - 681px) / 2);
-    min-height: 280px;
-    max-height: none;
-    padding: 14px 12px 18px;
-  }
-
-  .wl-sensors-panel__mm-value {
-    font-size: 38px;
-  }
-
-  .wl-sensors-panel__head {
-    font-size: 13px;
-  }
-
-  .wl-sensor-cell__dot {
-    width: 20px;
-    height: 20px;
-  }
-
-  .wl-sensor-cell__num {
-    font-size: 11px;
-  }
-
-  .wl-sensors-panel__grid {
-    gap: 10px 6px;
-  }
 }

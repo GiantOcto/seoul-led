@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const { execSync } = require('child_process');
+const { buildLedwin } = require('./build-ledwin');
 
 const ROOT = path.join(__dirname, '..');
 const NODE_VER = process.env.NODE_RELEASE_VERSION || '20.18.1';
@@ -118,6 +119,9 @@ function runRest() {
             recursive: true,
         });
     }
+
+    // 창 다루기 실행 파일(헤더 버튼·부팅 작업이 씀)을 설치본 안에 바로 빌드 — 개발 PC 에서 만들어 둔 게 딸려 왔어도 새로 만든 걸로 덮음
+    buildLedwin(path.join(OUT, 'server', 'ledwin.exe'));
 
     const nodeDir = path.join(OUT, 'node');
     const pathSep = ';';

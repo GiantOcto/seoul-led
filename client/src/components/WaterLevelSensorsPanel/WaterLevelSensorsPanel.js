@@ -160,7 +160,15 @@ function WaterLevelSensorsPanel() {
 
     <aside className="wl-sensors-panel" aria-label="수위 센서 상태">
 
-      <div className="wl-sensors-panel__head">수위 · 센서</div>
+      {/* 칸을 나눈 표 모양 (wl-cell 하나가 한 칸) — 어느 칸에 놓일지는 CSS(grid)에서 정함:
+          왼쪽 제목 / 윗줄 현재 수위(+PLC 상태)·압축공기 배출장치 / 아랫줄 센서 10개 */}
+      <div className="wl-cell wl-cell--head wl-sensors-panel__head">수위계</div>
+
+      <div className="wl-cell wl-cell--level-label wl-sensors-panel__label">현재 수위</div>
+
+      <div className="wl-cell wl-cell--sensors-label wl-sensors-panel__label">수위 센서</div>
+
+      <div className="wl-cell wl-cell--level">
 
       <div className="wl-sensors-panel__mm">
 
@@ -190,6 +198,10 @@ function WaterLevelSensorsPanel() {
 
       )}
 
+      </div>
+
+      <div className="wl-cell wl-cell--sensors">
+
       <div className="wl-sensors-panel__grid" role="list">
 
         {bits.map((isError, i) => (
@@ -210,9 +222,11 @@ function WaterLevelSensorsPanel() {
 
       </div>
 
-      <div className="wl-sensors-panel__divider" aria-hidden />
+      </div>
 
-      <div className="wl-sensors-panel__d1004-title">압축공기 배출장치 동작유무</div>
+      <div className="wl-cell wl-cell--d1004-label wl-sensors-panel__d1004-title">압축공기 배출장치 동작유무</div>
+
+      <div className="wl-cell wl-cell--d1004">
 
       <div
 
@@ -226,6 +240,8 @@ function WaterLevelSensorsPanel() {
 
         {/* PLC OFF 이면 서버가 D1004 를 보내지 않음(null) — 신호 없음 대신 PLC OFF 로 표시 */}
         <span>{d1004 === null ? (plcStatus === 0 ? "PLC OFF" : "신호 없음") : d1004 === 1 ? "동작 감지" : "정상"}</span>
+
+      </div>
 
       </div>
 
