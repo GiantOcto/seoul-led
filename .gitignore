@@ -9,3 +9,6 @@ dist/
 
 # 런타임 로그 (수위 CSV, dev 로그)
 logs/
+
+# 창 다루기 실행 파일 — server/ledwin 소스를 빌드한 산출물 (node scripts/build-ledwin.js)
+server/ledwin.exe
