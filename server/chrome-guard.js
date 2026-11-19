@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
-// LED 프로그램이 도는 동안 LED 전용 프로필(chrome-profile)이 아닌 크롬은 바로 끔 — 실제 감시는 chrome-guard.ps1 이 상주하며 함
+// LED 프로그램이 도는 동안 LED 전용 프로필(chrome-profile)이 아닌 크롬은 바로 끄고, LED 크롬 위에 작업표시줄이 보이게 함
+// — 실제 감시는 chrome-guard.ps1 이 상주하며 함
 const PROGRAM_ROOT = path.resolve(__dirname, '..');
 const SCRIPT = path.join(__dirname, 'chrome-guard.ps1');
 
@@ -26,10 +27,11 @@ function startChromeGuard({
         for (const line of chunk.toString().split(/\r?\n/)) {
             const killed = line.match(/^killed (\d+)/);
             if (killed) console.log(`[chrome-guard] LED 프로필이 아닌 크롬 종료 (pid ${killed[1]})`);
+            if (/^taskbar \d+/.test(line)) console.log('[chrome-guard] LED 화면 위에 작업표시줄이 보이게 표시함');
         }
     });
     child.on('exit', (code) => console.warn(`[chrome-guard] 감시 종료 (code ${code})`));
-    console.log('[chrome-guard] LED 크롬 말고 다른 크롬은 끄는 감시 시작');
+    console.log('[chrome-guard] 크롬 감시 시작 (다른 크롬 끄기 · LED 화면 위 작업표시줄 유지)');
     return child;
 }
 

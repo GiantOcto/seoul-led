@@ -30,6 +30,7 @@ const { fetchPm10 } = require('./airQuality');
 
 const { isLocalRequest, requestProgramShutdown } = require('./program-shutdown');
 const { bringNovaLctToFront } = require('./novalct');
+const { launchApp } = require('./app-launcher');
 const { startChromeGuard } = require('./chrome-guard');
 const { setResolution } = require('./display-resolution');
 const { openWindowsSettings, requestWindowsRestart } = require('./windows-control');
@@ -235,7 +236,35 @@ app.post('/api/novalct', async (req, res) => {
     res.json({ success: true });
 });
 
-// 헤더 "해상도 1920×1080" — 주 모니터 해상도를 1920x1080 으로 강제 설정 (같은 PC에서만)
+// 헤더 "ViPlex" — ViPlex 창을 맨 앞으로, 꺼져 있으면 실행 (같은 PC에서만)
+app.post('/api/viplex', async (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 ViPlex 를 띄울 수 있습니다.' });
+    }
+    const result = await launchApp('viplex');
+    if (!result.ok) {
+        console.warn('[viplex]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    res.json({ success: true });
+});
+
+// 헤더 "Relay 리셋" — 릴레이 시스템이 켜져 있으면 끄고 다시 켬, 꺼져 있으면 켬 (같은 PC에서만)
+// 릴레이 시스템 본 창이 뜬 뒤에 답함 — 화면은 답이 올 때까지 가운데에 "켜는 중" 안내를 띄워 둠
+app.post('/api/relay-reset', async (req, res) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ error: '이 PC에서만 릴레이 시스템을 다시 켤 수 있습니다.' });
+    }
+    const result = await launchApp('relay');
+    if (!result.ok) {
+        console.warn('[relay-reset]', result.error);
+        return res.status(409).json({ error: result.error });
+    }
+    console.log('[relay-reset] 화면에서 릴레이 시스템 리셋');
+    res.json({ success: true });
+});
+
+// 헤더 "해상도 리셋" — 주 모니터 해상도를 1920x1080 으로 강제 설정 (같은 PC에서만)
 app.post('/api/resolution', async (req, res) => {
     if (!isLocalRequest(req)) {
         return res.status(403).json({ error: '이 PC에서만 해상도를 바꿀 수 있습니다.' });
